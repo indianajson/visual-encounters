@@ -800,6 +800,7 @@ function updateTileImage(row, col) {
     }
 }
 
+
 // =============================================
 // Field Updates
 // =============================================
@@ -1071,28 +1072,6 @@ function setupEventHandlers() {
             } else if (type === 'player') {
                 $('#enemy-properties').hide();
                 $('#obstacle-properties').hide();
-                
-                // Only allow player on red team tiles
-                /*
-                const teamValue = variation.teams ? variation.teams[row][col] : defaultTeamPositions[row][col];
-                if (teamValue !== 2) {
-                    showStatus("Player can only be placed on red team tiles", 'error');
-                    $(this).val('none');
-                    return;
-                }
-                */
-                
-                // Remove player from any other tiles first
-                /*
-                for (let r = 0; r < 3; r++) {
-                    for (let c = 0; c < 6; c++) {
-                        if (variation.player_positions[r][c] > 0) {
-                            variation.player_positions[r][c] = 0;
-                            updateTileImage(r, c); // Update the visual grid
-                        }
-                    }
-                }
-                */DEBUG_MODE
                 variation.player_positions[row][col] = 1;
             } else {
                 $('#enemy-properties').hide();
@@ -2105,6 +2084,20 @@ function generateLuaString() {
     config.encounters.forEach(encounter => {
         if (!encounter.name) return;
 
+        // First, create a properly numbered player_positions array
+        const numberedPlayerPositions = Array(3).fill().map(() => Array(6).fill(0));
+        let playerCounter = 1;
+        
+        // First pass to find all player positions
+        for (let row = 0; row < 3; row++) {
+            for (let col = 0; col < 6; col++) {
+                if (encounter.player_positions && encounter.player_positions[row] && 
+                    encounter.player_positions[row][col] > 0) {
+                    numberedPlayerPositions[row][col] = playerCounter++;
+                }
+            }
+        }
+
         output.push(`local ${encounter.name} = {`);
         output.push(`    name="${encounter.name}",`);
         output.push(`    path="${encounter.path || ''}",`);
@@ -2124,6 +2117,7 @@ function generateLuaString() {
             });
             output.push(`    },`);
         }
+        
         // Handle obstacles
         if (encounter.obstacles && Array.isArray(encounter.obstacles)) {
             output.push(`    obstacles={`);
@@ -2137,7 +2131,6 @@ function generateLuaString() {
             output.push(`    },`);
         }
 
-
         // Handle positions
         if (encounter.positions && Array.isArray(encounter.positions)) {
             output.push(`    positions={`);
@@ -2148,7 +2141,8 @@ function generateLuaString() {
             });
             output.push(`    },`);
         }
-        // Handle obstalce positions
+        
+        // Handle obstacle positions
         if (encounter.obstacle_positions && Array.isArray(encounter.obstacle_positions)) {
             output.push(`    obstacle_positions={`);
             encounter.obstacle_positions.forEach(row => {
@@ -2159,10 +2153,19 @@ function generateLuaString() {
             output.push(`    },`);
         }
 
-        // Handle obstalce positions
-        if (encounter.player_positions && Array.isArray(encounter.player_positions)) {
-            output.push(`    player_positions={`);
-            encounter.player_positions.forEach(row => {
+        // Handle player positions with proper numbering
+        output.push(`    player_positions={`);
+        numberedPlayerPositions.forEach(row => {
+            if (Array.isArray(row)) {
+                output.push(`        {${row.join(',')}},`);
+            }
+        });
+        output.push(`    },`);
+
+        // Handle tiles
+        if (encounter.tiles && Array.isArray(encounter.tiles)) {
+            output.push(`    tiles={`);
+            encounter.tiles.forEach(row => {
                 if (Array.isArray(row)) {
                     output.push(`        {${row.join(',')}},`);
                 }
@@ -2170,11 +2173,10 @@ function generateLuaString() {
             output.push(`    },`);
         }
 
-
-        // Handle tiles
-        if (encounter.tiles && Array.isArray(encounter.tiles)) {
-            output.push(`    tiles={`);
-            encounter.tiles.forEach(row => {
+        // Handle teams
+        if (encounter.teams && Array.isArray(encounter.teams)) {
+            output.push(`    teams={`);
+            encounter.teams.forEach(row => {
                 if (Array.isArray(row)) {
                     output.push(`        {${row.join(',')}},`);
                 }
@@ -2210,6 +2212,7 @@ function generateLuaString() {
 
     return output.join('\n');
 }
+
 
 
 // =============================================
