@@ -356,9 +356,9 @@
             { name: "Bugtank", image: "enemies/Bugtank.webp", ranks: [1],offsetX: 0,offsetY: 0 },
             { name: "Shrimpy", image: "enemies/Shrimpy.webp", ranks: [1],offsetX: 0,offsetY: 0 },
             { name: "Puffy", image: "enemies/Puffy.webp", ranks: [1],offsetX: 0,offsetY: 0 },
-            { name: "HardHead", image: "enemies/HardHead.webp", ranks: [1],offsetX: 0,offsetY: 0 },
-            { name: "HotHead", image: "enemies/HotHead.webp", ranks: [1],offsetX: 0,offsetY: 0 },
-            { name: "ColdHead", image: "enemies/ColdHead.webp", ranks: [1],offsetX: 0,offsetY: 0 },
+            { name: "HardHead", image: "enemies/HardHead.webp", ranks: [1],offsetX: 0,offsetY: 40 },
+            { name: "HotHead", image: "enemies/HotHead.webp", ranks: [1],offsetX: 0,offsetY: 40 },
+            { name: "ColdHead", image: "enemies/ColdHead.webp", ranks: [1],offsetX: 0,offsetY: 40 },
             { name: "Boomer", image: "enemies/Boomer.webp", ranks: [1],offsetX: 0,offsetY: 0 },
             { name: "Gloomer", image: "enemies/Gloomer.webp", ranks: [1],offsetX: 0,offsetY: 0 },
             { name: "Doomer", image: "enemies/Doomer.webp", ranks: [1],offsetX: 0,offsetY: 0 },
@@ -1027,12 +1027,14 @@ function setupEventHandlers() {
             variation.teams[selectedTile.row][selectedTile.col] = value;
             
             // If changing to blue team and player is present, remove player
+            /*
             if (value === 1 && variation.player_positions[selectedTile.row][selectedTile.col] > 0) {
                 variation.player_positions[selectedTile.row][selectedTile.col] = 0;
                 $('#content-type').val('none');
                 $('#enemy-properties').hide();
                 $('#obstacle-properties').hide();
             }
+            */
             
             updateTileImage(selectedTile.row, selectedTile.col);
             saveToLocalStorage();
@@ -1070,14 +1072,17 @@ function setupEventHandlers() {
                 $('#obstacle-properties').hide();
                 
                 // Only allow player on red team tiles
+                /*
                 const teamValue = variation.teams ? variation.teams[row][col] : defaultTeamPositions[row][col];
                 if (teamValue !== 2) {
                     showStatus("Player can only be placed on red team tiles", 'error');
                     $(this).val('none');
                     return;
                 }
+                */
                 
                 // Remove player from any other tiles first
+                /*
                 for (let r = 0; r < 3; r++) {
                     for (let c = 0; c < 6; c++) {
                         if (variation.player_positions[r][c] > 0) {
@@ -1086,7 +1091,7 @@ function setupEventHandlers() {
                         }
                     }
                 }
-
+                */DEBUG_MODE
                 variation.player_positions[row][col] = 1;
             } else {
                 $('#enemy-properties').hide();
