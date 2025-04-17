@@ -185,7 +185,11 @@
             <h2>Battle Grid</h2>
             <div class="grid-container" id="battle-grid"></div>
             
-            <div class="properties-panel" id="main-properties">
+          <!-- <div class="properties-panel" id="main-properties">
+                
+            </div>-->
+
+            <div class="properties-panel" id="variation-properties" style="display:none;">
                 <h3>Main Configuration</h3>
                 <label>Minimum Steps Before Encounter:
                     <input type="number" id="min-steps" min="0" step="1">
@@ -193,9 +197,6 @@
                 <label>Encounter Chance Per Step (0.00-1.00):
                     <input type="number" id="encounter-chance" min="0" max="1" step="0.01">
                 </label>
-            </div>
-
-            <div class="properties-panel" id="variation-properties" style="display:none;">
                 <h3>Battle Scenario Properties</h3>
                 <label>Weight:
                     <input type="number" id="variation-weight" min="0" step="1">
@@ -1076,6 +1077,16 @@ function setupEventHandlers() {
                     return;
                 }
                 
+                // Remove player from any other tiles first
+                for (let r = 0; r < 3; r++) {
+                    for (let c = 0; c < 6; c++) {
+                        if (variation.player_positions[r][c] > 0) {
+                            variation.player_positions[r][c] = 0;
+                            updateTileImage(r, c); // Update the visual grid
+                        }
+                    }
+                }
+
                 variation.player_positions[row][col] = 1;
             } else {
                 $('#enemy-properties').hide();
@@ -1345,6 +1356,15 @@ function setupTilePropertyHandlers() {
                 showStatus("Player can only be placed on red team tiles", 'error');
                 $(this).val('none').trigger('change');
                 return;
+            }
+             // Remove player from any other tiles first
+            for (let r = 0; r < 3; r++) {
+                for (let c = 0; c < 6; c++) {
+                    if (variation.player_positions[r][c] > 0) {
+                        variation.player_positions[r][c] = 0;
+                        updateTileImage(r, c); // Update the visual grid
+                    }
+                }
             }
             variation.player_positions[row][col] = 1;
         }
