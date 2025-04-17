@@ -1,0 +1,2226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisualEncounters Editor</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+            image-rendering: optimizeSpeed;             /* STOP SMOOTHING, GIVE ME SPEED  */
+            image-rendering: -moz-crisp-edges;          /* Firefox                        */
+            image-rendering: -o-crisp-edges;            /* Opera                          */
+            image-rendering: -webkit-optimize-contrast; /* Chrome (and eventually Safari) */
+            image-rendering: pixelated;                 /* Universal support since 2021   */
+            image-rendering: optimize-contrast;         /* CSS3 Proposed                  */
+            -ms-interpolation-mode: nearest-neighbor;   /* IE8+                           */
+        }
+        .select2-results__option .enemy-option .option-preview {
+            height:70px;
+            width:70px;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .toolbar {
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .toolbar button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .panel {
+            background-color: white;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            flex: 1;
+            min-width: 300px;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(6, 130px);
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+        .tile {
+            width: 120px;
+            height: 180px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            position: relative;
+            overflow: visible;
+            cursor: pointer;
+        }
+        .tile.selected {
+            border-color: #0066ff;
+            box-shadow: 0 0 10px rgba(0,102,255,0.5);
+        }
+        .tile-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: bottom;
+        }
+        .tile-team {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: bottom;
+        }
+        .tile-entity {
+            position: absolute;
+            width: 90%;
+            height: 100%;
+            left: 5%;
+            top: 10%;
+            z-index: 3;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: bottom;
+        }
+        .properties-panel {
+            margin-top: 20px;
+        }
+        .properties-panel label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        .properties-panel input, .properties-panel select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        .status-message {
+            margin-top: 10px;
+            padding: 5px;
+            border-radius: 3px;
+            display: none;
+        }
+        .success { background-color: #dff0d8; color: #3c763d; }
+        .error { background-color: #f2dede; color: #a94442; }
+        .freedom-mission-options {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        /* Add these new styles */
+        .status-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            width: 300px;
+        }
+        .status-message {
+            padding: 10px 15px;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: none;
+            margin-bottom: 10px;
+        }
+        .select2-container--default .select2-results__option {
+            padding: 5px;
+        }
+        .enemy-option, .obstacle-option {
+            display: flex;
+            align-items: center;
+        }
+        .option-preview {
+            width: 30px;
+            height: 30px;
+            margin-right: 10px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        .toolbar {
+            margin-bottom: 10px;
+        }
+        .panel h2 {
+            margin-top: 0;
+        }
+        .properties-panel {
+            transition: all 0.3s ease;
+        }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+</head>
+<body>
+    <div class="toolbar">
+        <button id="new-config">New Config</button>
+        <button id="load-config">Load Config</button>
+        <button id="save-config">Save Config</button>
+        <button id="clear-all">Clear All</button>
+        <select id="variation-select"></select>
+        <button id="add-variation">Add Variation</button>
+        <button id="delete-variation" disabled>Delete Variation</button>
+    </div>
+
+    <div class="container">
+        <div class="panel" id="grid-panel">
+            <h2>Battle Grid</h2>
+            <div class="grid-container" id="battle-grid"></div>
+            
+            <div class="properties-panel" id="main-properties">
+                <h3>Main Configuration</h3>
+                <label>Minimum Steps Before Encounter:
+                    <input type="number" id="min-steps" min="0" step="1">
+                </label>
+                <label>Encounter Chance Per Step (0.00-1.00):
+                    <input type="number" id="encounter-chance" min="0" max="1" step="0.01">
+                </label>
+            </div>
+
+            <div class="properties-panel" id="variation-properties" style="display:none;">
+                <h3>Battle Scenario Properties</h3>
+                <label>Weight:
+                    <input type="number" id="variation-weight" min="0" step="1">
+                </label>
+                <label>Music Path:
+                    <input type="text" id="music-path">
+                </label>
+                <label>Results Callback:
+                    <input type="text" id="results-callback">
+                </label>
+                <label>
+                    <input type="checkbox" id="freedom-mission"> Freedom Mission
+                </label>
+                
+                <div id="freedom-mission-options" class="freedom-mission-options" style="display:none;">
+                    <label>Turn Count:
+                        <input type="number" id="turn-count" min="1" step="1">
+                    </label>
+                    <label>
+                        <input type="checkbox" id="player-can-flip"> Player can flip
+                    </label>
+                </div>
+            </div>
+
+            <div class="properties-panel" id="tile-properties" style="display:none;">
+                <h3>Tile Properties</h3>
+                <label>Team:
+                    <select id="tile-team">
+                        <option value="0">Neutral</option>
+                        <option value="1">Blue</option>
+                        <option value="2">Red</option>
+                    </select>
+                </label>
+                <label>Tile Type:
+                    <select id="tile-type">
+                        <option value="1">Normal</option>
+                        <option value="2">Cracked</option>
+                        <option value="3">Broken</option>
+                        <option value="4">Up</option>
+                        <option value="5">Down</option>
+                        <option value="6">Left</option>
+                        <option value="7">Right</option>
+                        <option value="8">Empty</option>
+                        <option value="9">Grass</option>
+                        <option value="10">Hidden</option>
+                        <option value="11">Holy</option>
+                        <option value="12">Ice</option>
+                        <option value="13">Lava</option>
+                        <option value="14">Poison</option>
+                        <option value="15">Volcano</option>
+                    </select>
+                </label>
+                <label>Content Type:
+                    <select id="content-type">
+                        <option value="none">None</option>
+                        <option value="enemy">Enemy</option>
+                        <option value="obstacle">Obstacle</option>
+                        <option value="player">Player</option>
+                    </select>
+                </label>
+                
+                <div id="enemy-properties" style="display:none;">
+                    <label>Enemy:
+                        <select id="enemy-type"></select>
+                    </label>
+                    <label>Rank:
+                        <select id="enemy-rank"></select>
+                    </label>
+                    <label>Nickname (optional):
+                        <input type="text" id="enemy-nickname">
+                    </label>
+                </div>
+                
+                <div id="obstacle-properties" style="display:none;">
+                    <label>Obstacle:
+                        <select id="obstacle-type"></select>
+                    </label>
+                </div>
+            </div>
+
+            <div class="status-container">
+                <div class="status-message" id="status-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        // Dictionaries for enemies with image paths and offsets
+        const enemyDictionary = [
+            { name: "Mettaur", image: "enemies/mettaur.png", ranks: [1,2,3,4,6,7],offsetX: 0,offsetY: 60 },
+            { name: "Champy", image: "enemies/champy.png", ranks: [1,2],offsetX: 0,offsetY: 20 },
+            { name: "Chimpy", image: "enemies/chimpy.png", ranks: [1],offsetX: 0,offsetY: 20 },
+            { name: "Chumpy", image: "enemies/chumpy.png", ranks: [1],offsetX: 0,offsetY: 20 },
+            { name: "RareChampy", image: "enemies/rarechampy.png", ranks: [1],offsetX: 0,offsetY: 0 },
+            { name: "Cactikil", image: "enemies/cactikil.webp", ranks: [1,5],offsetX: 0,offsetY: 0 },
+            { name: "Cactroll", image: "enemies/cactroll.webp", ranks: [1,5],offsetX: 0,offsetY: 0 },
+            { name: "Cacter", image: "enemies/cacter.webp", ranks: [1,5],offsetX: 0,offsetY: 0 },
+            { name: "Powie", image: "enemies/powie1.webp", ranks: [1,5],offsetX: 0,offsetY: 7 },
+            { name: "Powie2", image: "enemies/powie2.webp", ranks: [1,5],offsetX: 0,offsetY: 7 },
+            { name: "Powie3", image: "enemies/powie3.webp", ranks: [1,5],offsetX: 0,offsetY: 7 },
+            { name: "Spikey", image: "enemies/spikey1.webp", ranks: [1,2,3],offsetX: 0,offsetY: 50 },
+            { name: "Canodumb", image: "enemies/Canodumb1.webp", ranks: [1,2,3],offsetX: 0,offsetY: 0 },
+            //{ name: "Canosmart", image: "enemies/canosmart.png", ranks: [1],offsetX: 0,offsetY: 0 },
+            { name: "Gunner", image: "enemies/gunner.png", ranks: [1,2,3,4],offsetX: 0,offsetY: 23 },
+            { name: "Shooter", image: "enemies/shooter.png", ranks: [1,2,3,4],offsetX: 0,offsetY: 23 },
+            { name: "Sniper", image: "enemies/sniper.png", ranks: [1],offsetX: 0,offsetY: 23 },
+            { name: "BigBrute", image: "enemies/bigbrute.png", ranks: [1],offsetX: 0,offsetY: 35 },
+            { name: "Vulgear", image: "enemies/vulgear1.webp", ranks: [1,2,3,4],offsetX: 0,offsetY: 35 },
+            { name: "KillerEye", image: "enemies/KillerEye1.webp", ranks: [1,4,6,7],offsetX: 0,offsetY: 10 },
+            { name: "DemonEye", image: "enemies/DemonEye1.webp", ranks: [1],offsetX: 0,offsetY: 10 },
+            { name: "JokerEye", image: "enemies/JokerEye1.webp", ranks: [1],offsetX: 0,offsetY: 10 },
+            { name: "HauntedCandle", image: "enemies/HauntedCandle.webp", ranks: [1,2,3,4,6,7],offsetX: 0,offsetY: 0 },
+            { name: "Fishy", image: "enemies/Fishy1.webp", ranks: [1,2,3,4],offsetX: 0,offsetY: 17 },
+            { name: "BombCorn", image: "enemies/BombCorn.webp", ranks: [1,4,6,7],offsetX: 0,offsetY: 10 },
+            { name: "MegaCorn", image: "enemies/MegaCorn.webp", ranks: [1],offsetX: 0,offsetY: 10 },
+            { name: "GigaCorn", image: "enemies/GigaCorn.webp", ranks: [1],offsetX: 0,offsetY: 10 },
+            { name: "Bladia", image: "enemies/Bladia1.webp", ranks: [1],offsetX: 0,offsetY: 40 },
+            { name: "Metrid", image: "enemies/Metrid1.webp", ranks: [1,2,3,4],offsetX: 0,offsetY: 13 },
+            { name: "Basher", image: "enemies/Basher.webp", ranks: [1],offsetX: 0,offsetY: 13 },
+            { name: "FighterPlane", image: "enemies/FighterPlane.webp", ranks: [1,2,3,4],offsetX: 0,offsetY: 35 },
+            { name: "Catack", image: "enemies/Catack.webp", ranks: [1,2,3,4],offsetX: 0,offsetY: 35 },
+            { name: "Ratty", image: "enemies/Ratty1.webp", ranks: [1,2,3,4],offsetX: 0,offsetY: 75 },
+            { name: "Vort", image: "enemies/Yort1.webp", ranks: [1,2,3,4,5,6,7,8],offsetX: 0,offsetY: 45 },
+            { name: "Volcano", image: "enemies/Volcano.webp", ranks: [1,2,3,4,5,6,7,8],offsetX: 0,offsetY: 45 },
+            { name: "Swordy", image: "enemies/Swordy1.webp", ranks: [1,2,3,4,8],offsetX: 0,offsetY: 0 },
+            { name: "Skarab", image: "enemies/Skarab.webp", ranks: [1,4,6,7,8],offsetX: 0,offsetY: 25 },
+            { name: "Skarry", image: "enemies/Skarry1.webp", ranks: [1],offsetX: 0,offsetY: 25 },
+            { name: "Skelly", image: "enemies/Skelly1.webp", ranks: [1],offsetX: 0,offsetY: 25 },
+            { name: "Scuttle", image: "enemies/Scuttle1.webp", ranks: [1],offsetX: 0,offsetY: 50 },
+            { name: "Scutz", image: "enemies/Scutz1.webp", ranks: [1],offsetX: 0,offsetY: 50 },
+            { name: "Scuttler", image: "enemies/Scuttler1.webp", ranks: [1],offsetX: 0,offsetY: 50 },
+            { name: "Scuttzer", image: "enemies/Scutzer1.webp", ranks: [1],offsetX: 0,offsetY: 50 },
+            { name: "Scuttlest", image: "enemies/Scuttlest1.webp", ranks: [1,4],offsetX: 0,offsetY: 50 },
+            { name: "Lark", image: "enemies/Lark1.webp", ranks: [1,4,6,7,8],offsetX: 0,offsetY: 50 },
+            { name: "Bark", image: "enemies/Bark1.webp", ranks: [1],offsetX: 0,offsetY: 50 },
+            { name: "Tark", image: "enemies/Tark1.webp", ranks: [1],offsetX: 0,offsetY: 50 },
+            { name: "Flashy", image: "enemies/Flashy1.webp", ranks: [1],offsetX: 0,offsetY: 10 },
+            { name: "MetFire", image: "enemies/MetFire1.webp", ranks: [1,4,6,7,8],offsetX: 0,offsetY: 0 },
+            { name: "FulFire", image: "enemies/FulFire1.webp", ranks: [1,4,6,7,8],offsetX: 0,offsetY: 0 },
+            { name: "DthFire", image: "enemies/DthFire1.webp", ranks: [1,4,6,7,8],offsetX: 0,offsetY: 0 },
+            { name: "Elemperor", image: "enemies/Elemperor.webp", ranks: [1,2,3,4,6,7,8],offsetX: 0,offsetY: 30 },
+            { name: "Dominerd", image: "enemies/Dominerd.webp", ranks: [1,2,3,4,8],offsetX: 0,offsetY: 0 },
+            { name: "Cragger", image: "enemies/Cragger.webp", ranks: [1,2,3,4,6,7,8],offsetX: 0,offsetY: 15 },
+            { name: "DarkMech", image: "enemies/DarkMech.webp", ranks: [1,2,3,4,6,7],offsetX: 0,offsetY: 40 },
+            { name: "CirKill", image: "enemies/CirKill.webp", ranks: [1,4,6,7,8],offsetX: 0,offsetY: 35 },
+            { name: "CirCrush", image: "enemies/CirCrush.webp", ranks: [1],offsetX: 0,offsetY: 35 },
+            { name: "CirSmash", image: "enemies/CirSmash.webp", ranks: [1],offsetX: 0,offsetY: 35 },
+            { name: "WindBox", image: "enemies/WindBox.webp", ranks: [1,2,3,4,8],offsetX: 0,offsetY: 10 },
+            { name: "VacuumFan", image: "enemies/VacuumFan.webp", ranks: [1,2,3,4],offsetX: 0,offsetY: 10 },
+            { name: "OldStove", image: "enemies/OldStove.webp", ranks: [1,4,6,7,8],offsetX: 0,offsetY: 10 },
+            { name: "OldHeater", image: "enemies/OldHeater.webp", ranks: [1],offsetX: 0,offsetY: 10 },
+            { name: "OldBurner", image: "enemies/OldBurner.webp", ranks: [1],offsetX: 0,offsetY: 10 },
+            { name: "Bunny", image: "enemies/Bunny1.webp", ranks: [1],offsetX: 0,offsetY: 0 },
+            { name: "TuffBunny", image: "enemies/Bunny2.webp", ranks: [1],offsetX: 0,offsetY: 0 },
+            { name: "MegaBunny", image: "enemies/Bunny3.webp", ranks: [1],offsetX: 0,offsetY: 0 },
+            { name: "Bugtank", image: "enemies/Bugtank.webp", ranks: [1],offsetX: 0,offsetY: 0 },
+            { name: "Shrimpy", image: "enemies/Shrimpy.webp", ranks: [1],offsetX: 0,offsetY: 0 },
+            { name: "Puffy", image: "enemies/Puffy.webp", ranks: [1],offsetX: 0,offsetY: 0 },
+            { name: "HardHead", image: "enemies/HardHead.webp", ranks: [1],offsetX: 0,offsetY: 0 },
+            { name: "HotHead", image: "enemies/HotHead.webp", ranks: [1],offsetX: 0,offsetY: 0 },
+            { name: "ColdHead", image: "enemies/ColdHead.webp", ranks: [1],offsetX: 0,offsetY: 0 },
+            { name: "Boomer", image: "enemies/Boomer.webp", ranks: [1],offsetX: 0,offsetY: 0 },
+            { name: "Gloomer", image: "enemies/Gloomer.webp", ranks: [1],offsetX: 0,offsetY: 0 },
+            { name: "Doomer", image: "enemies/Doomer.webp", ranks: [1],offsetX: 0,offsetY: 0 },
+            { name: "Piranha", image: "enemies/Piranha.webp", ranks: [1],offsetX: 0,offsetY: 0 },
+            { name: "Quaker", image: "enemies/Quaker.webp", ranks: [1],offsetX: 0,offsetY: 0 },
+            { name: "Shaker", image: "enemies/Shaker.webp", ranks: [1],offsetX: 0,offsetY: 0 },
+            { name: "Breaker", image: "enemies/Breaker.webp", ranks: [1],offsetX: 0,offsetY: 0 },
+        ];
+    
+        //Defines obstacles with image paths and offsets
+        const obstacleDictionary = [
+            { name: "None", image: "" },
+            { name: "Rock", image: "obstacles/rock.png",offsetX: 0,offsetY: 60 },
+            { name: "RockCube", image: "obstacles/rockcube.png",offsetX: 0,offsetY: 24 },
+            { name: "Coffin", image: "obstacles/coffin.png",offsetX: 0,offsetY: 80 },
+            { name: "BlastCube", image: "obstacles/blastcube.png",offsetX: 0,offsetY: 26 },
+            { name: "IceCube", image: "obstacles/icecube.png",offsetX: 0,offsetY: 26 },
+            { name: "MysteryData", image: "obstacles/mysterydata.png",offsetX: 0,offsetY: 26 }
+        ];
+    
+        //Defines tile types with image paths and offsets
+        const tileDictionary = {
+            1: { name: "normal", image: "tile/normal.png",offsetX: 0,offsetY: 105 },
+            2: { name: "cracked", image: "tile/cracked.png",offsetX: 0,offsetY: 105 },
+            3: { name: "broken", image: "tile/broken.png",offsetX: 0,offsetY: 105 },
+            4: { name: "up", image: "tile/up.png",offsetX: 0,offsetY: 105 },
+            5: { name: "down", image: "tile/down.png",offsetX: 0,offsetY: 105 },
+            6: { name: "left", image: "tile/left.png",offsetX: 0,offsetY: 105 },
+            7: { name: "right", image: "tile/right.png",offsetX: 0,offsetY: 105 },
+            8: { name: "empty", image: "tile/hole.png",offsetX: 0,offsetY: 105 },
+            9: { name: "grass", image: "tile/grass.png",offsetX: 0,offsetY: 105 },
+            10: { name: "hidden", image: "",offsetX: 0,offsetY: 105 },
+            11: { name: "holy", image: "tile/holy.png",offsetX: 0,offsetY: 105 },
+            12: { name: "ice", image: "tile/ice.png",offsetX: 0,offsetY: 105 },
+            13: { name: "lava", image: "tile/lava.png",offsetX: 0,offsetY: 105 },
+            14: { name: "poison", image: "tile/poison.png",offsetX: 0,offsetY: 105 },
+            15: { name: "volcano", image: "tile/volcano.png",offsetX: 0,offsetY: 105 }
+        };
+    
+        //Defines team tile colors with image paths and offsets
+        const teamDictionary = {
+            0: { name: "neutral", image: "" },
+            1: { name: "blue", image: "tile/blue.png",offsetX: 0,offsetY: 105 },
+            2: { name: "red", image: "tile/red.jpg",offsetX: 0,offsetY: 105 }
+        };
+    
+        //Megaman.EXE placeholder for player with image paths and offsets
+        const playerDictionary = {
+            player: {
+                name: "Player",
+                image: "player.png",
+                offsetX: 0,
+                offsetY: 25
+            }
+        };
+
+    </script>
+    <script>
+    const DEBUG_MODE = true;
+
+// =============================================
+// Configuration and Data Structures
+// =============================================
+
+// Default configuration
+let config = {
+    minimum_steps_before_encounter: 80,
+    encounter_chance_per_step: 0.05,
+    encounters: []
+};
+
+// Current state
+let currentVariationIndex = -1;
+let selectedTile = null;
+
+// Default team positions (first 3 columns red, last 3 blue)
+const defaultTeamPositions = [
+    [2, 2, 2, 1, 1, 1],
+    [2, 2, 2, 1, 1, 1],
+    [2, 2, 2, 1, 1, 1]
+];
+
+// =============================================
+// Initialization Functions
+// =============================================
+
+function initializeEditor() {
+    // Load lastest edits from local storage or create default config
+    loadFromLocalStorage();
+    
+    // Set up UI elements
+    initializeGrid();
+    populateEnemyDropdown(); //Populate viruses
+    populateObstacleDropdown(); //Populate obstacles
+    updateEnemyRankOptions(enemyDictionary[0].name); // Initialize ranks
+    refreshVariationDropdown();
+    
+    // Initialize Select2 for dropdowns
+    $('#enemy-type').select2({
+        templateResult: formatEnemyOption,
+        templateSelection: formatEnemyOption,
+        width: '100%'
+    });
+    
+    $('#obstacle-type').select2({
+        templateResult: formatObstacleOption,
+        templateSelection: formatObstacleOption,
+        width: '100%'
+    });
+    
+    // If no variations exist, create a default one
+    if (config.encounters.length === 0) {
+        addNewVariation("Encounter1");
+    } else {
+        selectVariation(0);
+    }
+    
+    // Update main config fields
+    updateMainConfigFields();
+}
+function formatEnemyOption(enemy) {
+    if (!enemy.id) return enemy.text;
+    const enemyDef = enemyDictionary.find(e => e.name === enemy.id);
+    if (!enemyDef) return enemy.text;
+    
+    const $option = $(
+        `<div class="enemy-option">
+            <div class="option-preview" style="background-image: url(${enemyDef.image})"></div>
+            <span>${enemy.text}</span>
+        </div>`
+    );
+    return $option;
+}
+
+function formatObstacleOption(obstacle) {
+    if (!obstacle.id) return obstacle.text;
+    const obstacleDef = obstacleDictionary.find(o => o.name === obstacle.id);
+    if (!obstacleDef || !obstacleDef.image) return obstacle.text;
+    
+    const $option = $(
+        `<div class="obstacle-option">
+            <div class="option-preview" style="background-image: url(${obstacleDef.image})"></div>
+            <span>${obstacle.text}</span>
+        </div>`
+    );
+    return $option;
+}
+function initializeGrid() {
+    const grid = $('#battle-grid');
+    grid.empty();
+    
+    for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 6; col++) {
+            const tile = $(`
+                <div class="tile" data-row="${row}" data-col="${col}">
+                    <div class="tile-bg"></div>
+                    <div class="tile-team"></div>
+                    <div class="tile-entity"></div>
+                </div>
+            `);
+            
+            tile.click(function() {
+                selectTile(row, col);
+            });
+            
+            grid.append(tile);
+        }
+    }
+}
+
+function populateEnemyDropdown() {
+    const dropdown = $('#enemy-type');
+    dropdown.empty();
+    
+    enemyDictionary.forEach(enemy => {
+        dropdown.append(`<option value="${enemy.name}">${enemy.name}</option>`);
+    });
+}
+
+function populateObstacleDropdown() {
+    const dropdown = $('#obstacle-type');
+    dropdown.empty();
+    
+    obstacleDictionary.forEach((obstacle, index) => {
+        if (index > 0) {
+            dropdown.append(`<option value="${obstacle.name}">${obstacle.name}</option>`);
+        }
+    });
+}
+
+// =============================================
+// Variation Management
+// =============================================
+
+function refreshVariationDropdown() {
+    const dropdown = $('#variation-select');
+    dropdown.empty();
+    
+    config.encounters.forEach((variation, index) => {
+        const name = variation.name || `Scenario ${index + 1}`;
+        dropdown.append(`<option value="${index}">${name}</option>`);
+    });
+    
+    dropdown.val(currentVariationIndex);
+    $('#delete-variation').prop('disabled', config.encounters.length <= 1);
+}
+
+function clearTileSelection() {
+    if (selectedTile) {
+        $('.tile.selected').removeClass('selected');
+        selectedTile = null;
+        $('#tile-properties').hide();
+        $('#variation-properties').show();
+    }
+}
+
+function selectVariation(index) {
+    if (index >= 0 && index < config.encounters.length) {
+        currentVariationIndex = index;
+        $('#variation-select').val(index);
+        $('#delete-variation').prop('disabled', false);
+        
+        // Show variation properties
+        $('#main-properties').hide();
+        $('#variation-properties').show();
+        
+        // Update fields and grid
+        updateVariationFields();
+        updateGrid();
+        
+        // Clear tile selection
+        clearTileSelection();
+    }
+}
+
+
+function addNewVariation(name) {
+        // Ensure name is unique
+        let uniqueName = name;
+        let counter = 1;
+        
+        while (config.encounters.some(v => v.name === uniqueName)) {
+            uniqueName = `${name} ${counter++}`;
+        }
+        
+        const newVariation = {
+            name: uniqueName,
+            path: "/server/assets/ezlibs-assets/ezencounters/ezencounters.zip",
+            weight: 10,
+            enemies: [],
+            positions: [
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0]
+            ],
+            obstacles: [],
+            obstacle_positions: [
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0]
+            ],
+            player_positions: [
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0]
+            ],
+            tiles: [
+                [1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1],
+                [1, 1, 1, 1, 1, 1]
+            ],
+            teams: JSON.parse(JSON.stringify(defaultTeamPositions)),
+            music: { path: '' },
+            results_callback: '',
+            freedom_mission: {
+                enabled: false,
+                turn_count: 5,
+                player_can_flip: false
+            }
+        };
+        
+        config.encounters.push(newVariation);
+        currentVariationIndex = config.encounters.length - 1;
+        refreshVariationDropdown();
+        selectVariation(currentVariationIndex);
+        saveToLocalStorage();
+        
+        showStatus(`Added new variation: ${uniqueName}`, 'success');
+    }
+
+function deleteCurrentVariation() {
+        if (config.encounters.length <= 1) {
+            showStatus("Cannot delete the last variation", 'error');
+            return;
+        }
+        
+        if (confirm("Delete this variation permanently?")) {
+            const deletedName = config.encounters[currentVariationIndex].name;
+            config.encounters.splice(currentVariationIndex, 1);
+            
+            // Select another variation
+            const newIndex = Math.min(currentVariationIndex, config.encounters.length - 1);
+            refreshVariationDropdown();
+            selectVariation(newIndex);
+            
+            // If we deleted the last one, show main config
+            if (newIndex === -1) {
+                $('#variation-properties').hide();
+                $('#main-properties').show();
+            }
+            
+            saveToLocalStorage();
+            showStatus(`Deleted variation: ${deletedName}`, 'success');
+        }
+    }
+
+
+// =============================================
+// Tile and Grid Management
+// =============================================
+
+function selectTile(row, col) {
+    // Deselect if clicking the same tile
+    if (selectedTile && selectedTile.row === row && selectedTile.col === col) {
+        clearTileSelection();
+        return;
+    }
+    
+    // Select new tile
+    $('.tile.selected').removeClass('selected');
+    selectedTile = { row, col };
+    $(`.tile[data-row="${row}"][data-col="${col}"]`).addClass('selected');
+    $('#tile-properties').show();
+    $('#variation-properties').hide();
+    
+    updateTileFields();
+}
+
+function updateEnemyRankOptions(enemyName) {
+    const rankSelect = $('#enemy-rank');
+    rankSelect.empty();
+    
+    const enemy = enemyDictionary.find(e => e.name === enemyName);
+    if (!enemy) return;
+    
+    // Add available ranks from dictionary
+    enemy.ranks.forEach(rank => {
+        rankSelect.append(`<option value="${rank}">Rank ${rank}</option>`);
+    });
+    
+    // Default to first rank
+    if (enemy.ranks.length > 0) {
+        rankSelect.val(enemy.ranks[0]);
+    }
+}
+
+
+function updateGrid() {
+    if (currentVariationIndex === -1 || currentVariationIndex >= config.encounters.length) return;
+    
+    const variation = config.encounters[currentVariationIndex];
+    
+    // Ensure all required arrays exist
+    if (!variation.positions) variation.positions = defaultTeamPositions.map(row => [...row]);
+    if (!variation.tiles) variation.tiles = Array(3).fill().map(() => Array(6).fill(1));
+    if (!variation.teams) variation.teams = defaultTeamPositions.map(row => [...row]);
+    if (!variation.obstacle_positions) variation.obstacle_positions = Array(3).fill().map(() => Array(6).fill(0));
+    if (!variation.player_positions) variation.player_positions = Array(3).fill().map(() => Array(6).fill(0));
+    
+    for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 6; col++) {
+            updateTileImage(row, col);
+        }
+    }
+}
+
+function updateTileImage(row, col) {
+    const tile = $(`.tile[data-row="${row}"][data-col="${col}"]`);
+    const variation = config.encounters[currentVariationIndex];
+    
+    // Clear existing images
+    tile.find('.tile-bg, .tile-team, .tile-entity').css({
+        'background-image': 'none',
+        'background-position': '0 0'
+    });
+    
+    // Update tile background
+    const tileType = variation.tiles[row][col] || 1;
+    const tileDef = tileDictionary[tileType];
+    if (tileDef?.image) {
+        tile.find('.tile-bg').css({
+            'background-image': `url(${tileDef.image})`,
+            'background-position': `${tileDef.offsetX || 0}px ${tileDef.offsetY || 0}px`
+        });
+    }
+    
+    // Update team overlay
+    const teamValue = variation.teams ? variation.teams[row][col] : defaultTeamPositions[row][col];
+    const teamDef = teamDictionary[teamValue];
+    if (teamDef?.image) {
+        tile.find('.tile-team').css({
+            'background-image': `url(${teamDef.image})`,
+            'background-position': `${teamDef.offsetX || 0}px ${teamDef.offsetY || 0}px`
+        });
+    }
+    
+    // Update entity (enemy, obstacle, or player)
+    const enemyIndex = variation.positions[row][col];
+    const obstacleValue = variation.obstacle_positions ? variation.obstacle_positions[row][col] : 0;
+    const playerValue = variation.player_positions ? variation.player_positions[row][col] : 0;
+    
+    if (enemyIndex > 0 && variation.enemies && enemyIndex <= variation.enemies.length) {
+        const enemy = variation.enemies[enemyIndex - 1];
+        const enemyDef = enemyDictionary.find(e => e.name === enemy.name);
+        if (enemyDef?.image) {
+            tile.find('.tile-entity').css({
+                'background-image': `url(${enemyDef.image})`,
+                'background-position': `${enemyDef.offsetX || 0}px ${enemyDef.offsetY || 0}px`
+            });
+        }
+    } else if (obstacleValue > 0 && variation.obstacles && obstacleValue <= variation.obstacles.length) {
+        const obstacle = variation.obstacles[obstacleValue - 1];
+        const obstacleDef = obstacleDictionary.find(o => o.name === obstacle.name);
+        if (obstacleDef?.image) {
+            tile.find('.tile-entity').css({
+                'background-image': `url(${obstacleDef.image})`,
+                'background-position': `${obstacleDef.offsetX || 0}px ${obstacleDef.offsetY || 0}px`
+            });
+        }
+    } else if (playerValue > 0) {
+        const playerDef = playerDictionary.player;
+        if (playerDef?.image) {
+            tile.find('.tile-entity').css({
+                'background-image': `url(${playerDef.image})`,
+                'background-position': `${playerDef.offsetX || 0}px ${playerDef.offsetY || 0}px`
+            });
+        }
+    }
+}
+
+// =============================================
+// Field Updates
+// =============================================
+
+function updateMainConfigFields() {
+    $('#min-steps').val(config.minimum_steps_before_encounter);
+    $('#encounter-chance').val(config.encounter_chance_per_step);
+}
+
+function updateVariationFields() {
+    if (currentVariationIndex === -1 || currentVariationIndex >= config.encounters.length) return;
+    
+    const variation = config.encounters[currentVariationIndex];
+    $('#variation-weight').val(variation.weight || 10);
+    $('#music-path').val(variation.music?.path || '');
+    $('#results-callback').val(variation.results_callback || '');
+    
+    // Freedom mission options
+    const freedomMission = variation.freedom_mission || { enabled: false, turn_count: 5, player_can_flip: false };
+    $('#freedom-mission').prop('checked', freedomMission.enabled);
+    $('#freedom-mission-options').toggle(freedomMission.enabled);
+    $('#turn-count').val(freedomMission.turn_count);
+    $('#player-can-flip').prop('checked', freedomMission.player_can_flip);
+}
+
+function updateTileFields() {
+    if (!selectedTile || currentVariationIndex === -1 || currentVariationIndex >= config.encounters.length) {
+        $('#tile-properties').hide();
+        return;
+    }
+    
+    const variation = config.encounters[currentVariationIndex];
+    const { row, col } = selectedTile;
+    
+    // Ensure arrays exist
+    if (!variation.obstacles) variation.obstacles = Array();
+    if (!variation.tiles) variation.tiles = Array(3).fill().map(() => Array(6).fill(1));
+    if (!variation.teams) variation.teams = defaultTeamPositions.map(row => [...row]);
+    if (!variation.positions) variation.positions = Array(3).fill().map(() => Array(6).fill(0));
+    if (!variation.obstacle_positions) variation.obstacle_positions = Array(3).fill().map(() => Array(6).fill(0));
+    if (!variation.player_positions) variation.player_positions = Array(3).fill().map(() => Array(6).fill(0));
+    
+    // Get current tile state
+    const tileType = variation.tiles[row][col] || 1;
+    const teamValue = variation.teams[row][col];
+    const enemyIndex = variation.positions[row][col];
+    const obstacleValue = variation.obstacle_positions[row][col];
+    const playerValue = variation.player_positions[row][col];
+    
+    // Set tile type and team
+    $('#tile-type').val(tileType);
+    $('#tile-team').val(teamValue);
+    
+    // Set content type
+    if (enemyIndex > 0 && variation.enemies && enemyIndex <= variation.enemies.length) {
+        $('#content-type').val('enemy');
+        $('#enemy-properties').show();
+        $('#obstacle-properties').hide();
+        
+        const enemy = variation.enemies[enemyIndex - 1];
+        if (enemy) {
+            $('#enemy-type').val(enemy.name).trigger('change');
+            $('#enemy-rank').val(enemy.rank || 1);
+            $('#enemy-nickname').val(enemy.nickname || '');
+        }
+    } else if (obstacleValue > 0 && variation.obstacles && obstacleValue <= variation.obstacles.length) {
+        $('#content-type').val('obstacle');
+        $('#enemy-properties').hide();
+        $('#obstacle-properties').show();
+        
+        const obstacle = variation.obstacles[obstacleValue - 1];
+        if (obstacle) {
+            $('#obstacle-type').val(obstacle.name);
+        }
+    } else if (playerValue > 0) {
+        $('#content-type').val('player');
+        $('#enemy-properties').hide();
+        $('#obstacle-properties').hide();
+    } else {
+        $('#content-type').val('none');
+        $('#enemy-properties').hide();
+        $('#obstacle-properties').hide();
+    }
+}
+
+
+// =============================================
+// Event Handlers
+// =============================================
+
+function setupEventHandlers() {
+        // Toolbar buttons
+        $('#new-config').click(function() {
+            if (confirm("Create new configuration? Current changes will be lost.")) {
+                config = {
+                    minimum_steps_before_encounter: 80,
+                    encounter_chance_per_step: 0.05,
+                    encounters: []
+                };
+                addNewVariation("Encounter1");
+                saveToLocalStorage();
+                showStatus("Created new configuration", 'success');
+            }
+        });
+        
+        $('#load-config').click(function() {
+            $('#load-file').click();
+        });
+        
+        $('#save-config').click(function() {
+            saveToFile();
+        });
+        
+        $('#clear-all').click(function() {
+            if (confirm("Clear all settings and return to defaults?")) {
+                // Clear localStorage
+                localStorage.removeItem('battleConfig');
+                localStorage.removeItem('luaPreservedContent');
+                
+                // Reset config
+                config = {
+                    minimum_steps_before_encounter: 80,
+                    encounter_chance_per_step: 0.05,
+                    encounters: []
+                };
+                
+                // Clear file input
+                $('#load-file').val('');
+                
+                // Reset UI
+                addNewVariation("Encounter1");
+                saveToLocalStorage();
+                showStatus("Reset to default configuration", 'success');
+            }
+        });
+        
+        $('#add-variation').click(function() {
+            const name = prompt("Enter a name for the new scenario:");
+            const nameWithoutSpaces = name.replace(/\s/g, "");
+
+            if (nameWithoutSpaces) {
+                addNewVariation(nameWithoutSpaces);
+            }
+        });
+        
+        $('#delete-variation').click(deleteCurrentVariation);
+        
+        $('#variation-select').change(function() {
+            selectVariation(parseInt($(this).val()));
+        });
+        
+        // Main config fields
+        $('#min-steps').change(function() {
+            config.minimum_steps_before_encounter = parseInt($(this).val()) || 0;
+            saveToLocalStorage();
+        });
+        
+        $('#encounter-chance').change(function() {
+            let value = parseFloat($(this).val()) || 0;
+            value = Math.max(0, Math.min(1, value));
+            $(this).val(value);
+            config.encounter_chance_per_step = value;
+            saveToLocalStorage();
+        });
+        
+        // Variation fields
+        $('#variation-weight').change(function() {
+            if (currentVariationIndex === -1) return;
+            config.encounters[currentVariationIndex].weight = parseInt($(this).val()) || 0;
+            saveToLocalStorage();
+        });
+        
+        $('#music-path').change(function() {
+            if (currentVariationIndex === -1) return;
+            config.encounters[currentVariationIndex].music.path = $(this).val();
+            saveToLocalStorage();
+        });
+        
+        $('#results-callback').change(function() {
+            if (currentVariationIndex === -1) return;
+            config.encounters[currentVariationIndex].results_callback = $(this).val();
+            saveToLocalStorage();
+        });
+        
+        // Freedom mission toggle
+        $('#freedom-mission').change(function() {
+            if (currentVariationIndex === -1) return;
+            const enabled = $(this).is(':checked');
+            config.encounters[currentVariationIndex].freedom_mission.enabled = enabled;
+            $('#freedom-mission-options').toggle(enabled);
+            saveToLocalStorage();
+        });
+        
+        // Freedom mission options
+        $('#turn-count').change(function() {
+            if (currentVariationIndex === -1) return;
+            config.encounters[currentVariationIndex].freedom_mission.turn_count = parseInt($(this).val()) || 5;
+            saveToLocalStorage();
+        });
+        
+        $('#player-can-flip').change(function() {
+            if (currentVariationIndex === -1) return;
+            config.encounters[currentVariationIndex].freedom_mission.player_can_flip = $(this).is(':checked');
+            saveToLocalStorage();
+        });
+        
+        // Tile fields
+        $('#tile-type').change(function() {
+            if (!selectedTile || currentVariationIndex === -1) return;
+            const value = parseInt($(this).val()) || 1;
+            config.encounters[currentVariationIndex].tiles[selectedTile.row][selectedTile.col] = value;
+            updateTileImage(selectedTile.row, selectedTile.col);
+            saveToLocalStorage();
+        });
+        
+        $('#tile-team').change(function() {
+            if (!selectedTile || currentVariationIndex === -1) return;
+            const value = parseInt($(this).val()) || 0;
+            const variation = config.encounters[currentVariationIndex];
+            
+            // Initialize teams array if it doesn't exist
+            if (!variation.teams) {
+                variation.teams = JSON.parse(JSON.stringify(defaultTeamPositions));
+            }
+            
+            variation.teams[selectedTile.row][selectedTile.col] = value;
+            
+            // If changing to blue team and player is present, remove player
+            if (value === 1 && variation.player_positions[selectedTile.row][selectedTile.col] > 0) {
+                variation.player_positions[selectedTile.row][selectedTile.col] = 0;
+                $('#content-type').val('none');
+                $('#enemy-properties').hide();
+                $('#obstacle-properties').hide();
+            }
+            
+            updateTileImage(selectedTile.row, selectedTile.col);
+            saveToLocalStorage();
+        });
+        
+        $('#content-type').change(function() {
+            if (!selectedTile || currentVariationIndex === -1) return;
+            
+            const type = $(this).val();
+            const variation = config.encounters[currentVariationIndex];
+            const { row, col } = selectedTile;
+            
+            // Clear existing content
+            variation.positions[row][col] = 0;
+            variation.obstacle_positions[row][col] = 0;
+            variation.player_positions[row][col] = 0;
+            
+            // Show appropriate properties
+            if (type === 'enemy') {
+                $('#enemy-properties').show();
+                $('#obstacle-properties').hide();
+                const firstEnemy = enemyDictionary[0].name;
+                $('#enemy-type').val(firstEnemy).trigger('change');
+                updateEnemyOnTile();
+
+            } else if (type === 'obstacle') {
+                $('#enemy-properties').hide();
+                $('#obstacle-properties').show();
+                const firstObstacle = obstacleDictionary[1].name; // Skip "None"
+                $('#obstacle-type').val(firstObstacle).trigger('change');
+                updateObstacleOnTile();
+
+            } else if (type === 'player') {
+                $('#enemy-properties').hide();
+                $('#obstacle-properties').hide();
+                
+                // Only allow player on red team tiles
+                const teamValue = variation.teams ? variation.teams[row][col] : defaultTeamPositions[row][col];
+                if (teamValue !== 2) {
+                    showStatus("Player can only be placed on red team tiles", 'error');
+                    $(this).val('none');
+                    return;
+                }
+                
+                variation.player_positions[row][col] = 1;
+            } else {
+                $('#enemy-properties').hide();
+                $('#obstacle-properties').hide();
+            }
+            
+            updateTileImage(row, col);
+            saveToLocalStorage();
+        });
+        
+        // Enemy properties
+        $('#enemy-type').change(function() {
+            const enemyName = $(this).val();
+            updateEnemyRankOptions(enemyName);
+            updateEnemyOnTile();
+        });
+
+        $('#enemy-rank').change(updateEnemyOnTile);
+        $('#enemy-nickname').change(updateEnemyOnTile);
+        
+        // Obstacle properties
+        $('#obstacle-type').change(updateObstacleOnTile);
+        
+        // File input for loading
+
+        $('<input type="file" id="load-file" style="display:none;">').change(function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    const luaConfig = parseLuaConfig(content);
+                    
+                    if (!luaConfig) throw new Error("Failed to parse config");
+
+                    // Initialize default config structure
+                    const defaultConfig = {
+                        minimum_steps_before_encounter: 80,
+                        encounter_chance_per_step: 0.05,
+                        encounters: []
+                    };
+
+                    // Merge with loaded config
+                    config = { ...defaultConfig, ...luaConfig };
+
+                    // Ensure encounters is an array
+                    if (!Array.isArray(config.encounters)) {
+                        config.encounters = [];
+                    }
+
+                    // Process each encounter
+                    config.encounters = config.encounters.map(encounter => {
+                        const defaultEncounter = {
+                            name: "Unnamed Encounter",
+                            path: "/server/assets/ezlibs-assets/ezencounters/ezencounters.zip",
+                            weight: 10,
+                            enemies: [],
+                            positions: Array(3).fill().map(() => Array(6).fill(0)),
+                            obstacles: [],
+                            obstacle_positions: Array(3).fill().map(() => Array(6).fill(0)),
+                            player_positions: Array(3).fill().map(() => Array(6).fill(0)),
+                            tiles: Array(3).fill().map(() => Array(6).fill(1)),
+                            teams: JSON.parse(JSON.stringify(defaultTeamPositions)),
+                            music: { path: '' },
+                            results_callback: '',
+                            freedom_mission: {
+                                enabled: false,
+                                turn_count: 5,
+                                player_can_flip: false
+                            }
+                        };
+
+                        // Deep merge with loaded encounter
+                        const merged = { ...defaultEncounter, ...encounter };
+
+                        // Ensure enemies is properly formatted
+                        if (!Array.isArray(merged.obstacles)) {
+                            merged.obstacles = [];
+                        } else {
+                            merged.obstacles = merged.obstacles.filter(e => e && typeof e === 'object');
+                        }
+                        if (!Array.isArray(merged.enemies)) {
+                            merged.enemies = [];
+                        } else {
+                            merged.enemies = merged.enemies.filter(e => e && typeof e === 'object');
+                        }
+
+                        // Ensure all arrays have correct dimensions
+                        const ensureGrid = (grid, defaultValue = 0) => {
+                            if (!Array.isArray(grid)) return Array(3).fill().map(() => Array(6).fill(defaultValue));
+                            return grid.map(row => {
+                                if (!Array.isArray(row)) return Array(6).fill(defaultValue);
+                                return [...row, ...Array(Math.max(0, 6 - row.length)).fill(defaultValue)].slice(0, 6);
+                            }).slice(0, 3);
+                        };
+
+                        merged.positions = ensureGrid(merged.positions, 0);
+                        merged.obstacle_positions = ensureGrid(merged.obstacle_positions, 0);
+                        merged.player_positions = ensureGrid(merged.player_positions, 0);
+                        merged.tiles = ensureGrid(merged.tiles, 1);
+                        merged.teams = ensureGrid(merged.teams, 0);
+
+                        return merged;
+                    });
+
+                    // Reset UI state
+                    selectedTile = null;
+                    currentVariationIndex = -1;
+
+                    // Update UI components
+                    initializeGrid();
+                    refreshVariationDropdown();
+                    populateEnemyDropdown();
+                    populateObstacleDropdown();
+                    
+                    if (config.encounters.length > 0) {
+                        selectVariation(0);
+                    } else {
+                        $('#variation-properties').hide();
+                        $('#main-properties').show();
+                    }
+
+                    updateMainConfigFields();
+                    saveToLocalStorage();
+                    
+                    // Clear file input
+                    $(this).val('');
+                    
+                    showStatus("Configuration loaded successfully", 'success');
+                } catch (err) {
+                    showStatus("Error loading file: " + err.message, 'error');
+                    console.error("Import error:", err);
+                }
+            };
+            reader.readAsText(file);
+        }).appendTo('body');
+}
+
+
+function updateEnemyOnTile() {
+        if (!selectedTile || currentVariationIndex === -1) return;
+        
+        const variation = config.encounters[currentVariationIndex];
+        const { row, col } = selectedTile;
+        
+        // Get enemy properties
+        const name = $('#enemy-type').val();
+        const rank = parseInt($('#enemy-rank').val()) || 1;
+        const nickname = $('#enemy-nickname').val();
+        
+        // Create or update enemy
+        const enemy = { name, rank };
+        if (nickname) enemy.nickname = nickname;
+        
+        // Check if we're updating an existing enemy
+        const existingIndex = variation.positions[row][col] - 1;
+        if (existingIndex >= 0 && existingIndex < variation.enemies.length) {
+            variation.enemies[existingIndex] = enemy;
+        } else {
+            // Add new enemy
+            variation.enemies.push(enemy);
+            variation.positions[row][col] = variation.enemies.length;
+            variation.obstacle_positions[row][col] = 0;
+            variation.player_positions[row][col] = 0;
+        }
+        
+        updateTileImage(row, col);
+        saveToLocalStorage();
+    }
+
+function updateObstacleOnTile() {
+        if (!selectedTile || currentVariationIndex === -1) return;
+        
+        const variation = config.encounters[currentVariationIndex];
+        const { row, col } = selectedTile;
+        const name = $('#obstacle-type').val();
+        
+        // Create or update obstacle
+        const obstacle = { name };
+        
+        // Check if we're updating an existing obstacle
+        const existingIndex = variation.obstacle_positions[row][col] - 1;
+        if (existingIndex >= 0 && existingIndex < variation.obstacles.length) {
+            variation.obstacles[existingIndex] = obstacle;
+        } else {
+            // Add new obstacle
+            variation.obstacles.push(obstacle);
+            variation.obstacle_positions[row][col] = variation.obstacles.length;
+            variation.positions[row][col] = 0;
+            variation.player_positions[row][col] = 0;
+        }
+        
+        updateTileImage(row, col);
+        saveToLocalStorage();
+    }
+
+// =============================================
+// Event Handlers for Tile Properties
+// =============================================
+
+
+function setupTilePropertyHandlers() {
+    // Tile type change
+    $('#tile-type').change(function() {
+        if (!selectedTile || currentVariationIndex === -1) return;
+        const value = parseInt($(this).val()) || 1;
+        const variation = config.encounters[currentVariationIndex];
+        
+        // Initialize tiles array if it doesn't exist
+        if (!variation.tiles) {
+            variation.tiles = Array(3).fill().map(() => Array(6).fill(1));
+        }
+        
+        variation.tiles[selectedTile.row][selectedTile.col] = value;
+        updateTileImage(selectedTile.row, selectedTile.col);
+        saveToLocalStorage();
+    });
+    
+    // Team change
+    $('#tile-team').change(function() {
+        if (!selectedTile || currentVariationIndex === -1) return;
+        const value = parseInt($(this).val()) || 0;
+        const variation = config.encounters[currentVariationIndex];
+        
+        // Initialize teams array if it doesn't exist
+        if (!variation.teams) {
+            variation.teams = JSON.parse(JSON.stringify(defaultTeamPositions));
+        }
+        
+        variation.teams[selectedTile.row][selectedTile.col] = value;
+        
+        // If changing to blue team and player is present, remove player
+        if (value === 1 && variation.player_positions[selectedTile.row][selectedTile.col] > 0) {
+            variation.player_positions[selectedTile.row][selectedTile.col] = 0;
+            $('#content-type').val('none').trigger('change');
+        }
+        
+        updateTileImage(selectedTile.row, selectedTile.col);
+        saveToLocalStorage();
+    });
+    
+    // Content type change
+    $('#content-type').change(function() {
+        if (!selectedTile || currentVariationIndex === -1) return;
+        
+        const type = $(this).val();
+        const variation = config.encounters[currentVariationIndex];
+        const { row, col } = selectedTile;
+        
+        // Initialize arrays if they don't exist
+        if (!variation.positions) variation.positions = Array(3).fill().map(() => Array(6).fill(0));
+        if (!variation.obstacle_positions) variation.obstacle_positions = Array(3).fill().map(() => Array(6).fill(0));
+        if (!variation.player_positions) variation.player_positions = Array(3).fill().map(() => Array(6).fill(0));
+        
+        // Clear existing content
+        variation.positions[row][col] = 0;
+        variation.obstacle_positions[row][col] = 0;
+        variation.player_positions[row][col] = 0;
+        
+        // Handle the new content type
+        if (type === 'player') {
+            // Only allow player on red team tiles
+            const teamValue = variation.teams ? variation.teams[row][col] : defaultTeamPositions[row][col];
+            if (teamValue !== 2) {
+                showStatus("Player can only be placed on red team tiles", 'error');
+                $(this).val('none').trigger('change');
+                return;
+            }
+            variation.player_positions[row][col] = 1;
+        }
+        
+        updateTileImage(row, col);
+        saveToLocalStorage();
+    });
+    
+    // Enemy properties changes
+    $('#enemy-type, #enemy-rank, #enemy-nickname').change(function() {
+        if (!selectedTile || currentVariationIndex === -1) return;
+        
+        const variation = config.encounters[currentVariationIndex];
+        const { row, col } = selectedTile;
+        
+        // Get enemy properties
+        const name = $('#enemy-type').val();
+        const rank = parseInt($('#enemy-rank').val()) || 1;
+        const nickname = $('#enemy-nickname').val();
+        
+        // Create or update enemy
+        const enemy = { name, rank };
+        if (nickname) enemy.nickname = nickname;
+        
+        // Check if we're updating an existing enemy
+        const enemyIndex = variation.positions[row][col] - 1;
+        if (enemyIndex >= 0 && enemyIndex < variation.enemies.length) {
+            variation.enemies[enemyIndex] = enemy;
+        } else {
+            // Add new enemy
+            if (!variation.enemies) variation.enemies = [];
+            variation.enemies.push(enemy);
+            variation.positions[row][col] = variation.enemies.length;
+            variation.obstacle_positions[row][col] = 0;
+            variation.player_positions[row][col] = 0;
+        }
+        
+        updateTileImage(row, col);
+        saveToLocalStorage();
+    });
+    
+    // Obstacle properties changes
+    $('#obstacle-type').change(function() {
+        if (!selectedTile || currentVariationIndex === -1) return;
+        
+        const variation = config.encounters[currentVariationIndex];
+        const { row, col } = selectedTile;
+        const name = $('#obstacle-type').val();
+        
+        // Create or update obstacle
+        const obstacle = { name };
+        
+        // Check if we're updating an existing obstacle
+        const obstacleIndex = variation.obstacle_positions[row][col] - 1;
+        if (obstacleIndex >= 0 && obstacleIndex < variation.obstacles.length) {
+            variation.obstacles[obstacleIndex] = obstacle;
+        } else {
+            // Add new obstacle
+            if (!variation.obstacles) variation.obstacles = [];
+            variation.obstacles.push(obstacle);
+            variation.obstacle_positions[row][col] = variation.obstacles.length;
+            variation.positions[row][col] = 0;
+            variation.player_positions[row][col] = 0;
+        }
+        
+        updateTileImage(row, col);
+        saveToLocalStorage();
+    });
+}
+
+
+
+// =============================================
+// Storage and File Handling
+// =============================================
+
+
+function saveToLocalStorage() {
+    localStorage.setItem('battleConfig', JSON.stringify(config));
+}
+
+function loadFromLocalStorage() {
+    const saved = localStorage.getItem('battleConfig');
+    if (saved) {
+        try {
+            config = JSON.parse(saved);
+            
+            // Ensure all variations have required fields
+
+            if (!Array.isArray(config.encounters)) {
+                config.encounters = [];
+            }
+
+            if (config.encounters) {
+                config.encounters.forEach(variation => {
+                    if (!variation.teams) {
+                        variation.teams = JSON.parse(JSON.stringify(defaultTeamPositions));
+                    }
+                    if (!variation.player_positions) {
+                        variation.player_positions = [
+                            [0, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0]
+                        ];
+                    }
+                    if (!variation.results_callback) {
+                        variation.results_callback = '';
+                    }
+                    if (!variation.freedom_mission) {
+                        variation.freedom_mission = {
+                            enabled: false,
+                            turn_count: 5,
+                            player_can_flip: false
+                        };
+                    }
+                });
+            }
+        } catch (e) {
+            console.error("Error loading from local storage", e);
+            config = {
+                minimum_steps_before_encounter: 80,
+                encounter_chance_per_step: 0.05,
+                encounters: []
+            };
+        }
+    }
+}
+
+function saveToFile() {
+    // Convert config to Lua string
+    const luaString = generateLuaString();
+    
+    // Create download link
+    const blob = new Blob([luaString], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'battle_config.lua';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showStatus("Configuration saved to file", 'success');
+}
+
+
+// =============================================
+// Lua Generation Functions
+// =============================================
+
+function extractNonConfigContent(luaString) {
+    const preserved = {
+        comments: [],
+        functions: [],
+        other: []
+    };
+
+    // Remove the return statement and everything after it
+    const withoutReturn = luaString.split(/return\s*{[\s\S]*?}\s*$/)[0];
+    
+    // Extract comments
+    preserved.comments = withoutReturn.match(/--.*$/gm) || [];
+    
+    // Extract function definitions
+    preserved.functions = withoutReturn.match(/function\s+[\w\.]+\s*\([^)]*\)[\s\S]*?end/g) || [];
+    
+    // Extract other non-local content
+    const otherContent = withoutReturn
+        .replace(/--.*$/gm, '') // Remove comments
+        .replace(/function\s+[\w\.]+\s*\([^)]*\)[\s\S]*?end/g, '') // Remove functions
+        .replace(/local\s+\w+\s*=\s*{[\s\S]*?}(?=\s*(?:local|function|$))/g, ''); // Remove local vars
+    
+    preserved.other = otherContent.split('\n')
+        .filter(line => line.trim().length > 0 && !line.match(/^\s*local\s/));
+    
+    return preserved;
+}
+
+
+function parseLuaConfig(luaString) {
+    if (DEBUG_MODE) console.log("Starting to parse Lua config...");
+    
+    try {
+        // First extract preserved content (comments, functions, etc.)
+        const preserved = extractNonConfigContent(luaString);
+        localStorage.setItem('luaPreservedContent', JSON.stringify(preserved));
+        
+        if (DEBUG_MODE) console.log("Preserved content extracted:", preserved);
+        
+        // Then parse the actual config content
+        const config = parseConfigContent(luaString);
+        
+        if (DEBUG_MODE) console.log("Successfully parsed Lua config:", config);
+        return config;
+    } catch (e) {
+        if (DEBUG_MODE) console.error("Error parsing Lua config:", e);
+        showStatus(`Error parsing config: ${e.message}`, 'error');
+        return null;
+    }
+}
+
+function parseLuaTable(luaTableStr) {
+    if (DEBUG_MODE) console.log("Parsing Lua table:", luaTableStr);
+    
+    try {
+        // Clean up the string first
+        let cleaned = luaTableStr.trim();
+        
+        // Remove outer curly braces if present
+        if (cleaned.startsWith('{') && cleaned.endsWith('}')) {
+            cleaned = cleaned.slice(1, -1).trim();
+        }
+        
+        if (DEBUG_MODE) console.log("Cleaned table string:", cleaned);
+        
+        // Handle empty table
+        if (!cleaned) {
+            if (DEBUG_MODE) console.log("Empty table - returning empty object");
+            return {};
+        }
+        
+        // Initialize result object
+        const result = {};
+        const arrayResult = [];
+        let isArray = true;
+        
+        // Split into key-value pairs
+        const pairs = splitLuaTableEntries(cleaned);
+        
+        if (DEBUG_MODE) console.log("Found pairs:", pairs);
+        
+        pairs.forEach((pair, index) => {
+            // Special handling for enemies array
+            if (pair.trim().startsWith('enemies={')) {
+                isArray = false;
+                //const enemiesStr = pair.match(/enemies=\s*({.*})/)[0];
+                const enemiesStr = pair
+                console.log(pair)
+                result.enemies = parseLuaEnemies(enemiesStr);
+                return;
+            }
+            console.log("THE PAIR: ",pair)
+            if (pair.trim().startsWith('obstacles={')) {
+                isArray = false;
+                //const enemiesStr = pair.match(/enemies=\s*({.*})/)[0];
+                const obstaclesStr = pair
+                console.log(pair)
+                result.obstacles = parseLuaObstacles(obstaclesStr);
+                return;
+            }
+            
+            // Special handling for freedom_mission
+            if (pair.trim().startsWith('freedom_mission={')) {
+                isArray = false;
+                //const fmStr = pair.match(/freedom_mission=\s*({.*})/)[1];
+                const fmStr = pair
+                result.freedom_mission = parseLuaFreedomMission(fmStr);
+                return;
+            }
+            
+            // Special handling for music
+            if (pair.trim().startsWith('music={')) {
+                isArray = false;
+                //const musicStr = pair.match(/music=\s*({.*})/)[1];
+                const musicStr = pair
+                result.music = parseLuaMusic(musicStr);
+                return;
+            }
+            
+            // Handle array-like entries (no key specified)
+            if (!pair.includes('=')) {
+                const value = parseLuaValue(pair.trim());
+                arrayResult.push(value);
+                result[index + 1] = value; // Lua arrays are 1-based
+                return;
+            }
+            
+            // Handle key-value pairs
+            isArray = false;
+            const [keyStr, valueStr] = pair.split('=').map(s => s.trim());
+            const key = parseLuaKey(keyStr);
+            const value = parseLuaValue(valueStr);
+            
+            if (DEBUG_MODE) console.log(`Processing pair: ${keyStr}=${valueStr} ->`, {key, value});
+            
+            result[key] = value;
+        });
+        
+        // Return as array if it appears to be one
+        const finalResult = isArray ? arrayResult : result;
+        
+        if (DEBUG_MODE) console.log("Final parsed table:", finalResult);
+        return finalResult;
+    } catch (e) {
+        if (DEBUG_MODE) console.error("Error parsing Lua table:", e);
+        throw e;
+    }
+}
+
+// Special parser for enemies array
+function parseLuaEnemies(enemiesStr) {
+    if (DEBUG_MODE) console.log("Parsing enemies:", enemiesStr);
+    
+    const enemies = [];
+    //const cleaned = enemiesStr.trim().slice(0, -1).trim(); // Remove outer {}
+    const cleaned = enemiesStr.replace("\n    }","").replace("enemies={\n","")
+    console.log("CLEANED? ",cleaned)
+    if (!cleaned) return enemies;
+    
+    const enemyEntries = splitLuaTableEntries(cleaned);
+    
+    enemyEntries.forEach(entry => {
+        if (DEBUG_MODE) console.log("Parsing enemy entry:", entry);
+        
+        const enemy = {};
+        const props = entry.trim().slice(1, -1).split(',').map(p => p.trim());
+        
+        props.forEach(prop => {
+            if (!prop) return;
+            const [key, value] = prop.split('=').map(s => s.trim());
+            if (key && value) {
+                enemy[key] = parseLuaValue(value);
+            }
+        });
+        
+        if (Object.keys(enemy).length > 0) {
+            enemies.push(enemy);
+        }
+    });
+    
+    if (DEBUG_MODE) console.log("Parsed enemies:", enemies);
+    return enemies;
+}
+function parseLuaObstacles(obstaclesStr) {
+    if (DEBUG_MODE) console.log("Parsing obstacles:", obstaclesStr);
+    
+    const obstacles = [];
+    const cleaned = obstaclesStr.replace("\n    }","").replace("obstacles={\n","")
+    console.log("CLEANED? ",cleaned)
+    if (!cleaned) return obstacles;
+    
+    const enemyEntries = splitLuaTableEntries(cleaned);
+    
+    enemyEntries.forEach(entry => {
+        if (DEBUG_MODE) console.log("Parsing enemy entry:", entry);
+        
+        const enemy = {};
+        const props = entry.trim().slice(1, -1).split(',').map(p => p.trim());
+        
+        props.forEach(prop => {
+            if (!prop) return;
+            const [key, value] = prop.split('=').map(s => s.trim());
+            if (key && value) {
+                enemy[key] = parseLuaValue(value);
+            }
+        });
+        
+        if (Object.keys(enemy).length > 0) {
+            obstacles.push(enemy);
+        }
+    });
+    
+    if (DEBUG_MODE) console.log("Parsed obstacles:", obstacles);
+    return obstacles;
+}
+
+// Special parser for freedom_mission
+function parseLuaFreedomMission(fmStr) {
+    if (DEBUG_MODE) console.log("Parsing freedom_mission:", fmStr);
+    
+    const fm = {
+        enabled: false,
+        turn_count: 5,
+        player_can_flip: false
+    };
+    
+    //const cleaned = fmStr.trim().slice(1, -1).trim(); // Remove outer {}
+    const cleaned = fmStr.replace("\n    }","").replace("freedom_mission={\n","")
+
+    if (!cleaned) return fm;
+    
+    const props = splitLuaTableEntries(cleaned);
+    
+    props.forEach(prop => {
+        if (!prop) return;
+        const [key, value] = prop.split('=').map(s => s.trim());
+        if (key && value) {
+            fm[key] = parseLuaValue(value);
+        }
+    });
+    
+    if (DEBUG_MODE) console.log("Parsed freedom_mission:", fm);
+    return fm;
+}
+
+// Special parser for music
+function parseLuaMusic(musicStr) {
+    if (DEBUG_MODE) console.log("Parsing music:", musicStr);
+    
+    const music = {
+        path: ''
+    };
+    
+    const cleaned = musicStr.trim().slice(1, -1).trim(); // Remove outer {}
+    
+    if (!cleaned) return music;
+    
+    const props = splitLuaTableEntries(cleaned);
+    
+    props.forEach(prop => {
+        if (!prop) return;
+        const [key, value] = prop.split('=').map(s => s.trim());
+        if (key && value) {
+            music[key] = parseLuaValue(value);
+        }
+    });
+    
+    if (DEBUG_MODE) console.log("Parsed music:", music);
+    return music;
+}
+
+// Helper function to split Lua table entries while handling nested tables
+function splitLuaTableEntries(str) {
+    if (DEBUG_MODE) console.log("Splitting table entries:", str);
+    
+    const entries = [];
+    let current = '';
+    let depth = 0;
+    
+    for (let i = 0; i < str.length; i++) {
+        const char = str[i];
+        
+        if (char === '{') depth++;
+        if (char === '}') depth--;
+        
+        if (char === ',' && depth === 0) {
+            entries.push(current.trim());
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    
+    if (current.trim()) {
+        entries.push(current.trim());
+    }
+    
+    if (DEBUG_MODE) console.log("Split entries:", entries);
+    return entries;
+}
+
+// Helper function to parse Lua keys (strings or identifiers)
+function parseLuaKey(keyStr) {
+    if (DEBUG_MODE) console.log("Parsing key:", keyStr);
+    
+    // Handle string keys (quoted)
+    if (keyStr.startsWith('"') && keyStr.endsWith('"') || 
+        keyStr.startsWith("'") && keyStr.endsWith("'")) {
+        return keyStr.slice(1, -1);
+    }
+    
+    // Handle numeric keys
+    if (/^-?\d+$/.test(keyStr)) {
+        return parseInt(keyStr);
+    }
+    
+    // Handle boolean keys
+    if (keyStr === 'true') return true;
+    if (keyStr === 'false') return false;
+    
+    // Default to using the string as-is (for identifiers)
+    return keyStr;
+}
+
+// Helper function to parse Lua values
+function parseLuaValue(valueStr) {
+    if (DEBUG_MODE) console.log("Parsing value:", valueStr);
+    
+    // Handle nested tables
+    if (valueStr.startsWith('{') && valueStr.endsWith('}')) {
+        return parseLuaTable(valueStr);
+    }
+    
+    // Handle strings
+    if (valueStr.startsWith('"') && valueStr.endsWith('"') || 
+        valueStr.startsWith("'") && valueStr.endsWith("'")) {
+        return valueStr.slice(1, -1);
+    }
+    
+    // Handle numbers
+    if (/^-?\d+\.?\d*$/.test(valueStr)) {
+        return parseFloat(valueStr);
+    }
+    
+    // Handle booleans
+    if (valueStr === 'true') return true;
+    if (valueStr === 'false') return false;
+    
+    // Handle nil
+    if (valueStr === 'nil') return null;
+    
+    // Default to string (might be a variable reference)
+    return valueStr;
+}
+
+function parseConfigContent(luaString) {
+    if (DEBUG_MODE) console.log("Starting to parse config content...");
+    
+    // First extract all local variable definitions
+    const localVars = {};
+    const localPattern = /local\s+(\w+)\s*=\s*({[\s\S]*?})(?=\s*(?:local|function|return|$))/g;
+    let localMatch;
+    
+    if (DEBUG_MODE) console.log("Extracting local variables...");
+    
+    while (localMatch = localPattern.exec(luaString)) {
+        const varName = localMatch[1];
+        const varValue = localMatch[2];
+        
+        if (DEBUG_MODE) console.log("Found local var:", varName);
+        
+        try {
+            localVars[varName] = parseLuaTable(varValue);
+            if (DEBUG_MODE) console.log("Parsed var content:", localVars[varName]);
+        } catch (e) {
+            if (DEBUG_MODE) console.error(`Failed to parse ${varName}:`, e);
+            throw new Error(`Failed to parse variable ${varName}: ${e.message}`);
+        }
+    }
+
+    // Then extract the return statement
+    if (DEBUG_MODE) console.log("Extracting return statement...");
+    const returnMatch = luaString.match(/return\s*({[\s\S]*?})\s*$/);
+    if (!returnMatch) {
+        throw new Error("No return statement found in Lua config");
+    }
+
+    // Process the return table
+    let returnTable;
+    try {
+        returnTable = parseLuaTable(returnMatch[1]);
+        if (DEBUG_MODE) console.log("Parsed return table:", returnTable);
+    } catch (e) {
+        if (DEBUG_MODE) console.error("Failed to parse return table:", e);
+        throw new Error(`Failed to parse return table: ${e.message}`);
+    }
+    
+    // Replace variable references in encounters array with actual values
+    if (returnTable.encounters && Array.isArray(returnTable.encounters)) {
+        if (DEBUG_MODE) console.log("Processing encounters array...");
+        
+        returnTable.encounters = returnTable.encounters.map(name => {
+            const cleanName = typeof name === 'string' ? name.trim() : name;
+            
+            if (DEBUG_MODE) console.log("Processing encounter reference:", cleanName);
+            
+            if (localVars[cleanName]) {
+                return localVars[cleanName];
+            }
+            throw new Error(`Undefined encounter reference: ${cleanName}`);
+        });
+    }
+
+    return {
+        ...returnTable,
+        ...localVars
+    };
+}
+
+function jsonToLuaTable(obj, indent = '    ', isGrid = false) {
+    if (obj === null || obj === undefined) {
+        return 'nil';
+    }
+    
+    if (Array.isArray(obj)) {
+        if (obj.length === 0) return '{}';
+        
+        // Special handling for grid arrays
+        if (isGrid && obj.length > 0 && Array.isArray(obj[0])) {
+            let result = '{\n';
+            obj.forEach(row => {
+                result += `${indent}{${row.join(',')}},\n`;
+            });
+            result += `${indent.substring(0, indent.length - 4)}}`;
+            return result;
+        }
+        
+        // Regular array handling
+        let result = '{\n';
+        obj.forEach((item, index) => {
+            result += `${indent}${jsonToLuaTable(item, indent + '    ')},\n`;
+        });
+        result += `${indent.substring(0, indent.length - 4)}}`;
+        return result;
+    } else if (typeof obj === 'object') {
+        const keys = Object.keys(obj);
+        if (keys.length === 0) return '{}';
+        
+        let result = '{\n';
+        keys.forEach(key => {
+            // Special handling for enemies/obstacles
+            if (key === 'enemies' || key === 'obstacles') {
+                result += `${indent}${key}={\n`;
+                if (Array.isArray(obj[key])) {
+                    obj[key].forEach(item => {
+                        if (typeof item === 'object') {
+                            result += `${indent}    {`;
+                            const props = [];
+                            for (const prop in item) {
+                                props.push(`${prop}=${jsonToLuaTable(item[prop], indent + '        ')}`);
+                            }
+                            result += props.join(',');
+                            result += `},\n`;
+                        }
+                    });
+                }
+                result += `${indent}},\n`;
+                return;
+            }
+            
+            // Special handling for grid arrays
+            if (Array.isArray(obj[key]) && obj[key].length > 0 && Array.isArray(obj[key][0])) {
+                result += `${indent}${key}=${jsonToLuaTable(obj[key], indent, true)},\n`;
+                return;
+            }
+            
+            // Handle numeric keys (array indices)
+            const isNumericKey = String(Number(key)) === key;
+            const keyStr = isNumericKey ? '' : `${key}=`;
+            result += `${indent}${keyStr}${jsonToLuaTable(obj[key], indent + '    ')},\n`;
+        });
+        result += `${indent.substring(0, indent.length - 4)}}`;
+        return result;
+    } else if (typeof obj === 'string') {
+        // Escape quotes if needed
+        if (obj.includes('"') || obj.includes('\\') || obj.includes('\n')) {
+            return `'${obj.replace(/'/g, "\\'")}'`;
+        }
+        return `"${obj}"`;
+    } else if (typeof obj === 'boolean') {
+        return obj ? 'true' : 'false';
+    }
+    
+    return String(obj);
+}
+
+function convertJsonToLua(obj, indent = '    ', isGrid = false) {
+    if (obj === null || obj === undefined) {
+        return 'nil';
+    }
+    
+    if (Array.isArray(obj)) {
+        if (obj.length === 0) return '{}';
+        
+        // Special handling for grid arrays
+        if (isGrid && obj.length > 0 && Array.isArray(obj[0])) {
+            let result = '{\n';
+            obj.forEach(row => {
+                result += `${indent}{${row.join(',')}},\n`;
+            });
+            result += `${indent.substring(0, indent.length - 4)}}`;
+            return result;
+        }
+        
+        // Regular array handling
+        let result = '{\n';
+        obj.forEach((item, index) => {
+            result += `${indent}${convertJsonToLua(item, indent + '    ')},\n`;
+        });
+        result += `${indent.substring(0, indent.length - 4)}}`;
+        return result;
+    } else if (typeof obj === 'object') {
+        const keys = Object.keys(obj);
+        if (keys.length === 0) return '{}';
+        
+        let result = '{\n';
+        keys.forEach(key => {
+            // Special handling for enemies/obstacles
+            if (key === 'enemies' || key === 'obstacles') {
+                result += `${indent}${key}={\n`;
+                obj[key].forEach(item => {
+                    result += `${indent}    {`;
+                    const props = [];
+                    for (const prop in item) {
+                        // Properly format each property without extra quotes
+                        const val = convertJsonToLua(item[prop], indent + '        ');
+                        props.push(`${prop}=${val}`);
+                    }
+                    result += props.join(',');
+                    result += `},\n`;
+                });
+                result += `${indent}},\n`;
+                return;
+            }
+            
+            // Special handling for grid arrays
+            if (Array.isArray(obj[key]) && obj[key].length > 0 && Array.isArray(obj[key][0])) {
+                result += `${indent}${key}=${convertJsonToLua(obj[key], indent, true)},\n`;
+                return;
+            }
+            
+            // Handle numeric keys (array indices)
+            const isNumericKey = String(Number(key)) === key;
+            const keyStr = isNumericKey ? '' : `${key}=`;
+            result += `${indent}${keyStr}${convertJsonToLua(obj[key], indent + '    ')},\n`;
+        });
+        result += `${indent.substring(0, indent.length - 4)}}`;
+        return result;
+    } else if (typeof obj === 'string') {
+        // Escape quotes if needed, but don't add extra quotes
+        if (obj.includes('"') || obj.includes('\\') || obj.includes('\n')) {
+            return `'${obj.replace(/'/g, "\\'")}'`;
+        }
+        return `"${obj}"`;
+    } else if (typeof obj === 'boolean') {
+        return obj ? 'true' : 'false';
+    }
+    
+    return String(obj);
+}
+
+function generateLuaString() {
+    // Ensure config.encounters exists and is an array
+    if (!config.encounters || !Array.isArray(config.encounters)) {
+        config.encounters = [];
+    }
+
+    const output = [];
+
+    // Generate each encounter
+    config.encounters.forEach(encounter => {
+        if (!encounter.name) return;
+
+        output.push(`local ${encounter.name} = {`);
+        output.push(`    name="${encounter.name}",`);
+        output.push(`    path="${encounter.path || ''}",`);
+        output.push(`    weight=${encounter.weight || 10},`);
+
+        // Handle enemies
+        if (encounter.enemies && Array.isArray(encounter.enemies)) {
+            output.push(`    enemies={`);
+            encounter.enemies.forEach(enemy => {
+                if (enemy && typeof enemy === 'object') {
+                    const props = [];
+                    if (enemy.name) props.push(`name="${enemy.name.replace(/"/g, '\\"')}"`);
+                    if (enemy.rank) props.push(`rank=${enemy.rank}`);
+                    if (enemy.nickname) props.push(`nickname="${enemy.nickname.replace(/"/g, '\\"')}"`);
+                    output.push(`        {${props.join(',')}},`);
+                }
+            });
+            output.push(`    },`);
+        }
+        // Handle obstacles
+        if (encounter.obstacles && Array.isArray(encounter.obstacles)) {
+            output.push(`    obstacles={`);
+            encounter.obstacles.forEach(obstacle => {
+                if (obstacle && typeof obstacle === 'object') {
+                    const props = [];
+                    if (obstacle.name) props.push(`name="${obstacle.name.replace(/"/g, '\\"')}"`);
+                    output.push(`        {${props.join(',')}},`);
+                }
+            });
+            output.push(`    },`);
+        }
+
+
+        // Handle positions
+        if (encounter.positions && Array.isArray(encounter.positions)) {
+            output.push(`    positions={`);
+            encounter.positions.forEach(row => {
+                if (Array.isArray(row)) {
+                    output.push(`        {${row.join(',')}},`);
+                }
+            });
+            output.push(`    },`);
+        }
+        // Handle obstalce positions
+        if (encounter.obstacle_positions && Array.isArray(encounter.obstacle_positions)) {
+            output.push(`    obstacle_positions={`);
+            encounter.obstacle_positions.forEach(row => {
+                if (Array.isArray(row)) {
+                    output.push(`        {${row.join(',')}},`);
+                }
+            });
+            output.push(`    },`);
+        }
+
+        // Handle obstalce positions
+        if (encounter.player_positions && Array.isArray(encounter.player_positions)) {
+            output.push(`    player_positions={`);
+            encounter.player_positions.forEach(row => {
+                if (Array.isArray(row)) {
+                    output.push(`        {${row.join(',')}},`);
+                }
+            });
+            output.push(`    },`);
+        }
+
+
+        // Handle tiles
+        if (encounter.tiles && Array.isArray(encounter.tiles)) {
+            output.push(`    tiles={`);
+            encounter.tiles.forEach(row => {
+                if (Array.isArray(row)) {
+                    output.push(`        {${row.join(',')}},`);
+                }
+            });
+            output.push(`    },`);
+        }
+
+        // Handle other properties
+        if (encounter.music?.path) {
+            output.push(`    music={path="${encounter.music.path.replace(/"/g, '\\"')}"},`);
+        }
+        if (encounter.results_callback) {
+            output.push(`    results_callback="${encounter.results_callback.replace(/"/g, '\\"')}",`);
+        }
+        if (encounter.freedom_mission?.enabled) {
+            output.push(`    freedom_mission={`);
+            output.push(`        enabled=true,`);
+            output.push(`        turn_count=${encounter.freedom_mission.turn_count || 5},`);
+            output.push(`        player_can_flip=${encounter.freedom_mission.player_can_flip ? 'true' : 'false'}`);
+            output.push(`    },`);
+        }
+
+        output.push('}');
+        output.push(''); // Empty line between encounters
+    });
+
+    // Add return statement
+    output.push('return {');
+    output.push(`    minimum_steps_before_encounter=${config.minimum_steps_before_encounter || 80},`);
+    output.push(`    encounter_chance_per_step=${config.encounter_chance_per_step || 0.05},`);
+    output.push(`    encounters={${config.encounters.map(e => e.name).filter(Boolean).join(',')}}`);
+    output.push('}');
+
+    return output.join('\n');
+}
+
+
+// =============================================
+// Utility Functions
+// =============================================
+
+function showStatus(message, type) {
+    const status = $('#status-message');
+    status.text(message)
+          .removeClass('success error')
+          .addClass(type)
+          .stop(true, true)
+          .fadeIn()
+          .delay(3000)
+          .fadeOut();
+}
+
+
+// =============================================
+// Initialize Editor
+// =============================================
+
+$(document).ready(function() {
+    initializeEditor();
+    setupEventHandlers();
+    
+    if (DEBUG_MODE) {
+        console.log("Editor initialized in debug mode");
+        window.debugGetConfig = () => config;
+        window.debugReload = () => {
+            localStorage.removeItem('battleConfig');
+            location.reload();
+        };
+    }
+});
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+</body>
+</html>
