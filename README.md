@@ -7,13 +7,17 @@
 
 ## Getting Started
 
-This editor modifies and creates configuration files compatible with [Keristero's ezEncounters library](https://github.com/Keristero/ezlibs-scripts#ezencounters) you will need to setup ezLibs on your server in order for the configuration files made with this tool to work. 
+To use the editor, visit https://indianajson.github.io/visual-encounters/ to use the editor. While you can import existing configs, they can only contain encounter configurations and the return string (no functions, comments, etc) so you are better off creating new configurations with the tool and then importing those if you wish to change them later. 
 
-To use the editor, visit http://indianajson.github.io/visual-encounters/ to use the editor. While you can import existing configs, they can only contain encounter configurations and the return string (no functions, comments, etc) so you are better off creating new configurations with the tool and then importing those if you wish to change them. 
+The editor's interface (see below) has three main sections: main menu (at top), battle preview (in middle), and settings (at bottom). To change the settings for any given tile simply click on the tile to select it and the menu options will change at the bottom.  To edit the encounter's main settings (such as music file, callback function, freedom mission settings, etc) unselect the currently selected tile by clicking on it again.
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/f20e9890-4e32-4caa-bbb0-37fc4d39634e" alt="interface" width="450">
 </p>
+
+Feel free to ping @indianajson on the Discord if you have any problems. 
+
+IMPORTANT: This editor modifies and creates configuration files compatible specifically with [Keristero's ezEncounters library](https://github.com/Keristero/ezlibs-scripts#ezencounters) you will need to set up ezLibs on your server in order for the configuration files made with this tool to function. 
 
 ## Features
 
