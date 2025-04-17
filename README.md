@@ -21,6 +21,13 @@ IMPORTANT: This editor modifies and creates configuration files compatible speci
 
 ## Features
 
-- All progress is saved in your browser so you can close the page and come back later without losing your progress (does not work in Incognito/Private browsing sessions).
-- Add multiple encounters to a single configuration file.
-- All settings (music, freedom missions, callback functions) are definable within the editor. 
+- Changes are saved every time in your browser so you can close the page and come back later without losing your progress (does not work in Incognito/Private browsing sessions).
+- Multiple encounters per configuration file.
+- Settings (music, freedom missions, callback functions) are definable within the editor. 
+- Allows for multiple players on field for PVP and coop encounters.
+
+## Known Limitations
+
+- Importing works well IF the lua only contains encounter variables and a return (other functions, comments, etc. break the importer).
+- Each encounter can only have one table for positions so you have to make separate variations if you want different mob placement.
+- Virus list is restricted to ezEncounters default viruses and the preview doesn’t change for each virus rank (only a preview image for the main virus). The virus list is also hard coded at the moment where (in a perfect work) it would be based on current mob mod list.
