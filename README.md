@@ -7,17 +7,17 @@
 
 ## Getting Started
 
+<img src="https://github.com/user-attachments/assets/f20e9890-4e32-4caa-bbb0-37fc4d39634e" align="right" alt="interface" width="450">
+<p align="justify">
 To use the editor, visit https://indianajson.github.io/visual-encounters/ to use the editor. While you can import existing configs, they can only contain encounter configurations and the return string (no functions, comments, etc) so you are better off creating new configurations with the tool and then importing those if you wish to change them later. 
-
-The editor's interface (see below) has three main sections: main menu (at top), battle preview (in middle), and settings (at bottom). To change the settings for any given tile simply click on the tile to select it and the menu options will change at the bottom.  To edit the encounter's main settings (such as music file, callback function, freedom mission settings, etc) unselect the currently selected tile by clicking on it again.
-
-<p align="center">
-<img src="https://github.com/user-attachments/assets/f20e9890-4e32-4caa-bbb0-37fc4d39634e" alt="interface" width="450">
+</p><p align="justify">
+The editor's interface has three main sections: main menu (at top), battle preview (in middle), and settings (at bottom). To change the settings for any given tile simply click on the tile to select it and the menu options will change at the bottom.  To edit the encounter's main settings (such as music file, callback function, freedom mission settings, etc) unselect the currently selected tile by clicking on it again.
 </p>
+<p align="justify">
+Feel free to ping @indianajson on the Discord if you have any problems. </p>
+<p align="justify">
+<b>IMPORTANT</b>: This editor modifies and creates configuration files compatible specifically with <a href="https://github.com/Keristero/ezlibs-scripts#ezencounters">Keristero's ezEncounters library</a> you will need to set up ezLibs on your server in order for the configuration files made with this tool to function. This editor does NOT supply the mods so if you use something outside of ezEncounter's defaults you will need to download it from <a href="https://keristero.github.io/onb-modsite/">the mod site</a> and add it your server.  </p>
 
-Feel free to ping @indianajson on the Discord if you have any problems. 
-
-IMPORTANT: This editor modifies and creates configuration files compatible specifically with [Keristero's ezEncounters library](https://github.com/Keristero/ezlibs-scripts#ezencounters) you will need to set up ezLibs on your server in order for the configuration files made with this tool to function. 
 
 ## Features
 
