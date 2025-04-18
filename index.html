@@ -19,10 +19,17 @@
             image-rendering: optimize-contrast;         /* CSS3 Proposed                  */
             -ms-interpolation-mode: nearest-neighbor;   /* IE8+                           */
         }
-        .select2-results__option .enemy-option .option-preview {
+        .select2-results__option .enemy-option .option-preview, .select2-results__option .rank-option .option-preview{
             height:70px;
             width:70px;
         }
+        /* Add to existing styles */
+        .rank-option {
+            display: flex;
+            align-items: center;
+            padding: 2px;
+        }
+
         .container {
             display: flex;
             flex-wrap: wrap;
@@ -288,7 +295,11 @@
 
         // Dictionaries for enemies with image paths and offsets
         const enemyDictionary = [
-            { name: "Mettaur", image: "enemies/mettaur.png", ranks: [1,2,3,4,6,7],offsetX: 0,offsetY: 60 },
+            { name: "Mettaur", image: "enemies/mettaur.png", ranks: [1,2,3,4,6,7],offsetX: 0,offsetY: 60,
+                rankImages: {
+                    1: "enemies/mettaur.png",
+                }
+            },
             { name: "Champy", image: "enemies/champy.png", ranks: [1,2],offsetX: 0,offsetY: 20 },
             { name: "Chimpy", image: "enemies/chimpy.png", ranks: [1],offsetX: 0,offsetY: 20 },
             { name: "Chumpy", image: "enemies/chumpy.png", ranks: [1],offsetX: 0,offsetY: 20 },
@@ -698,6 +709,28 @@ function selectTile(row, col) {
     updateTileFields();
 }
 
+function formatRankOption(rank) {
+    if (!rank.id) return rank.text;
+    
+    const imagePath = $(rank.element).data('image');
+    if (!imagePath) return rank.text;
+    
+    return $(`
+        <div class="rank-option">
+            <div class="option-preview" style="background-image: url(${imagePath})"></div>
+            <span>${rank.text}</span>
+        </div>
+    `);
+}
+function updateEnemyRankPreview(enemyName, rank) {
+    const preview = $('#enemy-rank-preview');
+    const imagePath = getEnemyImage(enemyName, rank);
+    if (imagePath) {
+        preview.css('background-image', `url(${imagePath})`);
+    } else {
+        preview.css('background-image', 'none');
+    }
+}
 function updateEnemyRankOptions(enemyName) {
     const rankSelect = $('#enemy-rank');
     rankSelect.empty();
@@ -707,14 +740,27 @@ function updateEnemyRankOptions(enemyName) {
     
     // Add available ranks from dictionary
     enemy.ranks.forEach(rank => {
-        rankSelect.append(`<option value="${rank}">Rank ${rank}</option>`);
+        const imagePath = getEnemyImage(enemyName, rank);
+        rankSelect.append(`<option value="${rank}" data-image="${imagePath}">Rank ${rank}</option>`);
+    });
+    
+    // Initialize or refresh Select2
+    if (rankSelect.hasClass('select2-hidden-accessible')) {
+        rankSelect.select2('destroy');
+    }
+    
+    rankSelect.select2({
+        templateResult: formatRankOption,
+        templateSelection: formatRankOption,
+        width: '100%'
     });
     
     // Default to first rank
     if (enemy.ranks.length > 0) {
-        rankSelect.val(enemy.ranks[0]);
+        rankSelect.val(enemy.ranks[0]).trigger('change');
     }
 }
+
 
 
 function updateGrid() {
@@ -734,6 +780,19 @@ function updateGrid() {
             updateTileImage(row, col);
         }
     }
+}
+
+function getEnemyImage(enemyName, rank) {
+    const enemy = enemyDictionary.find(e => e.name === enemyName);
+    if (!enemy) return '';
+    
+    // Check for rank-specific image first
+    if (enemy.rankImages && enemy.rankImages[rank]) {
+        return enemy.rankImages[rank];
+    }
+    
+    // Fall back to default image
+    return enemy.image;
 }
 
 function updateTileImage(row, col) {
@@ -774,11 +833,14 @@ function updateTileImage(row, col) {
     if (enemyIndex > 0 && variation.enemies && enemyIndex <= variation.enemies.length) {
         const enemy = variation.enemies[enemyIndex - 1];
         const enemyDef = enemyDictionary.find(e => e.name === enemy.name);
-        if (enemyDef?.image) {
-            tile.find('.tile-entity').css({
-                'background-image': `url(${enemyDef.image})`,
-                'background-position': `${enemyDef.offsetX || 0}px ${enemyDef.offsetY || 0}px`
-            });
+        if (enemyDef) {
+            const imagePath = getEnemyImage(enemy.name, enemy.rank || 1);
+            if (imagePath) {
+                tile.find('.tile-entity').css({
+                    'background-image': `url(${imagePath})`,
+                    'background-position': `${enemyDef.offsetX || 0}px ${enemyDef.offsetY || 0}px`
+                });
+            }
         }
     } else if (obstacleValue > 0 && variation.obstacles && obstacleValue <= variation.obstacles.length) {
         const obstacle = variation.obstacles[obstacleValue - 1];
