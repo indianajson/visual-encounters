@@ -9,7 +9,7 @@
 
 <img src="https://github.com/user-attachments/assets/f20e9890-4e32-4caa-bbb0-37fc4d39634e" align="right" alt="interface" width="450">
 <p align="justify">
-To use the editor, visit https://indianajson.github.io/visual-encounters/ to use the editor. While you can import existing configs, they can only contain encounter configurations and the return string (no functions, comments, etc) so you are better off creating new configurations with the tool and then importing those if you wish to change them later. 
+To launch the editor, <b><a href="https://indianajson.github.io/visual-encounters/">CLICK HERE</a></b>. While you can import existing configs, they can only contain encounter configurations and the return string (no functions, comments, etc) so you are better off creating new configurations with the tool and then importing those if you wish to change them later. 
 </p><p align="justify">
 The editor's interface has three main sections: main menu (at top), battle preview (in middle), and settings (at bottom). To change the settings for any given tile simply click on the tile to select it and the menu options will change at the bottom.  To edit the encounter's main settings (such as music file, callback function, freedom mission settings, etc) unselect the currently selected tile by clicking on it again.
 </p>
