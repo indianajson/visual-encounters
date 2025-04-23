@@ -303,7 +303,7 @@
             { name: "Champy", image: "enemies/champy.png", ranks: [1,2],offsetX: 0,offsetY: 20 },
             { name: "Chimpy", image: "enemies/chimpy.png", ranks: [1],offsetX: 0,offsetY: 20 },
             { name: "Chumpy", image: "enemies/chumpy.png", ranks: [1],offsetX: 0,offsetY: 20 },
-            { name: "RareChampy", image: "enemies/rarechampy.png", ranks: [1],offsetX: 0,offsetY: 0 },
+            { name: "RareChampy", image: "enemies/rarechampy.png", ranks: [1],offsetX: 0,offsetY: 20 },
             { name: "Cactikil", image: "enemies/cactikil.webp", ranks: [1,5],offsetX: 0,offsetY: 0 },
             { name: "Cactroll", image: "enemies/cactroll.webp", ranks: [1,5],offsetX: 0,offsetY: 0 },
             { name: "Cacter", image: "enemies/cacter.webp", ranks: [1,5],offsetX: 0,offsetY: 0 },
@@ -317,11 +317,11 @@
             { name: "Shooter", image: "enemies/shooter.png", ranks: [1,2,3,4],offsetX: 0,offsetY: 23 },
             { name: "Sniper", image: "enemies/sniper.png", ranks: [1],offsetX: 0,offsetY: 23 },
             { name: "BigBrute", image: "enemies/bigbrute.png", ranks: [1],offsetX: 0,offsetY: 35 },
-            { name: "Vulgear", image: "enemies/vulgear1.webp", ranks: [1,2,3,4],offsetX: 0,offsetY: 35 },
+            { name: "Volgear", image: "enemies/vulgear1.webp", ranks: [1,2,3,4],offsetX: 0,offsetY: 35 },
             { name: "KillerEye", image: "enemies/KillerEye1.webp", ranks: [1,4,6,7],offsetX: 0,offsetY: 10 },
             { name: "DemonEye", image: "enemies/DemonEye1.webp", ranks: [1],offsetX: 0,offsetY: 10 },
             { name: "JokerEye", image: "enemies/JokerEye1.webp", ranks: [1],offsetX: 0,offsetY: 10 },
-            { name: "HauntedCandle", image: "enemies/HauntedCandle.webp", ranks: [1,2,3,4,6,7],offsetX: 0,offsetY: 0 },
+            { name: "HauntedCandle", image: "enemies/HauntedCandle.webp", ranks: [1,2,3,4,7],offsetX: 0,offsetY: 0 },
             { name: "Fishy", image: "enemies/Fishy1.webp", ranks: [1,2,3,4],offsetX: 0,offsetY: 17 },
             { name: "BombCorn", image: "enemies/BombCorn.webp", ranks: [1,4,6,7],offsetX: 0,offsetY: 10 },
             { name: "MegaCorn", image: "enemies/MegaCorn.webp", ranks: [1],offsetX: 0,offsetY: 10 },
@@ -662,30 +662,29 @@ function addNewVariation(name) {
     }
 
 function deleteCurrentVariation() {
-        if (config.encounters.length <= 1) {
-            showStatus("Cannot delete the last variation", 'error');
-            return;
-        }
-        
-        if (confirm("Delete this variation permanently?")) {
-            const deletedName = config.encounters[currentVariationIndex].name;
-            config.encounters.splice(currentVariationIndex, 1);
-            
-            // Select another variation
-            const newIndex = Math.min(currentVariationIndex, config.encounters.length - 1);
-            refreshVariationDropdown();
-            selectVariation(newIndex);
-            
-            // If we deleted the last one, show main config
-            if (newIndex === -1) {
-                $('#variation-properties').hide();
-                $('#main-properties').show();
-            }
-            
-            saveToLocalStorage();
-            showStatus(`Deleted variation: ${deletedName}`, 'success');
-        }
+    if (config.encounters.length <= 1) {
+        showStatus("Cannot delete the last variation", 'error');
+        return;
     }
+    
+    if (confirm("Delete this variation permanently?")) {
+        const deletedName = config.encounters[currentVariationIndex].name;
+        
+        // Clean up before deletion
+        cleanupEnemies(config.encounters[currentVariationIndex]);
+        
+        config.encounters.splice(currentVariationIndex, 1);
+        
+        // Select another variation
+        const newIndex = Math.min(currentVariationIndex, config.encounters.length - 1);
+        refreshVariationDropdown();
+        selectVariation(newIndex);
+        
+        saveToLocalStorage();
+        showStatus(`Deleted variation: ${deletedName}`, 'success');
+    }
+}
+
 
 
 // =============================================
@@ -707,7 +706,63 @@ function selectTile(row, col) {
     $('#variation-properties').hide();
     
     updateTileFields();
+
+    if (selectedTile) {
+    const variation = config.encounters[currentVariationIndex];
+    cleanupEnemies(variation);          
+    }
 }
+
+function cleanupEnemies(variation) {
+    // Collect all enemy indices currently in use
+    const usedIndices = new Set();
+    for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 6; col++) {
+            const index = variation.positions[row][col];
+            if (index > 0) {
+                usedIndices.add(index);
+            }
+        }
+    }
+
+    // If all enemies are used, no cleanup needed
+    if (usedIndices.size === (variation.enemies?.length || 0)) {
+        return;
+    }
+
+    // Create new arrays for cleaned enemies and position mapping
+    const newEnemies = [];
+    const indexMap = {};
+    let newIndex = 1;
+
+    // Build new enemies array and mapping
+    variation.enemies?.forEach((enemy, oldIndex) => {
+        const actualIndex = oldIndex + 1;
+        if (usedIndices.has(actualIndex)) {
+            newEnemies.push(enemy);
+            indexMap[actualIndex] = newIndex++;
+        }
+    });
+
+    // Update positions with new indices
+    for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 6; col++) {
+            const oldIndex = variation.positions[row][col];
+            if (oldIndex > 0 && indexMap[oldIndex]) {
+                variation.positions[row][col] = indexMap[oldIndex];
+            } else if (oldIndex > 0) {
+                variation.positions[row][col] = 0; // Clear invalid references
+            }
+        }
+    }
+
+    // Update the variation
+    variation.enemies = newEnemies;
+    
+    // Add this line to immediately reflect changes
+    updateGrid();
+}
+
 
 function formatRankOption(rank) {
     if (!rank.id) return rank.text;
@@ -1008,7 +1063,13 @@ function setupEventHandlers() {
             }
         });
         
-        $('#delete-variation').click(deleteCurrentVariation);
+        $('#delete-variation').click(function() {
+            // Add this at the start:
+            if (currentVariationIndex >= 0) {
+                cleanupEnemies(config.encounters[currentVariationIndex]);
+            }
+            deleteCurrentVariation();
+        });
         
         $('#variation-select').change(function() {
             selectVariation(parseInt($(this).val()));
@@ -1141,6 +1202,8 @@ function setupEventHandlers() {
             }
             
             updateTileImage(row, col);
+            cleanupEnemies(config.encounters[currentVariationIndex]);
+            updateGrid();
             saveToLocalStorage();
         });
         
@@ -1276,35 +1339,48 @@ function setupEventHandlers() {
 
 
 function updateEnemyOnTile() {
-        if (!selectedTile || currentVariationIndex === -1) return;
-        
-        const variation = config.encounters[currentVariationIndex];
-        const { row, col } = selectedTile;
-        
-        // Get enemy properties
-        const name = $('#enemy-type').val();
-        const rank = parseInt($('#enemy-rank').val()) || 1;
-        const nickname = $('#enemy-nickname').val();
-        
-        // Create or update enemy
-        const enemy = { name, rank };
-        if (nickname) enemy.nickname = nickname;
-        
-        // Check if we're updating an existing enemy
-        const existingIndex = variation.positions[row][col] - 1;
-        if (existingIndex >= 0 && existingIndex < variation.enemies.length) {
-            variation.enemies[existingIndex] = enemy;
-        } else {
-            // Add new enemy
-            variation.enemies.push(enemy);
-            variation.positions[row][col] = variation.enemies.length;
-            variation.obstacle_positions[row][col] = 0;
-            variation.player_positions[row][col] = 0;
-        }
-        
-        updateTileImage(row, col);
-        saveToLocalStorage();
+    if (!selectedTile || currentVariationIndex === -1) return;
+    
+    const variation = config.encounters[currentVariationIndex];
+    const { row, col } = selectedTile;
+    
+    // Get enemy properties
+    const name = $('#enemy-type').val();
+    const rank = parseInt($('#enemy-rank').val()) || 1;
+    const nickname = $('#enemy-nickname').val();
+    
+    // First check if an identical enemy already exists
+    let enemyIndex = -1;
+    if (variation.enemies) {
+        enemyIndex = variation.enemies.findIndex(e => 
+            e.name === name && e.rank === rank
+        );
     }
+
+    // Create or update enemy
+    const enemy = { name, rank };
+    if (nickname) enemy.nickname = nickname;
+    
+    if (enemyIndex >= 0) {
+        // Update existing enemy (preserve any additional properties)
+        variation.enemies[enemyIndex] = { ...variation.enemies[enemyIndex], ...enemy };
+        variation.positions[row][col] = enemyIndex + 1; // +1 because positions are 1-based
+    } else {
+        // Add new enemy
+        if (!variation.enemies) variation.enemies = [];
+        variation.enemies.push(enemy);
+        variation.positions[row][col] = variation.enemies.length;
+    }
+    
+    // Clear other content types
+    variation.obstacle_positions[row][col] = 0;
+    variation.player_positions[row][col] = 0;
+    
+    cleanupEnemies(variation);
+    updateTileImage(row, col);
+    saveToLocalStorage();
+}
+
 
 function updateObstacleOnTile() {
         if (!selectedTile || currentVariationIndex === -1) return;
@@ -1329,7 +1405,9 @@ function updateObstacleOnTile() {
         }
         
         updateTileImage(row, col);
+        cleanupEnemies(variation);
         saveToLocalStorage();
+        
     }
 
 // =============================================
