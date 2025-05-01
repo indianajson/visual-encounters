@@ -16,13 +16,14 @@ The editor's interface has three main sections: main menu (at top), battle previ
 <p align="justify">
 Feel free to ping @indianajson on the Discord if you have any problems. </p>
 <p align="justify">
-<b>IMPORTANT</b>: This editor modifies and creates configuration files compatible specifically with <a href="https://github.com/Keristero/ezlibs-scripts#ezencounters">Keristero's ezEncounters library</a> you will need to set up ezLibs on your server in order for the configuration files made with this tool to function. This editor does NOT supply the mods so if you use something outside of ezEncounter's defaults you will need to download it from <a href="https://keristero.github.io/onb-modsite/">the mod site</a> and add it your server.  </p>
-
+<b>IMPORTANT</b>: This editor modifies and creates configuration files compatible specifically with <a href="https://github.com/Keristero/ezlibs-scripts#ezencounters">Keristero's ezEncounters library</a> you will need to set up ezLibs on your server in order for the configuration files made with this tool to function. That said, this tool DOES supply the mods so if you use something outside of ezEncounter's defaults tick the box labeled "Download mods?" and it will download the necessary mods for you to add to your server. You will need to also include the custom `ezencounters.zip` provided with the mods when you download your config.</p>
 
 ## Features
 
+- Mod files are included with the tool for easily updating your server with the necessary files (no need to visit the mod site).  
 - Changes are saved every time in your browser so you can close the page and come back later without losing your progress (does not work in Incognito/Private browsing sessions).
 - Multiple encounters per configuration file.
+- Almost all publicly available ONB Enemy mods are included. 
 - Settings (music, freedom missions, callback functions) are definable within the editor. 
 - Allows for multiple players on field for PVP and coop encounters.
 
@@ -35,5 +36,5 @@ Feel free to ping @indianajson on the Discord if you have any problems. </p>
 ## Special Thanks
 
 - `Keristero` for making ezEncounters.
-- `CyanMan.EXE` for bug testing the initial release. 
+- `CyanMan.EXE` for extensive bug testing. 
 
