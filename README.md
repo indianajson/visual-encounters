@@ -20,7 +20,8 @@ Feel free to ping @indianajson on the Discord if you have any problems. </p>
 
 ## Features
 
-- Mod files are included with the tool for easily updating your server with the necessary files (no need to visit the mod site).  
+- Mod files are included with the tool for easily updating your server with the necessary files (no need to visit the mod site).
+- Interface can be set between a light and dark mode. 
 - Changes are saved every time in your browser so you can close the page and come back later without losing your progress (does not work in Incognito/Private browsing sessions).
 - Multiple encounters per configuration file.
 - Almost all publicly available ONB Enemy mods are included. 
