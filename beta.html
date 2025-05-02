@@ -109,6 +109,7 @@
             background-size: contain;
             background-repeat: no-repeat;
             background-position: bottom;
+            transform-origin: center;
         }
         .properties-panel {
             margin-top: 20px;
@@ -2627,7 +2628,8 @@ function updateTileImage(row, col) {
             if (imagePath) {
                 tile.find('.tile-entity').css({
                     'background-image': `url(${imagePath})`,
-                    'background-position': `${enemyDef.offsetX || 0}px ${enemyDef.offsetY || 0}px`
+                    'background-position': `${enemyDef.offsetX || 0}px ${enemyDef.offsetY || 0}px`,
+                    'transform': teamValue === 2 ? 'scaleX(-1)' : 'none' // Add this line
                 });
             }
         }
@@ -2645,7 +2647,8 @@ function updateTileImage(row, col) {
         if (playerDef?.image) {
             tile.find('.tile-entity').css({
                 'background-image': `url(${playerDef.image})`,
-                'background-position': `${playerDef.offsetX || 0}px ${playerDef.offsetY || 0}px`
+                'background-position': `${playerDef.offsetX || 0}px ${playerDef.offsetY || 0}px`,
+                'transform': teamValue === 1 ? 'scaleX(-1)' : 'none' // Flip player on blue team
             });
         }
     }
