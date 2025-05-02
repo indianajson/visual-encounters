@@ -32,7 +32,6 @@ Feel free to ping @indianajson on the Discord if you have any problems. </p>
 
 - Importing works well IF the lua only contains encounter variables and a return (other functions, comments, etc. break the importer).
 - Each encounter can only have one table for positions so you have to make separate variations if you want different mob placement.
-- Virus list is restricted to ezEncounters default viruses and the preview doesn’t change for each virus rank (only a preview image for the main virus). The virus list is also hard coded at the moment where (in a perfect work) it would be based on current mob mod list.
 
 ## Special Thanks
 
