@@ -36,6 +36,6 @@ Feel free to ping @indianajson on the Discord if you have any problems. </p>
 
 ## Special Thanks
 
-- `Keristero` for making ezEncounters.
-- `CyanMan.EXE` for extensive bug testing. 
+- **[Keristero](http://github.com/keristero/)** for making ezEncounters.
+- **[CyanMan.EXE](https://x.com/CyanmanEXE)** for extensive bug testing. 
 
