@@ -425,6 +425,28 @@
         // Dictionaries for enemies with image paths and offsets
         const enemyDictionary = [
             //NAVIS
+            { name: "Gobby", image: "gobby.png", 
+                package:"mob.realms.rey.navi.000.gobby",
+                ranks: [
+                    {value: 1, name: "Gobby"},
+                    {value: 2, name: "GobbyV2"},
+                    {value: 3, name: "GobbyV3"},
+                    {value: 4, name: "GobbySP"},
+                    {value: 5, name: "DarkGobby"},
+                    {value: 6, name: "GobbySP2"},
+                    {value: 7, name: "DarkGobbyV2"},
+                ],
+                rankImages:{
+                    4:"gobbysp.png",
+                    5:"gobbynm.png",
+                    6:"gobbysp.png",
+                    7:"gobbynm.png",
+                },
+                downloads:[
+                    "encounter_realms_rey_navi_000_gobby.zip"
+                ],
+                offsetX: 0,offsetY: 0,
+            },
             { name: "VolcanoMan", image: "volcanoman.png", 
                 package:"com.alrysc.enemy.VolcanoManEnemy",
                 ranks: [
@@ -591,12 +613,6 @@
                     {value: 3, name: "IceMan V3"},
                     {value: 4, name: "IceMan SP"},
                 ],
-                rankImages: {
-                    1: "",
-                    2: "",
-                    3: "",
-                    4: "",
-                },
                 downloads:[
                     "com_OFC_mob_EXEPoN_023_IceManV1.zip",
                     "com_OFC_mob_EXEPoN_023_IceManV2.zip",
@@ -712,12 +728,6 @@
                     {value: 3, name: "HatMan V3"},
                     {value: 4, name: "HatMan SP"},
                 ],
-                rankImages: {
-                    1: "",
-                    2: "",
-                    3: "",
-                    4: "",
-                },
                 downloads:["com_alrysc_enemy_HatMan.zip"],
                 offsetX: 0,offsetY: 0,
             },
@@ -737,12 +747,6 @@
                     {value: 3, name: "JammingMan V3"},
                     {value: 4, name: "JammingMan SP"},
                 ],
-                rankImages: {
-                    1: "",
-                    2: "",
-                    3: "",
-                    4: "",
-                },
                 downloads:["com_alrysc_enemy_JammingManV1.zip"],
                 offsetX: 0,offsetY: 0,
             },
@@ -753,12 +757,6 @@
                     {value: 2, name: "Kogasa V2"},
                     {value: 3, name: "Kogasa V3"},
                 ],
-                rankImages: {
-                    1: "",
-                    2: "",
-                    3: "",
-                    4: "",
-                },
                 downloads:["com_alrysc_enemy_Kogasa.zip"],
                 offsetX: 0,
                 offsetY: 0,
@@ -788,11 +786,6 @@
                     {value: 3, name: "HeelNavi V3"},
                     {value: 4, name: "HeelNavi SP"},
                 ],
-                rankImages: {
-                    2: "", //add rank
-                    3: "", //add rank
-                    4: "", //add rank
-                },
                 downloads:["com_louise_HeelNavi.zip"],
                 offsetX: 0,
                 offsetY: 40,
@@ -879,7 +872,7 @@
                 offsetX: 0,offsetY: 50,
                 downloads:["com_OFC_mob_EXEPoN_018_DreamMeraru.zip","com_OFC_mob_EXEPoN_021_DreamMoss.zip"]
             },
-            { name: "Yura", image: "Object_sparky-pon.png", 
+            { name: "Yura (PoN)", image: "Object_sparky-pon.png", 
                 package:"com.OFC.char.EXEPoN-014-Yura",
                 ranks: [
                     {value: 1, name: "Yura"},
@@ -891,7 +884,7 @@
                 offsetX: 0,offsetY: 20,
                 downloads:["com_OFC_mob_EXEPoN_014_Yura.zip"]
             },
-            { name: "Yurayura", image: "Object_sparkler-pon.png", 
+            { name: "Yurayura (PoN)", image: "Object_sparkler-pon.png", 
                 package:"com.OFC.char.EXEPoN-014-Yurayura",
                 ranks: [
                     {value: 1, name: ""},
@@ -899,7 +892,7 @@
                 offsetX: 0,offsetY: 20,
                 downloads:["com_OFC_mob_EXEPoN_014_Yura.zip"]
             },
-            { name: "Yurarion", image: "Object_sparknoid-pon.png", 
+            { name: "Yurarion (PoN)", image: "Object_sparknoid-pon.png", 
                 package:"com.OFC.char.EXEPoN-014-Yurarion",
                 ranks: [
                     {value: 1, name: ""},
@@ -923,7 +916,7 @@
                 offsetX: 0,offsetY: 50,
                 downloads:["com_OFC_mob_EXEPoN_007_Kabutank.zip"]
             },
-            { name: "Dharma", image: "Object_dharma-pon.png", 
+            { name: "Dharma", nickname:"Dharma (PoN)", image: "Object_dharma-pon.png", 
                 package:"com.OFC.char.EXEPoN-011-Dharma",
                 ranks: [
                     {value: 1, name: "Dharma"},
@@ -935,7 +928,7 @@
                 offsetX: 0,offsetY: 55,
                 downloads:["com_OFC_mob_EXEPoN_011_Dharma.zip"]
             },
-            { name: "Dharga", nickname:"Karma", image: "Object_karma-pon.png", 
+            { name: "Dharga", nickname:"Karma (PoN)", image: "Object_karma-pon.png", 
                 package:"com.OFC.char.EXEPoN-011-Dharga",
                 ranks: [
                     {value: 1, name: ""},
@@ -943,7 +936,7 @@
                 offsetX: 0,offsetY: 55,
                 downloads:["com_OFC_mob_EXEPoN_011_Dharma.zip"]
             },
-            { name: "Dhardara", nickname:"Dogma", image: "Object_dogma-pon.png", 
+            { name: "Dhardara", nickname:"Dogma (PoN)", image: "Object_dogma-pon.png", 
                 package:"com.OFC.char.EXEPoN-011-Dhardara",
                 ranks: [
                     {value: 1, name: ""},
@@ -951,7 +944,7 @@
                 offsetX: 0,offsetY: 55,
                 downloads:["com_OFC_mob_EXEPoN_011_Dharma.zip"]
             },
-            { name: "KillPlant", image: "Object_killplant-pon.png", 
+            { name: "KillPlant", nickname:"KillPlant (PoN)", image: "Object_killplant-pon.png", 
                 package:"com.OFC.char.EXEPoN-010-KillPlant",
                 ranks: [
                     {value: 1, name: "KillPlant"},
@@ -963,7 +956,7 @@
                 offsetX: 0,offsetY: 20,
                 downloads:["com_OFC_mob_EXEPoN_010_KillPlant.zip"]
             },
-            { name: "KillWeed", image: "Object_killweed-pon.png", 
+            { name: "KillWeed", nickname:"KillWeed (PoN)",image: "Object_killweed-pon.png", 
                 package:"com.OFC.char.EXEPoN-010-KillWeed",
                 ranks: [
                     {value: 1, name: ""},
@@ -971,7 +964,7 @@
                 offsetX: 0,offsetY: 20,
                 downloads:["com_OFC_mob_EXEPoN_010_KillPlant.zip"]
             },
-            { name: "KillFlower", image: "Object_killfleur-pon.png", 
+            { name: "KillFlower", nickname:"KillFlower (PoN)", image: "Object_killfleur-pon.png", 
                 package:"com.OFC.char.EXEPoN-010-KillFlower",
                 ranks: [
                     {value: 1, name: ""},
@@ -1009,10 +1002,10 @@
                 package:"com.alrysc.enemy.RayCannon_enemy",
                 ranks: [
                     {value: 1, name: "RayCannon"},
-                    {value: 2, name: "RayCannon2"}, 
-                    {value: 3, name: "RayCannon3"}, 
-                    {value: 5, name: "RayCannon EX"}, 
-                    {value: 0, name: "RayCannon SP"},
+                  //  {value: 2, name: "RayCannon2"}, 
+                  //  {value: 3, name: "RayCannon3"}, 
+                  //  {value: 4, name: "RayCannonEX"}, 
+                  //  {value: -1, name: "RayCannon SP"}, 
                 ],
                 offsetX: 0,offsetY: 0,
                 rankImages: {
@@ -1020,7 +1013,7 @@
                     2: "",
                     3: "",
                     5: "",
-                    0: "",
+                    //-1: "", //indexes can't be negaitve
                 },
                 downloads:["com_alrysc_enemy_RayCannon.zip"],
                 
@@ -1032,7 +1025,7 @@
                     {value: 2, name: "Mettaur2"}, 
                     {value: 3, name: "Mettaur3"}, 
                     {value: 4, name: "MettaurSP"},
-                    {value: 6, name: "RareMettaur1"}, 
+                    {value: 6, name: "RareMettaur"}, 
                     {value: 7, name: "RareMettaur2"},
                 ],
                 offsetX: 0,offsetY: 60,
@@ -1464,17 +1457,23 @@
                 offsetX: 0,offsetY: 45,
                 downloads:["com_louise_Volcano.zip"], 
             },
-            { name:"Swordy", nickname: "Swordy (family)", image: "Swordy1.webp", 
-            package:"com_louise_Swordy.zip",
+            { name:"Swordy", nickname: "Swordy (family)", image: "Object_swordy-bn6.png", 
+            package:"com.louise.enemy.Swordy",
             ranks: [
-                {value: 1, name: ""},
-                {value: 2, name: ""},
-                {value: 3, name: ""},
-                {value: 4, name: ""},
-                {value: 8, name: ""}
+                {value: 1, name: "Swordy"},
+                {value: 2, name: "Swordy2"},
+                {value: 3, name: "Swordy3"},
+                {value: 4, name: "SwordySP"},
+                {value: 8, name: "SwordyNM"}
             ],
-            offsetX: 0,offsetY: 0,
-            downloads:["com.louise.enemy.Swordy"], 
+            offsetX: 0,offsetY: 20,
+            rankImages:{
+                2:"Object_swordy2-bn6.png",
+                3:"Object_swordy3-bn6.png",
+                4:"Object_swordy-bn6-sp.png",
+                8:"Object_swordysp.png",
+            },
+            downloads:["com_louise_Swordy.zip"], 
             },
             { 
                 name:"SwordyEl", 
@@ -1675,28 +1674,39 @@
                 offsetX: 0,offsetY: 0,
                 downloads:["com_louise_Dominerd.zip"], 
             },
-            { name: "Cragger", image: "Cragger.webp", 
+            { name: "Cragger", image: "Object_cragger.png", 
             package:"com.louise.enemy.Cragger",
                 ranks: [
-                    {value: 1, name: ""},
-                    {value: 2, name: ""},
-                    {value: 3, name: ""},
-                    {value: 4, name: ""},
-                    {value: 6, name: ""},
-                    {value: 7, name: ""},
-                    {value: 8, name: ""}
+                    {value: 1, name: "Cragger"},
+                    {value: 2, name: "MetalCragger"},
+                    {value: 3, name: "BigCragger"},
+                    {value: 4, name: "CraggerSP"},
+                    {value: 6, name: "RareCragger"},
+                    {value: 7, name: "RareCragger2"},
+                   // {value: 8, name: "CraggerNM"} //sprite missing from mod
                 ],
+                rankImages:{
+                    2:"Object_metalcragger.png",
+                    3:"Object_bigcragger.png",
+                    4:"Object_craggersp.png",
+                    6:"Object_rarecragger.png",
+                    7:"Object_rarecragger2.png",
+                },
                 offsetX: 0,offsetY: 15,
                 downloads:["com_louise_Cragger.zip"], 
             },
-            { name: "Juraigon", image: "juraigon.png", 
+            { name: "Juraigon", name: "Juragon", image: "juraigon.png", 
             package:"com.alrysc.enemy.juraigonVirus",
                 ranks: [
-                    {value: 1, name: ""},
-                    {value: 2, name: ""},
-                    {value: 3, name: ""},
+                    {value: 1, name: "Juragon"},
+                    {value: 2, name: "Juragon2"},
+                    {value: 3, name: "Juragon3"},
                 ],
-                offsetX: 0,offsetY: 0,
+                rankImages:{
+                    2:"juraigon2.png",
+                    3:"juraigon3.png",
+                },
+                offsetX: 0,offsetY: 60,
                 downloads:["com_alrysc_enemy_juraigon.zip"], 
             },
             { name: "DarkMech", image: "DarkMech.webp", 
