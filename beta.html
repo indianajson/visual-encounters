@@ -304,9 +304,9 @@
 <body>
     <div class="toolbar">
       <!--  <button id="new-config">New Config</button> -->
-        <button id="clear-all">Clear All</button>
         <button id="load-config">Load Config</button>
         <button id="save-config">Save Config</button>
+        <button id="clear-all">Reset/Clear</button>
         <select id="variation-select"></select>
         <button id="add-variation">Add Variation</button>
         <button id="delete-variation" disabled>Delete Variation</button>
@@ -491,11 +491,11 @@
                     "com_Dawn_Shademan.zip"
                 ],
                 offsetX: 0,offsetY: 0,
-            },
+            },/*
             { name: "CutMan", image: "Object_cutman.png", 
                 package:"com.louise.enemy.CutMan",
                 ranks: [
-                    {value: 1, name: "CutMan V1"},
+                    {value: 1, name: "CutMan"},
                     {value: 5, name: "CutMan EX"},
                     {value: 4, name: "CutMan SP"},
                     {value: 8, name: "CutMan DS"},
@@ -504,7 +504,7 @@
                     "com_louise_Cutman.zip"
                 ],
                 offsetX: 0,offsetY: 25,
-            },
+            },*/
             { name: "DarkMega", nickname:"DarkMegaMan V1", image: "Object_darkmegaman.png", 
                 package:"",
                 ranks: [
@@ -871,8 +871,8 @@
                 },
                 offsetX: 0,offsetY: 50,
                 downloads:["com_OFC_mob_EXEPoN_018_DreamMeraru.zip","com_OFC_mob_EXEPoN_021_DreamMoss.zip"]
-            },
-            { name: "Yura (PoN)", image: "Object_sparky-pon.png", 
+            },/*
+            { name: "Sparky", nickname:"Yura/Sparky (PoN)", image: "Object_sparky-pon.png", 
                 package:"com.OFC.char.EXEPoN-014-Yura",
                 ranks: [
                     {value: 1, name: "Yura"},
@@ -884,7 +884,7 @@
                 offsetX: 0,offsetY: 20,
                 downloads:["com_OFC_mob_EXEPoN_014_Yura.zip"]
             },
-            { name: "Yurayura (PoN)", image: "Object_sparkler-pon.png", 
+            { name:"Yurayura", nickname: "Yurayura (PoN)", image: "Object_sparkler-pon.png", 
                 package:"com.OFC.char.EXEPoN-014-Yurayura",
                 ranks: [
                     {value: 1, name: ""},
@@ -892,14 +892,14 @@
                 offsetX: 0,offsetY: 20,
                 downloads:["com_OFC_mob_EXEPoN_014_Yura.zip"]
             },
-            { name: "Yurarion (PoN)", image: "Object_sparknoid-pon.png", 
+            { name:"Yurarion", nickname: "Yurarion (PoN)", image: "Object_sparknoid-pon.png", 
                 package:"com.OFC.char.EXEPoN-014-Yurarion",
                 ranks: [
                     {value: 1, name: ""},
                 ],
                 offsetX: 0,offsetY: 20,
                 downloads:["com_OFC_mob_EXEPoN_014_Yura.zip"]
-            },
+            },*/
             { name: "Beetank", nickname:"Bugtank/Beetank (family)", image: "Object_beetank-pon.png", 
                 package:"com.OFC.char.EXEPoN-007-Kabutank",
                 ranks: [
@@ -1709,16 +1709,23 @@
                 offsetX: 0,offsetY: 60,
                 downloads:["com_alrysc_enemy_juraigon.zip"], 
             },
-            { name: "DarkMech", image: "DarkMech.webp", 
+            { name: "DarkMech", image: "Object_darkmech.png", 
             package:"com.HNST_SGNL.enemy.DarkMech",
                 ranks: [
-                    {value: 1, name: ""},
-                    {value: 2, name: ""},
-                    {value: 3, name: ""},
-                    {value: 4, name: ""},
-                    {value: 6, name: ""},
-                    {value: 7, name: ""}
+                    {value: 1, name: "DarkMech"},
+                    {value: 2, name: "ElecMech"},
+                    {value: 3, name: "DoomMech"},
+                    {value: 4, name: "DarkMechSP"},
+                    {value: 6, name: "RareDarkMech"},
+                    {value: 7, name: "RareDarkMech2"}
                 ],
+                rankImages:{
+                    2:"Object_elecmech.png",
+                    3:"Object_doommech.png",
+                    4:"Object_darkmechsp.png",
+                    6:"Object_raredarkmech.png",
+                    7:"Object_raredarkmech2.png",
+                },
                 offsetX: 0,offsetY: 40,
                 downloads:["com_HNST_SGNL_DarkMech.zip"], 
             },
@@ -1900,18 +1907,28 @@
                 ranks: [
                     {value: 1, name: ""}
                 ],
-                offsetX: 0,offsetY: 0,
+                offsetX: 0,offsetY: 30,
                 downloads:["com_louise_Piranha.zip"], 
             },
-            { name: "Quaker", image: "Quaker.webp", 
+            { name: "Quaker", image: "Object_quaker-bn6.png", 
             package:"com.louise.enemy.Quaker",
                 ranks: [
-                    {value: 1, name: ""}
+                    {value: 1, name: "Quaker"},
+                    {value: 2, name: "Shaker"},
+                    {value: 3, name: "Breaker"},
+                    {value: 4, name: "QuakerSP"},
+                    {value: 4, name: "QuakerNM"}
                 ],
+                rankImages:{
+                    2:"Object_shaker-bn6.png",
+                    3:"Object_breaker-bn6.png",
+                    4:"Object_quakersp.png",
+                    8:"Object_rarequaker2.png",
+                },
                 offsetX: 0,offsetY: 30,
                 downloads:["com_louise_Quaker.zip"], 
             },
-            { name: "Shaker", image: "Shaker.webp", 
+           /* { name: "Shaker", image: "Shaker.webp", 
             package:"com.louise.enemy.Shaker",
                 ranks: [
                     {value: 1, name: ""}
@@ -1926,7 +1943,7 @@
                 ],
                 offsetX: 0,offsetY: 30,
                 downloads:["com_louise_Quaker.zip"], 
-            }
+            }*/
         ];
     
         //Defines obstacles with image paths and offsets
