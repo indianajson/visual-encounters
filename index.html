@@ -26,7 +26,7 @@
         /* Add to existing styles */
         .rank-option {
             display: flex;
-            align-items: center;
+            /*align-items: center;*/
             padding: 2px;
         }
 
@@ -58,6 +58,9 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             flex: 1;
             min-width: 300px;
+        }
+        .select2-container .select2-selection--single{
+            height:40px !important; 
         }
         .grid-container {
             display: grid;
@@ -106,6 +109,7 @@
             background-size: contain;
             background-repeat: no-repeat;
             background-position: bottom;
+            transform-origin: center;
         }
         .properties-panel {
             margin-top: 20px;
@@ -184,19 +188,132 @@
             padding: 0;
             overflow: hidden;
         }
+        /* Add to existing styles */
+        body.dark-mode {
+            background-color: #222;
+            color: #eee;
+        }
 
+        body.dark-mode .panel {
+            background-color: #333;
+            color: #eee;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        body.dark-mode .toolbar {
+            background-color: #444;
+        }
+
+        body.dark-mode .tile {
+            border-color: #555;
+        }
+
+        body.dark-mode .properties-panel input,
+        body.dark-mode .properties-panel select{
+            background-color: #444;
+            color: #eee;
+            border: 1px solid #555;
+        }
+
+        body.dark-mode .properties-panel span{
+            background-color: #444;
+            color: #fff !important;
+        }
+        body.dark-mode .select2-container--default .select2-selection--single, .select2-search__field,.select2-search .select2-search--dropdown {
+            background-color: #444;
+            color: #fff !important;
+            border: 1px solid #555;
+        }
+
+        body.dark-mode .select2-container--default .select2-results__option {
+            background-color: #444;
+            color: #fff !important;
+        }
+
+        body.dark-mode .select2-container--default .select2-results__option--highlighted {
+            background-color: #666;
+            color: #fff !important;
+        }
+        body.darmode .select2-selection__rendered{
+            color:#fff !important;
+        }
+        body.dark-mode .freedom-mission-options {
+            background-color: #444;
+            border-color: #555;
+        }
+            
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+        }
+
+        body.dark-mode .modal-content {
+            background-color: #333;
+            color: #eee;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            background-color: #f1f1f1;
+            border-radius: 3px;
+            margin: 10px 0;
+        }
+
+        body.dark-mode .progress-bar {
+            background-color: #555;
+        }
+       
+        .progress {
+            height: 20px;
+            border-radius: 3px;
+            background-color: #4CAF50;
+            width: 0%;
+            transition: width 0.3s;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+        }
     </style>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 </head>
 <body>
     <div class="toolbar">
-        <button id="new-config">New Config</button>
+      <!--  <button id="new-config">New Config</button> -->
         <button id="load-config">Load Config</button>
         <button id="save-config">Save Config</button>
-        <button id="clear-all">Clear All</button>
+        <button id="clear-all">Reset/Clear</button>
         <select id="variation-select"></select>
         <button id="add-variation">Add Variation</button>
         <button id="delete-variation" disabled>Delete Variation</button>
+        <button id="dark-mode-toggle" title="Toggle Dark Mode">☀️</button>
+        <label style="margin-left: 10px; color: white;">
+            <input type="checkbox" id="download-mods" checked> Download Mods?
+        </label>
     </div>
 
     <div class="container">
@@ -284,7 +401,7 @@
                     <div id="enemy-rank-container">
                         <label>Rank:
                             <select id="enemy-rank"></select>
-                        </label>
+                        </label><br>
                     </div>                    
                     <label>Nickname (optional):
                         <input type="text" id="enemy-nickname">
@@ -305,92 +422,1620 @@
     </div>
 
     <script>
-
         // Dictionaries for enemies with image paths and offsets
         const enemyDictionary = [
-            { name: "Mettaur", image: "enemies/mettaur.png", ranks: [1,2,3,4,6,7],offsetX: 0,offsetY: 60,
-                rankImages: {
-                    1: "enemies/mettaur.png",
-                }
+            //NAVIS
+            { name: "Gobby", image: "gobby.png", 
+                package:"mob.realms.rey.navi.000.gobby",
+                ranks: [
+                    {value: 1, name: "Gobby"},
+                    {value: 2, name: "GobbyV2"},
+                    {value: 3, name: "GobbyV3"},
+                    {value: 4, name: "GobbySP"},
+                    {value: 5, name: "DarkGobby"},
+                    {value: 6, name: "GobbySP2"},
+                    {value: 7, name: "DarkGobbyV2"},
+                ],
+                rankImages:{
+                    4:"gobbysp.png",
+                    5:"gobbynm.png",
+                    6:"gobbysp.png",
+                    7:"gobbynm.png",
+                },
+                downloads:[
+                    "encounter_realms_rey_navi_000_gobby.zip"
+                ],
+                offsetX: 0,offsetY: 0,
             },
-            { name: "Champy", image: "enemies/champy.png", ranks: [1,2],offsetX: 0,offsetY: 20 },
-            { name: "Chimpy", image: "enemies/chimpy.png", ranks: [1],offsetX: 0,offsetY: 20 },
-            { name: "Chumpy", image: "enemies/chumpy.png", ranks: [1],offsetX: 0,offsetY: 20 },
-            { name: "RareChampy", image: "enemies/rarechampy.png", ranks: [1],offsetX: 0,offsetY: 20 },
-            { name: "Cactikil", image: "enemies/cactikil.webp", ranks: [1,5],offsetX: 0,offsetY: 0 },
-            { name: "Cactroll", image: "enemies/cactroll.webp", ranks: [1,5],offsetX: 0,offsetY: 0 },
-            { name: "Cacter", image: "enemies/cacter.webp", ranks: [1,5],offsetX: 0,offsetY: 0 },
-            { name: "Powie", image: "enemies/powie1.webp", ranks: [1,5],offsetX: 0,offsetY: 7 },
-            { name: "Powie2", image: "enemies/powie2.webp", ranks: [1,5],offsetX: 0,offsetY: 7 },
-            { name: "Powie3", image: "enemies/powie3.webp", ranks: [1,5],offsetX: 0,offsetY: 7 },
-            { name: "Spikey", image: "enemies/spikey1.webp", ranks: [1,2,3],offsetX: 0,offsetY: 50 },
-            { name: "Canodumb", image: "enemies/Canodumb1.webp", ranks: [1,2,3],offsetX: 0,offsetY: 0 },
-            //{ name: "Canosmart", image: "enemies/canosmart.png", ranks: [1],offsetX: 0,offsetY: 0 },
-            { name: "Gunner", image: "enemies/gunner.png", ranks: [1,2,3,4],offsetX: 0,offsetY: 23 },
-            { name: "Shooter", image: "enemies/shooter.png", ranks: [1,2,3,4],offsetX: 0,offsetY: 23 },
-            { name: "Sniper", image: "enemies/sniper.png", ranks: [1],offsetX: 0,offsetY: 23 },
-            { name: "BigBrute", image: "enemies/bigbrute.png", ranks: [1],offsetX: 0,offsetY: 35 },
-            { name: "Volgear", image: "enemies/vulgear1.webp", ranks: [1,2,3,4],offsetX: 0,offsetY: 35 },
-            { name: "KillerEye", image: "enemies/KillerEye1.webp", ranks: [1,4,6,7],offsetX: 0,offsetY: 10 },
-            { name: "DemonEye", image: "enemies/DemonEye1.webp", ranks: [1],offsetX: 0,offsetY: 10 },
-            { name: "JokerEye", image: "enemies/JokerEye1.webp", ranks: [1],offsetX: 0,offsetY: 10 },
-            { name: "HauntedCandle", image: "enemies/HauntedCandle.webp", ranks: [1,2,3,4,7],offsetX: 0,offsetY: 0 },
-            { name: "Fishy", image: "enemies/Fishy1.webp", ranks: [1,2,3,4],offsetX: 0,offsetY: 17 },
-            { name: "BombCorn", image: "enemies/BombCorn.webp", ranks: [1,4,6,7],offsetX: 0,offsetY: 10 },
-            { name: "MegaCorn", image: "enemies/MegaCorn.webp", ranks: [1],offsetX: 0,offsetY: 10 },
-            { name: "GigaCorn", image: "enemies/GigaCorn.webp", ranks: [1],offsetX: 0,offsetY: 10 },
-            { name: "Bladia", image: "enemies/Bladia1.webp", ranks: [1],offsetX: 0,offsetY: 40 },
-            { name: "Metrid", image: "enemies/Metrid1.webp", ranks: [1,2,3,4],offsetX: 0,offsetY: 13 },
-            { name: "Basher", image: "enemies/Basher.webp", ranks: [1],offsetX: 0,offsetY: 13 },
-            { name: "FighterPlane", image: "enemies/FighterPlane.webp", ranks: [1,2,3,4],offsetX: 0,offsetY: 35 },
-            { name: "Catack", image: "enemies/Catack.webp", ranks: [1,2,3,4],offsetX: 0,offsetY: 35 },
-            { name: "Ratty", image: "enemies/Ratty1.webp", ranks: [1,2,3,4],offsetX: 0,offsetY: 75 },
-            { name: "Vort", image: "enemies/Yort1.webp", ranks: [1,2,3,4,5,6,7,8],offsetX: 0,offsetY: 45 },
-            { name: "Volcano", image: "enemies/Volcano.webp", ranks: [1,2,3,4,5,6,7,8],offsetX: 0,offsetY: 45 },
-            { name: "Swordy", image: "enemies/Swordy1.webp", ranks: [1,2,3,4,8],offsetX: 0,offsetY: 0 },
-            { name: "Skarab", image: "enemies/Skarab.webp", ranks: [1,4,6,7,8],offsetX: 0,offsetY: 25 },
-            { name: "Skarry", image: "enemies/Skarry1.webp", ranks: [1],offsetX: 0,offsetY: 25 },
-            { name: "Skelly", image: "enemies/Skelly1.webp", ranks: [1],offsetX: 0,offsetY: 25 },
-            { name: "Scuttle", image: "enemies/Scuttle1.webp", ranks: [1],offsetX: 0,offsetY: 50 },
-            { name: "Scutz", image: "enemies/Scutz1.webp", ranks: [1],offsetX: 0,offsetY: 50 },
-            { name: "Scuttler", image: "enemies/Scuttler1.webp", ranks: [1],offsetX: 0,offsetY: 50 },
-            { name: "Scuttzer", image: "enemies/Scutzer1.webp", ranks: [1],offsetX: 0,offsetY: 50 },
-            { name: "Scuttlest", image: "enemies/Scuttlest1.webp", ranks: [1,4],offsetX: 0,offsetY: 50 },
-            { name: "Lark", image: "enemies/Lark1.webp", ranks: [1,4,6,7,8],offsetX: 0,offsetY: 50 },
-            { name: "Bark", image: "enemies/Bark1.webp", ranks: [1],offsetX: 0,offsetY: 50 },
-            { name: "Tark", image: "enemies/Tark1.webp", ranks: [1],offsetX: 0,offsetY: 50 },
-            { name: "Flashy", image: "enemies/Flashy1.webp", ranks: [1],offsetX: 0,offsetY: 10 },
-            { name: "MetFire", image: "enemies/MetFire1.webp", ranks: [1,4,6,7,8],offsetX: 0,offsetY: 0 },
-            { name: "FulFire", image: "enemies/FulFire1.webp", ranks: [1,4,6,7,8],offsetX: 0,offsetY: 0 },
-            { name: "DthFire", image: "enemies/DthFire1.webp", ranks: [1,4,6,7,8],offsetX: 0,offsetY: 0 },
-            { name: "Elemperor", image: "enemies/Elemperor.webp", ranks: [1,2,3,4,6,7,8],offsetX: 0,offsetY: 30 },
-            { name: "Dominerd", image: "enemies/Dominerd.webp", ranks: [1,2,3,4,8],offsetX: 0,offsetY: 0 },
-            { name: "Cragger", image: "enemies/Cragger.webp", ranks: [1,2,3,4,6,7,8],offsetX: 0,offsetY: 15 },
-            { name: "DarkMech", image: "enemies/DarkMech.webp", ranks: [1,2,3,4,6,7],offsetX: 0,offsetY: 40 },
-            { name: "CirKill", image: "enemies/CirKill.webp", ranks: [1,4,6,7,8],offsetX: 0,offsetY: 35 },
-            { name: "CirCrush", image: "enemies/CirCrush.webp", ranks: [1],offsetX: 0,offsetY: 35 },
-            { name: "CirSmash", image: "enemies/CirSmash.webp", ranks: [1],offsetX: 0,offsetY: 35 },
-            { name: "WindBox", image: "enemies/WindBox.webp", ranks: [1,2,3,4,8],offsetX: 0,offsetY: 10 },
-            { name: "VacuumFan", image: "enemies/VacuumFan.webp", ranks: [1,2,3,4],offsetX: 0,offsetY: 10 },
-            { name: "OldStove", image: "enemies/OldStove.webp", ranks: [1,4,6,7,8],offsetX: 0,offsetY: 10 },
-            { name: "OldHeater", image: "enemies/OldHeater.webp", ranks: [1],offsetX: 0,offsetY: 10 },
-            { name: "OldBurner", image: "enemies/OldBurner.webp", ranks: [1],offsetX: 0,offsetY: 10 },
-            { name: "Bunny", image: "enemies/Bunny1.webp", ranks: [1],offsetX: 0,offsetY: 0 },
-            { name: "TuffBunny", image: "enemies/Bunny2.webp", ranks: [1],offsetX: 0,offsetY: 0 },
-            { name: "MegaBunny", image: "enemies/Bunny3.webp", ranks: [1],offsetX: 0,offsetY: 0 },
-            { name: "Bugtank", image: "enemies/Bugtank.webp", ranks: [1],offsetX: 0,offsetY: 0 },
-            { name: "Shrimpy", image: "enemies/Shrimpy.webp", ranks: [1],offsetX: 0,offsetY: 0 },
-            { name: "Puffy", image: "enemies/Puffy.webp", ranks: [1],offsetX: 0,offsetY: 0 },
-            { name: "HardHead", image: "enemies/HardHead.webp", ranks: [1],offsetX: 0,offsetY: 40 },
-            { name: "HotHead", image: "enemies/HotHead.webp", ranks: [1],offsetX: 0,offsetY: 40 },
-            { name: "ColdHead", image: "enemies/ColdHead.webp", ranks: [1],offsetX: 0,offsetY: 40 },
-            { name: "Boomer", image: "enemies/Boomer.webp", ranks: [1],offsetX: 0,offsetY: 0 },
-            { name: "Gloomer", image: "enemies/Gloomer.webp", ranks: [1],offsetX: 0,offsetY: 0 },
-            { name: "Doomer", image: "enemies/Doomer.webp", ranks: [1],offsetX: 0,offsetY: 0 },
-            { name: "Piranha", image: "enemies/Piranha.webp", ranks: [1],offsetX: 0,offsetY: 0 },
-            { name: "Quaker", image: "enemies/Quaker.webp", ranks: [1],offsetX: 0,offsetY: 0 },
-            { name: "Shaker", image: "enemies/Shaker.webp", ranks: [1],offsetX: 0,offsetY: 0 },
-            { name: "Breaker", image: "enemies/Breaker.webp", ranks: [1],offsetX: 0,offsetY: 0 },
+            { name: "VolcanoMan", image: "volcanoman.png", 
+                package:"com.alrysc.enemy.VolcanoManEnemy",
+                ranks: [
+                    {value: 1, name: "VolcanoMan V1"},
+                    {value: 2, name: "VolcanoMan V2"},
+                ],
+                downloads:[
+                    "com_alrysc_enemy_VolcanoMan.zip"
+                ],
+                offsetX: 0,offsetY: 20,
+            },
+            { name: "Yuki", image: "Yuki.png", 
+                package:"com.alrysc.enemy.YukiEnemy",
+                ranks: [
+                    {value: 1, name: "Yuki V1"},
+                    {value: 2, name: "Yuki V2"},
+                ],
+                downloads:[
+                    "com_alrysc_enemy_Yuki.zip"
+                ],
+                offsetX: 0,offsetY: 10,
+            },
+            { name: "Yumeko", image: "yumeko.png", 
+                package:"com.alrysc.enemy.YumekoEnemy",
+                ranks: [
+                    {value: 1, name: "Yumeko V1"},
+                    {value: 2, name: "Yumeko V2"},
+                ],
+                downloads:[
+                    "com_alrysc_enemy_Yumeko.zip"
+                ],
+                offsetX: 0,offsetY: 0,
+            },
+            { name: "ShadeMan", image: "Object_shademan.png", 
+                package:"com.Dawn.Enemy.Shademan",
+                ranks: [
+                    {value: 1, name: "ShadeMan V1"},
+                    {value: 5, name: "ShadeMan EX"},
+                    {value: 4, name: "ShadeMan SP"},
+                ],
+                downloads:[
+                    "com_Dawn_Shademan.zip"
+                ],
+                offsetX: 0,offsetY: 0,
+            },
+            { name: "CutMan", image: "Object_cutman.png", 
+                package:"com.louise.enemy.CutMan",
+                ranks: [
+                    {value: 1, name: "CutMan"},
+                    {value: 5, name: "CutMan EX"},
+                    {value: 4, name: "CutMan SP"},
+                    {value: 8, name: "CutMan DS"},
+                ],
+                downloads:[
+                    "com_louise_Cutman.zip"
+                ],
+                offsetX: 0,offsetY: 25,
+            },
+            { name: "DarkMega", nickname:"DarkMegaMan V1", image: "Object_darkmegaman.png", 
+                package:"",
+                ranks: [
+                    {value: 1, name: ""},
+                ],
+                downloads:[
+                    "com_Dawn_DarkRock.zip"
+                ],
+                offsetX: 0,offsetY: 30,
+            },
+            { name: "DarkMegaNM", nickname:"DarkMegaMan NM", image: "Object_darkmegaman.png", 
+                package:"",
+                ranks: [
+                    {value: 8, name: ""},
+                ],
+                downloads:[
+                    "com_Dawn_DarkRockNM.zip"
+                ],
+                offsetX: 0,offsetY: 30,
+            },
+            { name: "BlastMan", nickname:"BlastMan", image: "Blastman.webp", 
+                package:"com.Thor.enemy.BlastMan_V1",
+                ranks: [
+                    {value: 1, name: "BlastMan"},
+                    {value: 5, name: "BlastMan EX"},
+                    {value: 4, name: "BlastMan SP"},
+                   // {value: 6, name: "BlastMan RV"},
+                ],
+                downloads:[
+                    "com_Thor_BlastMan_1.zip",
+                    "com_Thor_BlastMan_2.zip",
+                    "com_Thor_BlastMan_3.zip",
+                   //"com_Thor_BlastMan_4.zip"
+                ],
+                offsetX: 0,offsetY: -10,
+            },
+            { name: "ElementMan", image: "Element.webp", 
+                package:"com.OFC.char.EXE6-045-ElementMan1",
+                ranks: [
+                    {value: 1, name: "ElementMan"},
+                    {value: 5, name: "ElementMan EX"},
+                    {value: 4, name: "ElementMan SP"},
+                    {value: 8, name: "ElementMan RV"},
+                ],
+                downloads:[
+                    "EXE6-045-ElementMan1.zip",
+                    "EXE6-045-ElementMan2.zip",
+                    "EXE6-045-ElementMan3.zip",
+                    "EXE6-045-ElementMan4.zip"
+                ],
+                offsetX: 0,offsetY: -10,
+            },
+            { name: "StarMan", nickname:"StarMan", image: "starman.png", 
+                package:"com.OFC.char.EXE45-036-StarMan1",
+                ranks: [
+                    {value: 1, name: "StarMan"},
+                    {value: 2, name: "StarMan V2"},
+                    {value: 3, name: "StarMan V3"},
+                    {value: 4, name: "StarMan SP"},
+                ],
+                downloads:[
+                    "com_OFC_mob_EXE45_036_StarMan1.zip",
+                    "com_OFC_mob_EXE45_036_StarMan2.zip",
+                    "com_OFC_mob_EXE45_036_StarMan3.zip",
+                    "com_OFC_mob_EXE45_036_StarMan4.zip"
+                ],
+                rankImages:{
+                    4:"starman_sp.png",
+                },
+                offsetX: 0,offsetY: 0,
+            },
+            { name: "FireManPoN", nickname:"FireMan (PoN)", image: "Object_fireman-pon.png", 
+                package:"com.OFC.char.EXEPoN-022-FireMan",
+                ranks: [
+                    {value: 1, name: "FireMan"},
+                    {value: 2, name: "FireMan V2"},
+                    {value: 3, name: "FireMan V3"},
+                    {value: 4, name: "FireMan SP"},
+                ],
+                downloads:[
+                    "com_OFC_mob_EXEPoN_022_FireManV1.zip",
+                    "com_OFC_mob_EXEPoN_022_FireManV2.zip",
+                    "com_OFC_mob_EXEPoN_022_FireManV3.zip",
+                    "com_OFC_mob_EXEPoN_022_FireManV4.zip"
+                ],
+                offsetX: 0,offsetY: -10,
+            },
+            { name: "Forte", nickname:"Bass/Forte", image: "Object_bass-bn4.png", 
+                package:"com.OFC.char.EXE4-047-Forte1",
+                ranks: [
+                    {value: 1, name: "Bass"},
+                    {value: 4, name: "Bass SP"},
+                    {value: 8, name: "Bass XX"},
+                ],
+                downloads:[
+                    "com_OFC_mob_EXE4_047_Forte1.zip",
+                    "com_OFC_mob_EXE4_047_Forte2.zip",
+                    "com_OFC_mob_EXE4_047_Forte3.zip"
+                ],
+                offsetX: 0,offsetY: 10,
+            },
+            { name: "Alpha", image: "Alpha.webp", 
+                package:"com.OFC.char.EXE3-061-Proto",
+                ranks: [
+                    {value: 1, name: "Alpha"},
+                    {value: 4, name: "Alpha SP"},
+                ],
+                rankImages: {
+                    4: "AlphaSP.webp",
+                },
+                downloads:[
+                    "com_OFC_mob_EXE3_061_Proto.zip",
+                    "com_OFC_mob_EXE3_061_ProtoSP.zip"
+                ],
+                offsetX: 0,offsetY: 0,
+            },
+            { name: "IceManPoN", nickname:"IceMan (PoN)", image: "Object_iceman-pon.png", 
+                package:"com.OFC.char.EXEPoN-023-IceMan",
+                ranks: [
+                    {value: 1, name: "IceMan"},
+                    {value: 2, name: "IceMan V2"},
+                    {value: 3, name: "IceMan V3"},
+                    {value: 4, name: "IceMan SP"},
+                ],
+                downloads:[
+                    "com_OFC_mob_EXEPoN_023_IceManV1.zip",
+                    "com_OFC_mob_EXEPoN_023_IceManV2.zip",
+                    "com_OFC_mob_EXEPoN_023_IceManV3.zip",
+                    "com_OFC_mob_EXEPoN_023_IceManV4.zip"
+                ],
+                offsetX: 0,offsetY: 40,
+            },
+            { name: "ShadowManPoN", nickname:"ShadowMan (PoN)", image: "ShadowMan.webp", 
+                package:"com.OFC.char.EXEPoN-025-ShadowMan",
+                attachment:"",
+                ranks: [
+                    {value: 1, name: "ShadowMan"},
+                    {value: 2, name: "ShadowMan V2"},
+                    {value: 3, name: "ShadowMan V3"},
+                    {value: 4, name: "ShadowMan SP"},
+                ],
+                rankImages: {
+                    1: "ShadowMan.webp",
+                    2: "ShadowManV2.webp",
+                    3: "ShadowManV3.webp",
+                    4: "ShadowManSP.webp",
+                },
+                downloads:[
+                    "com_OFC_mob_EXEPoN_025_ShadowManV1.zip",
+                    "com_OFC_mob_EXEPoN_025_ShadowManV2.zip",
+                    "com_OFC_mob_EXEPoN_025_ShadowManV3.zip",
+                    "com_OFC_mob_EXEPoN_025_ShadowManV4.zip"
+                ],
+                offsetX: 0,offsetY: 0,
+            },
+            { name: "Noir", image: "Noir.png", 
+                package:"com.OctoChris.enemy.Noir",
+                ranks: [
+                    {value: 1, name: "Noir"},
+                ],
+                offsetX: 0,offsetY: 0,
+                downloads:["com_OctoChris_mob_Noir.zip"],
+            },
+            { name: "GutsManPoN", nickname:"GutsMan (PoN)", image: "Gutsman.webp", 
+                package:"com.OFC.char.EXEPoN-028-Blues",
+                ranks: [
+                    {value: 1, name: "GutsMan"},
+                    {value: 2, name: "GutsMan V2"},
+                    {value: 3, name: "GutsMan V3"},
+                    {value: 4, name: "GutsMan SP"},
+                    {value: 8, name: "GutsMan DS"},
+                ],
+                rankImages: {
+                    1: "Gutsman.webp",
+                    2: "GutsmanV2.webp",
+                    3: "GutsmanV3.webp",
+                    4: "GutsmanSP.webp",
+                    8: "GutsmanDS.webp",
+                },
+                downloads:[
+                    "com_OFC_mob_EXEPoN_026_GutsManV1.zip",
+                    "com_OFC_mob_EXEPoN_026_GutsManV2.zip",
+                    "com_OFC_mob_EXEPoN_026_GutsManV3.zip",
+                    "com_OFC_mob_EXEPoN_026_GutsManV4.zip"
+                ],
+                offsetX: 0,offsetY: 50,
+            },
+            { name: "ProtomanPoN", nickname:"ProtoMan (PoN)", image: "Protoman.webp", 
+                package:"com.OFC.char.EXEPoN-028-Blues",
+                ranks: [
+                    {value: 1, name: "ProtoMan"},
+                    {value: 2, name: "ProtoMan V2"},
+                    {value: 3, name: "ProtoMan V3"},
+                    {value: 4, name: "ProtoMan SP"},
+                ],
+                rankImages: {
+                    1: "Protoman.webp",
+                    2: "ProtomanV2.webp",
+                    3: "ProtomanV3.webp",
+                    4: "ProtomanSP.webp",
+                },
+                offsetX: 0,offsetY: 25,
+                downloads:[
+                    "com_OFC_mob_EXEPoN_028_BluesV1.zip",
+                    "com_OFC_mob_EXEPoN_028_BluesV2.zip",
+                    "com_OFC_mob_EXEPoN_028_BluesV3.zip",
+                    "com_OFC_mob_EXEPoN_028_BluesV4.zip",
+                ],
+            },
+            { name: "WoodmanPoN", nickname:"WoodMan (PoN)", image: "WoodMan.webp", 
+                package:"com.OFC.char.EXEPoN-024-WoodMan",
+                ranks: [
+                    {value: 1, name: "WoodMan"},
+                    {value: 2, name: "WoodMan V2"},
+                    {value: 3, name: "WoodMan V3"},
+                    {value: 4, name: "WoodMan SP"},
+                ],
+                rankImages: {
+                    1: "WoodMan.webp",
+                    2: "WoodManV2.webp",
+                    3: "WoodManV3.webp",
+                    4: "WoodManSP.webp",
+                },
+                downloads:[
+                    "com_OFC_mob_EXEPoN_024_WoodManV1.zip",
+                    "com_OFC_mob_EXEPoN_024_WoodManV2.zip",
+                    "com_OFC_mob_EXEPoN_024_WoodManV3.zip",
+                    "com_OFC_mob_EXEPoN_024_WoodManV4.zip",
+                ],
+                offsetX: 0,offsetY: 0,
+            },
+            { name: "HatMan", nickname:"HatMan (PoN)", image: "hatman.png", 
+                package:"com.alrysc.enemy.HatManEnemy",
+                ranks: [
+                    {value: 1, name: "HatMan"},
+                    {value: 2, name: "HatMan V2"},
+                    {value: 3, name: "HatMan V3"},
+                    {value: 4, name: "HatMan SP"},
+                ],
+                downloads:["com_alrysc_enemy_HatMan.zip"],
+                offsetX: 0,offsetY: 0,
+            },
+            { name: "Roll", image: "roll.png", 
+                package:"com.OFC.char.EXEPoN-027-Roll",
+                ranks: [
+                    {value: 1, name: "Roll"},
+                ],
+                offsetX: 0,offsetY: 0,
+                downloads:["com_OFC_mob_EXEPoN_027_RollV1.zip"],
+            },
+            { name: "JammingMan", nickname:"JammingMan", image: "JammingMan.png", 
+                package:"com.alrysc.enemy.JammingManEnemy",
+                ranks: [
+                    {value: 1, name: "JammingMan"},
+                    {value: 2, name: "JammingMan V2"},
+                    {value: 3, name: "JammingMan V3"},
+                    {value: 4, name: "JammingMan SP"},
+                ],
+                downloads:["com_alrysc_enemy_JammingManV1.zip"],
+                offsetX: 0,offsetY: 0,
+            },
+            { name: "Kogasa", image: "Kogasa.png", 
+                package:"com.alrysc.enemy.KogasaEnemy",
+                ranks: [
+                    {value: 1, name: "Kogasa"},
+                    {value: 2, name: "Kogasa V2"},
+                    {value: 3, name: "Kogasa V3"},
+                ],
+                downloads:["com_alrysc_enemy_Kogasa.zip"],
+                offsetX: 0,
+                offsetY: 0,
+            },
+            { name: "CircusMan", image: "Object_circusman.png", 
+                package:"com.louise.enemy.CircusMan",
+                ranks: [
+                    {value: 1, name: "CircusMan"},
+                    {value: 5, name: "CircusMan EX"},
+                    {value: 4, name: "CircusMan SP"},
+                    {value: 8, name: "CircusMan NM"},
+                ],
+                rankImages: {
+                    5: "", //add rank
+                    4: "", //add rank
+                    8: "", //add rank
+                },
+                downloads:["com_louise_CircusMan.zip"],
+                offsetX: 0,
+                offsetY: 30,
+            },
+            { name: "HeelNavi", image: "heelnavi.png", 
+                package:"com.louise.enemy.HeelNavi",
+                ranks: [
+                    {value: 1, name: "HeelNavi"},
+                    {value: 2, name: "HeelNavi V2"},
+                    {value: 3, name: "HeelNavi V3"},
+                    {value: 4, name: "HeelNavi SP"},
+                ],
+                downloads:["com_louise_HeelNavi.zip"],
+                offsetX: 0,
+                offsetY: 40,
+            },
+            { name: "QuickMan", image: "quickman.png", 
+                package:"com.louise.enemy.Quickman",
+                ranks: [
+                    {value: 1, name: "QuickMan"},
+                    {value: 2, name: "QuickMan V2"},
+                    {value: 3, name: "QuickMan V3"},
+                    {value: 4, name: "QuickMan SP"},
+                    {value: 8, name: "QuickMan DS"},
+                ],
+                rankImages: {
+                    4: "quickman-sp.png",
+                    8: "quickman-ds.png",
+                },
+                downloads:["com_louise_Quickman.zip"],
+                offsetX: 0,
+                offsetY: 0,
+            },
+            //VIRUS
+            { name: "DreamMeraru", image: "Object_scutz-pon.png", 
+                package:"com.OFC.char.EXEPoN-018-DreamMeraru",
+                ranks: [
+                    {value: 1, name: "DreamMeraru"},
+                    {value: 2, name: "DreamMeraru2"},
+                    {value: 3, name: "DreamMeraru3"},
+                    {value: 4, name: "DreamMeraru SP"},
+                ],
+                rankImages:{
+                    2:"Object_scutz2-pon.png",
+                    3:"Object_scutz3-pon.png",
+                    4:"Object_scutzsp-pon.png",
+                },
+                offsetX: 0,offsetY: 50,
+                downloads:["com_OFC_mob_EXEPoN_018_DreamMeraru.zip"]
+            },
+            { name: "DreamRapia", image: "Object_scuttle-pon.png", 
+                package:"com.OFC.char.EXEPoN-018-DreamLapia",
+                ranks: [
+                    {value: 1, name: "DreamRapia"},
+                    {value: 2, name: "DreamRapia2"},
+                    {value: 3, name: "DreamRapia3"},
+                    {value: 4, name: "DreamRapia SP"},
+                ],
+                rankImages:{
+                    2:"Object_scuttle2-pon.png",
+                    3:"Object_scuttle3-pon.png",
+                    4:"Object_scuttlesp-pon.png",
+                },
+                offsetX: 0,offsetY: 50,
+                downloads:["com_OFC_mob_EXEPoN_018_DreamMeraru.zip","com_OFC_mob_EXEPoN_019_DreamLapia.zip"]
+            },
+            { name: "DreamBolt", image: "Object_scuttler-pon.png", 
+                package:"com.OFC.char.EXEPoN-018-DreamBolt",
+                ranks: [
+                    {value: 1, name: "DreamBolt"},
+                    {value: 2, name: "DreamBolt2"},
+                    {value: 3, name: "DreamBolt3"},
+                    {value: 4, name: "DreamBolt SP"},
+                ],
+                rankImages:{
+                    2:"Object_scuttler2-pon.png",
+                    3:"Object_scuttler3-pon.png",
+                    4:"Object_scuttlersp-pon.png",
+                },
+                offsetX: 0,offsetY: 50,
+                downloads:["com_OFC_mob_EXEPoN_018_DreamMeraru.zip","com_OFC_mob_EXEPoN_020_DreamBolt.zip"]
+            },
+            { name: "DreamMoss", image: "Object_scuttzer-pon.png", 
+                package:"com.OFC.char.EXEPoN-018-DreamMoss",
+                ranks: [
+                    {value: 1, name: "DreamMoss"},
+                    {value: 2, name: "DreamMoss2"},
+                    {value: 3, name: "DreamMoss3"},
+                    {value: 4, name: "DreamMoss SP"},
+                ],
+                rankImages:{
+                    2:"Object_scuttzer2-pon.png",
+                    3:"Object_scuttzer3-pon.png",
+                    4:"Object_scuttzersp-pon.png",
+                },
+                offsetX: 0,offsetY: 50,
+                downloads:["com_OFC_mob_EXEPoN_018_DreamMeraru.zip","com_OFC_mob_EXEPoN_021_DreamMoss.zip"]
+            },
+            { name: "Sparky", nickname:"Yura/Sparky (PoN)", image: "Object_sparky-pon.png", 
+                package:"com.OFC.char.EXEPoN-014-Yura",
+                ranks: [
+                    {value: 1, name: "Yura"},
+                    {value: 4, name: "Yura SP"},
+                ],
+                rankImages:{
+                    4:"Object_sparkysp-pon.png",
+                },
+                offsetX: 0,offsetY: 20,
+                downloads:["com_OFC_mob_EXEPoN_014_Yura.zip"]
+            },
+            { name:"Yurayura", nickname: "Yurayura (PoN)", image: "Object_sparkler-pon.png", 
+                package:"com.OFC.char.EXEPoN-014-Yurayura",
+                ranks: [
+                    {value: 1, name: ""},
+                ],
+                offsetX: 0,offsetY: 20,
+                downloads:["com_OFC_mob_EXEPoN_014_Yura.zip"]
+            },
+            { name:"Yurarion", nickname: "Yurarion (PoN)", image: "Object_sparknoid-pon.png", 
+                package:"com.OFC.char.EXEPoN-014-Yurarion",
+                ranks: [
+                    {value: 1, name: ""},
+                ],
+                offsetX: 0,offsetY: 20,
+                downloads:["com_OFC_mob_EXEPoN_014_Yura.zip"]
+            },
+            { name: "Beetank", nickname:"Bugtank/Beetank (family)", image: "Object_beetank-pon.png", 
+                package:"com.OFC.char.EXEPoN-007-Kabutank",
+                ranks: [
+                    {value: 1, name: "Beetank"},
+                    {value: 2, name: "Beetank2"},
+                    {value: 3, name: "Beetank3"},
+                    {value: 4, name: "Beetank SP"},
+                ],
+                rankImages:{
+                    2:"Object_beetank2-pon.png",
+                    3:"Object_beetank3-pon.png",
+                    4:"Object_beetanksp-pon.png",
+                },
+                offsetX: 0,offsetY: 50,
+                downloads:["com_OFC_mob_EXEPoN_007_Kabutank.zip"]
+            },
+            { name: "Dharma", nickname:"Dharma (PoN)", image: "Object_dharma-pon.png", 
+                package:"com.OFC.char.EXEPoN-011-Dharma",
+                ranks: [
+                    {value: 1, name: "Dharma"},
+                    {value: 4, name: "DharmaSP"},
+                ],
+                rankImages:{
+                    4:"Object_dharmasp-pon.png"
+                },
+                offsetX: 0,offsetY: 55,
+                downloads:["com_OFC_mob_EXEPoN_011_Dharma.zip"]
+            },
+            { name: "Dharga", nickname:"Karma (PoN)", image: "Object_karma-pon.png", 
+                package:"com.OFC.char.EXEPoN-011-Dharga",
+                ranks: [
+                    {value: 1, name: ""},
+                ],
+                offsetX: 0,offsetY: 55,
+                downloads:["com_OFC_mob_EXEPoN_011_Dharma.zip"]
+            },
+            { name: "Dhardara", nickname:"Dogma (PoN)", image: "Object_dogma-pon.png", 
+                package:"com.OFC.char.EXEPoN-011-Dhardara",
+                ranks: [
+                    {value: 1, name: ""},
+                ],
+                offsetX: 0,offsetY: 55,
+                downloads:["com_OFC_mob_EXEPoN_011_Dharma.zip"]
+            },
+            { name: "KillPlant", nickname:"KillPlant (PoN)", image: "Object_killplant-pon.png", 
+                package:"com.OFC.char.EXEPoN-010-KillPlant",
+                ranks: [
+                    {value: 1, name: "KillPlant"},
+                    {value: 4, name: "KillPlantSP"},
+                ],
+                rankImages:{
+                    4:"Object_killplantsp-pon.png"
+                },
+                offsetX: 0,offsetY: 20,
+                downloads:["com_OFC_mob_EXEPoN_010_KillPlant.zip"]
+            },
+            { name: "KillWeed", nickname:"KillWeed (PoN)",image: "Object_killweed-pon.png", 
+                package:"com.OFC.char.EXEPoN-010-KillWeed",
+                ranks: [
+                    {value: 1, name: ""},
+                ],
+                offsetX: 0,offsetY: 20,
+                downloads:["com_OFC_mob_EXEPoN_010_KillPlant.zip"]
+            },
+            { name: "KillFlower", nickname:"KillFlower (PoN)", image: "Object_killfleur-pon.png", 
+                package:"com.OFC.char.EXEPoN-010-KillFlower",
+                ranks: [
+                    {value: 1, name: ""},
+                ],
+                
+                offsetX: 0,offsetY: 20,
+                downloads:["com_OFC_mob_EXEPoN_010_KillPlant.zip"]
+            },
+            { name: "SwapLight", image: "SwapLight.png", 
+                package:"hoov.enemy.swaplight",
+                ranks: [
+                    {value: 1, name: ""},
+                ],
+                downloads:["hoov_package_swaplight.zip"],
+                offsetX: 0,offsetY: 50,
+            },
+            { name: "ChefVirus", image: "chef.png", 
+                package:"com.alrysc.enemy.ChefVirusEnemy",
+                ranks: [
+                    {value: 1, name: "ChefVirus"},
+                ],
+                offsetX: 0,offsetY: 35,
+                downloads:["com_alrysc_enemy_ChefVirus.zip"],
+            },
+            { name: "Hecatia", image: "Hecatia.png", 
+                package:"com.alrysc.enemy.HecatiaEnemy",
+                ranks: [
+                    {value: 1, name: "Hecatia"},
+                    {value: 2, name: "Hecatia V2"},
+                ],
+                offsetX: 0,offsetY: 0,
+                downloads:["com_alrysc_enemy_Hecatia.zip"],
+            },
+            { name: "RayCannon", image: "raycannon.png", 
+                package:"com.alrysc.enemy.RayCannon_enemy",
+                ranks: [
+                    {value: 1, name: "RayCannon"},
+                  //  {value: 2, name: "RayCannon2"}, 
+                  //  {value: 3, name: "RayCannon3"}, 
+                  //  {value: 4, name: "RayCannonEX"}, 
+                  //  {value: -1, name: "RayCannon SP"}, 
+                ],
+                offsetX: 0,offsetY: 0,
+                downloads:["com_alrysc_enemy_RayCannon.zip"],
+                
+            },
+            { name: "Mettaur", nickname: "Mettaur (family)", image: "mettaur.png", 
+                package:"com.keristero.char.Mettaur",
+                ranks: [
+                    {value: 1, name: "Mettaur"},
+                    {value: 2, name: "Mettaur2"}, 
+                    {value: 3, name: "Mettaur3"}, 
+                    {value: 4, name: "MettaurSP"},
+                    {value: 6, name: "RareMettaur"}, 
+                    {value: 7, name: "RareMettaur2"},
+                ],
+                offsetX: 0,offsetY: 60,
+                rankImages: {
+                    1: "mettaur.png",
+                    2: "Mettaur2.webp",
+                    3: "Mettaur3.webp",
+                    4: "MettaurOmega.webp",
+                    6: "MettaurRare1.webp",
+                    7: "MettaurRare2.webp",
+                },
+                downloads:["com_keristero_mob_Mettaur.zip"],
+            },
+            { name: "Champy", image: "champy.png", 
+            package:"com.keristero.char.Champy",
+                ranks: [
+                    {value: 1, name: "Champy"},
+                    {value: 2, name: "ChampySP"}
+                ],
+                rankImages: {
+                    2: "champysp.png",
+                },
+                offsetX: 0,offsetY: 20,
+                downloads:["com_keristero_mob_Champy.zip"],
+            },
+            { name: "Chimpy", image: "chimpy.png", 
+            package:"com.keristero.char.Chimpy",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 20, 
+                downloads:["com_keristero_mob_Champy.zip"],
+            },
+            { name: "Chumpy", image: "chumpy.png", 
+            package:"com.keristero.char.Chumpy",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                downloads:["com_keristero_mob_Champy.zip"],
+                offsetX: 0,offsetY: 20 
+            },
+            { name: "RareChampy", image: "rarechampy.png", 
+            package:"com.keristero.char.RareChampy",
+            package:"",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                downloads:["com_keristero_mob_Champy.zip"],
+                offsetX: 0,offsetY: 20 
+            },
+            { name: "Cactikil", image: "cactikil.webp", 
+            package:"com.discord.Konstinople#7692.enemy.cactikil",
+                ranks: [
+                    {value: 1, name: "Cactikil"},
+                    {value: 5, name: "CactikilEX"}
+                ],
+                rankImages: {
+                    5: "CactkilEX.webp"
+                },
+                downloads:["com_discord_Konstinople_7692_cactikil.zip"],
+                offsetX: 0,offsetY: 0 
+            },
+            { name: "Cactroll", image: "cactroll.webp", 
+            package:"com.discord.Konstinople#7692.enemy.cactroll",
+                ranks: [
+                    {value: 1, name: "Cactroll"},
+                    {value: 5, name: "CactrollEX"}
+                ],
+                rankImages: {
+                    5: "CactrlEX.webp",
+                },
+                downloads:["com_discord_Konstinople_7692_cactikil.zip"],
+                offsetX: 0,offsetY: 0 
+            },
+            { name: "Cacter", image: "cacter.webp", 
+            package:"com.discord.Konstinople#7692.enemy.cacter",
+                ranks: [
+                    {value: 1, name: "Cacter"},
+                    {value: 5, name: "CacterEX"}
+                ],
+                rankImages: {
+                    5: "CacterEX.webp"
+                },
+                downloads:["com_discord_Konstinople_7692_cactikil.zip"],
+                offsetX: 0,offsetY: 0 
+            },
+            { name: "Powie", image: "Object_powie-bn5.png", 
+            package:"com.discord.Konstinople#7692.enemy.powie",
+                ranks: [
+                    {value: 1, name: "Powie"},
+                    {value: 5, name: "Powie EX"}
+                ],
+                rankImages:{
+                    5:"Object_powieex.png",
+                },
+                downloads:["com_discord_Konstinople_7692_powie.zip"],
+                offsetX: 0,offsetY: 7 
+            },
+            { name: "Powie2", image: "Object_powie2-bn5.png", 
+            package:"com.discord.Konstinople#7692.enemy.powie2",
+                ranks: [
+                    {value: 1, name: "Powie2"},
+                    {value: 5, name: "Powie2 EX"}
+                ],
+                rankImages:{
+                    5:"Object_powie2ex.png",
+                },
+                downloads:["com_discord_Konstinople_7692_powie.zip"],
+                offsetX: 0,offsetY: 7 
+            },
+            { name: "Powie3", image: "Object_powie3-bn5.png", 
+            package:"com.discord.Konstinople#7692.enemy.powie3",
+                ranks: [
+                    {value: 1, name: "Powie3"},
+                    {value: 5, name: "Powie3 EX"}
+                ],
+                rankImages:{
+                    5:"Object_powie3ex.png",
+                },
+                downloads:["com_discord_Konstinople_7692_powie.zip"],
+                offsetX: 0,offsetY: 7 
+            },
+            { name: "Spikey", image: "Object_spikey-pon.png", 
+            package:"com.Dawn.char.Spikey",
+                ranks: [
+                    {value: 1, name: "Spikey"},
+                    {value: 2, name: "Spikey2"},
+                    {value: 3, name: "Spikey3"},
+                    {value: 4, name: "SpikeySP"}
+                ],
+                rankImages:{
+                    2:"Object_spikey2-pon.png",
+                    3:"Object_spikey3-pon.png",
+                    4:"Object_spikeysp-pon.png",
+                },
+                downloads:["com_Dawn_mob_Spikey.zip"],
+                offsetX: 0,offsetY: 60, 
+            },
+            { name: "Cannodumb", name: "Cannodumb (family)", image: "Object_canodumb-pon.png", 
+            package:"com.OFC.char.EXEPoN-002-Cannodumb",
+                ranks: [
+                    {value: 1, name: "Cannodumb"},
+                    {value: 2, name: "Cannodumb2"},
+                    {value: 3, name: "Cannodumb3"},
+                    {value: 4, name: "Cannodumb SP"}
+                ],
+                rankImages:{
+                    2:"Object_canodumb2-pon.png",
+                    3:"Object_canodumb3-pon.png",
+                    4:"Object_canodumbsp-pon.png",
+                },
+                offsetX: 0,offsetY: 0,
+                downloads:["com_OFC_mob_EXEPoN_002_Cannodumb.zip"]
+            },
+            { name: "Gunner", image: "Object_gunner.png", 
+            package:"com.keristero.char.Gunner",
+                ranks: [
+                    {value: 1, name: "Gunner"},
+                    {value: 6, name: "RareGunner1"},
+                    {value: 4, name: "GunnerSP"},
+                    {value: 7, name: "RareGunner2"}
+                ],
+                rankImages:{
+                    4:"Object_gunnersp.png",
+                    6:"Object_raregunner.png",
+                    7:"Object_raregunner2.png",
+                },  
+                offsetX: 0,offsetY: 23,
+                downloads:["com_keristero_mob_Gunner.zip"],
+            },
+            { name: "Shooter", image: "shooter.png", 
+            package:"com.keristero.char.Shooter",
+                ranks: [
+                    {value: 1, name: "Shooter"},
+                    {value: 4, name: "ShooterSP"},
+                ],
+                rankImages:{
+                    4:"shooter_sp.png"
+                },
+                downloads:["com_keristero_mob_Gunner.zip"],
+                offsetX: 0,offsetY: 23 
+            },
+            { name: "Sniper", image: "sniper.png", 
+            package:"com.keristero.char.Sniper",
+                ranks: [
+                    {value: 1, name: "Sniper"}
+                ],
+                offsetX: 0,offsetY: 23,
+                downloads:["com_keristero_mob_Gunner.zip"],
+            },
+            { name: "BigBrute", image: "bigbrute.png", 
+            package:"com.keristero.char.BigBrute",
+                ranks: [
+                    {value: 1, name: "BigBrute"}
+                ],
+                downloads:["com_keristero_mob_BigBrute.zip"],
+                offsetX: 0,offsetY: 35 
+            },
+            { name: "Volgear", nickname:"Volgear (family)", image: "Object_volgear-bn4.png", 
+            package:"com.louise.char.Volgear",
+                ranks: [
+                    {value: 1, name: "Volgear"},
+                    {value: 2, name: "Vulgear"},
+                    {value: 3, name: "Valgear"},
+                    {value: 4, name: "ValgearEX"}
+                ],
+                rankImages:{
+                    2:"Object_vulgear.png",
+                    3:"Object_valgear.png",
+                    4:"Object_valgearex.png",
+                },
+                offsetX: 0,offsetY: 35,
+                downloads:["com_louise_Volgear.zip"],
+            },
+            { name: "KillerEye", image: "Object_killereye-bn6.png", 
+            package:"com.louise.char.KillerEye",
+                ranks: [
+                    {value: 1, name: "KillerEye"},
+                    {value: 4, name: "KillerEyeSP"},
+                    {value: 6, name: "RareKillerEye1"},
+                    {value: 7, name: "RareKillerEye2"}
+                ],
+                rankImages:{
+                    4:"Object_killereyesp.png",
+                    6:"Object_rarekillereye.png",
+                    7:"Object_rarekillereye2.png",
+                },
+                offsetX: 0,offsetY: 10,
+                downloads:["com_louise_KillerEye.zip"], 
+            },
+            { name: "DemonEye", image: "DemonEye1.webp", 
+            package:"",
+                ranks: [
+                    {value: 1, name: "DemonEye"}
+                ],
+                offsetX: 0,offsetY: 10,
+                downloads:["com_louise_KillerEye.zip"], 
+            },
+            { name: "JokerEye", image: "JokerEye1.webp", 
+            package:"",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 10,
+                downloads:["com_louise_KillerEye.zip"], 
+            },
+            { name: "HauntedCandle", image: "Object_hauntedcandle.png", 
+            package:"",
+                ranks: [
+                    {value: 1, name: "HauntedCandle"},
+                    {value: 2, name: "HauntedCandle2"},
+                    {value: 3, name: "HauntedCandle3"},
+                    {value: 4, name: "HauntedCandleSP"},
+                    {value: 6, name: "RareHauntedCandle1"},
+                    {value: 7, name: "RareHauntedCandle2"}
+                ],
+                rankImages:{
+                    2:"Object_hauntedcandle2.png",
+                    3:"Object_hauntedcandle3.png",
+                    4:"Object_hauntedcandlesp.png",
+                    6:"Object_rarehauntedcandle.png",
+                    7:"Object_rarehauntedcandle2.png"
+                },
+                offsetX: 0,offsetY: 0,
+                downloads:["com_louise_HauntedCandle.zip"],
+            },
+            { name: "Fishy", nickname:"Fishy (family)", image: "Object_fishy-bn2.png", 
+            package:"",
+                ranks: [
+                    {value: 1, name: "Fishy"},
+                    {value: 2, name: "Fishy2"},
+                    {value: 3, name: "Fishy3"},
+                    {value: 4, name: "FishySP"},
+                    {value: 6, name: "RareFishy1"},
+                    {value: 7, name: "RareFishy2"},
+                    {value: 8, name: "FishyNM"},
+                ],
+                rankImages:{
+                    2:"Object_fishy2-bn2.png",
+                    3:"Object_fishy3.png",
+                    4:"Object_fishyomega.png",
+                    6:"Object_fishy-r1.png",
+                    7:"Object_fishy-r2-bn2.png",
+                    8:"Object_fishy-nm.png",
+                },
+                downloads:["com_louise_Fishy.zip"],
+                offsetX: 10,offsetY: 17 
+            },
+            { name: "BombCorn", image: "Object_bombcorn.png", 
+            package:"com.louise.enemy.Corn.BombCorn",
+                ranks: [
+                    {value: 1, name: "BombCorn"},
+                    {value: 4, name: "BombCornSP"},
+                    {value: 6, name: "RareCorn"},
+                    {value: 7, name: "RareCorn2"}
+                ],
+                rankImages:{
+                    4:"Object_bombcornsp.png",
+                    6:"Object_rarecorn.png",
+                    7:"Object_rarecorn2.png",
+                },
+                offsetX: 0,offsetY: 20,
+                downloads:["com_louise_Corn.zip"],
+            },
+            { name: "MegaCorn", image: "MegaCorn.webp", 
+            package:"com.louise.enemy.Corn.MegaCorn",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 10,
+                downloads:["com_louise_Corn.zip"], 
+            },
+            { name: "GigaCorn", image: "GigaCorn.webp", 
+            package:"com.louise.enemy.Corn.GigaCorn",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 10,
+                downloads:["com_louise_Corn.zip"], 
+            },
+            { name: "Bladia", image: "Object_bladia.png", 
+            package:"com.EXE5.Bladia.Enemy",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 40,
+                downloads:["com_EXE5_Bladia.zip"],
+            },
+            { name: "Bladia2", image: "Object_bladia2.png", 
+            package:"com.EXE5.Bladia.Enemy2",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 40,
+                downloads:["com_EXE5_Bladia.zip"], 
+            },
+            { name: "Bladia3", image: "Object_bladia3.png", 
+            package:"com.EXE5.Bladia.Enemy3",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 40,
+                downloads:["com_EXE5_Bladia.zip"], 
+            },
+            { name: "Bladia4", image: "Object_bladia4.png", 
+            package:"com.EXE5.Bladia.Enemy4",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 40,
+                downloads:["com_EXE5_Bladia.zip"], 
+            },
+            { name: "Bladia5", image: "Object_bladia5.png", 
+            package:"com.EXE5.Bladia.Enemy5",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 40,
+                downloads:["com_EXE5_Bladia.zip"], 
+            },
+            { name: "Bladia6", image: "Object_bladia6.png", 
+            package:"com.EXE5.Bladia.Enemy6",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 40,
+                downloads:["com_EXE5_Bladia.zip"], 
+            },
+            { name: "Metrid", image: "Object_metrid.png", 
+            package:"com.EXE3.Metrid.Enemy",
+                ranks: [
+                    {value: 1, name: "Metrid"},
+                    {value: 2, name: "Metrod"},
+                    {value: 3, name: "Metrodo"},
+                    {value: 4, name: "MetridSP"},
+                    {value: 8, name: "MetridNM"},
+                ],
+                rankImages:{
+                    2:"Object_metrod.png",
+                    3:"Object_metrodo.png",
+                    4:"Object_metrodomega.png"
+                },
+                offsetX: 0,offsetY: 13,
+                downloads:["com_EXE3_Metrid.zip"]
+            },
+            { name: "Basher", image: "Basher.webp", 
+            package:"com.EXE3.Basher.Enemy",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 13,
+                downloads:["com_EXE3_Basher.zip"]
+            },
+            { name: "FighterPlane", image: "Object_fighterplane.png", 
+            package:"com.Dawn.Viruses.Enemy.FighterPlane",
+                ranks: [
+                    {value: 1, name: "FighterPlane"},
+                    {value: 2, name: "FighterPlane2"},
+                    {value: 3, name: "FighterPlane3"},
+                    {value: 4, name: "FighterPlaneSP"}
+                ],
+                rankImages:{
+                    2:"Object_fighterplane2.png",
+                    3:"Object_fighterplane3.png",
+                    4:"Object_fighterplanesp.png",
+                },
+                offsetX: 0,offsetY: 35,
+                downloads:["com_Dawn_Viruses_FighterPlane.zip"],
+            },
+            { name: "Catack", image: "Object_catack.png", 
+            package:"com.Dawn.Requested.Enemy.Catack",
+                ranks: [
+                    {value: 1, name: "Catack"},
+                    {value: 2, name: "Cateen"},
+                    {value: 3, name: "Catapult"},
+                    {value: 4, name: "CatackSP"}
+                ],
+                rankImages:{
+                    2:"Object_cateen.png",
+                    3:"Object_catapult.png",
+                    4:"Object_catapultex.png",
+                },
+                offsetX: 0,offsetY: 35,
+                downloads:["com_Dawn_Requested_Catack.zip"],
+            },
+            { name: "Ratty", image: "Object_ratty-bn2.png", 
+            package:"",
+                ranks: [
+                    {value: 1, name: "Ratty"},
+                    {value: 2, name: "Ratty2"},
+                    {value: 3, name: "Ratty3"},
+                    {value: 4, name: "RattySP"}
+                ],
+                rankImages:{
+                    2:"Object_ratty2-bn2.png",
+                    3:"Object_ratty3-bn2.png",
+                    4:"Object_rattyomega.png",
+                },
+                offsetX: 0,offsetY: 80,
+                downloads:["com_Dawn_BN3_Ratty.zip"],
+            },
+            { name: "Yort", image: "Object_yort-bn3.png", 
+            package:"com.louise.enemy.Yort",
+                ranks: [
+                    {value: 1, name: "Yort"},
+                    {value: 2, name: "Yart"},
+                    {value: 3, name: "Yurt"},
+                    {value: 4, name: "YortSP"},
+                    {value: 6, name: "RareYort1"},
+                    {value: 7, name: "RareYort2"},
+                    {value: 8, name: "YortNM"}
+                ],
+                rankImages:{
+                    2:"Object_yart-bn3.png",
+                    3:"Object_yurt-bn3.png",
+                    4:"Object_yortsp.png",
+                    6:"Object_yortr1.png",
+                    7:"Object_yortr2.png",
+                    8:"Object_yortnm.png",
+                },
+                offsetX: 0,offsetY: 45,
+                downloads:["com_louise_Yort.zip"], 
+            },
+            { name: "Volcano", image: "Object_volcano.png", 
+            package:"com.louise.enemy.Volcano",
+                ranks: [
+                    {value: 1, name: "Volcano"},
+                    {value: 2, name: "Volcaner"},
+                    {value: 3, name: "Volcanest"},
+                    {value: 4, name: "VolcanoSP"},
+                    {value: 6, name: "RareVolcano1"},
+                    {value: 7, name: "RareVolcano2"},
+                    {value: 8, name: "VolcanoNM"}
+                ],
+                rankImages:{
+                2:"Object_volcaner.png",
+                3:"Object_volcanest.png",
+                4:"Object_volcanoomega.png",
+                6:"Object_volcanor1.png",
+                7:"Object_volcanor2.png",
+                8:"Object_volcanonm.png",
+            },
+                offsetX: 0,offsetY: 45,
+                downloads:["com_louise_Volcano.zip"], 
+            },
+            { name:"Swordy", nickname: "Swordy (family)", image: "Object_swordy-bn6.png", 
+            package:"com.louise.enemy.Swordy",
+            ranks: [
+                {value: 1, name: "Swordy"},
+                {value: 2, name: "Swordy2"},
+                {value: 3, name: "Swordy3"},
+                {value: 4, name: "SwordySP"},
+                {value: 8, name: "SwordyNM"}
+            ],
+            offsetX: 0,offsetY: 20,
+            rankImages:{
+                2:"Object_swordy2-bn6.png",
+                3:"Object_swordy3-bn6.png",
+                4:"Object_swordy-bn6-sp.png",
+                8:"Object_swordysp.png",
+            },
+            downloads:["com_louise_Swordy.zip"], 
+            },
+            { 
+                name:"SwordyEl", 
+                nickname: "Swordy (Elemental)", 
+                image: "Swordy1.webp", 
+                package:"encounter_realms_rey_virus_009_swordy.zip",
+                ranks: [
+                    {value: 1, name: "Burny"},
+                    {value: 2, name: "Splashy"},
+                    {value: 3, name: "Shocky"},
+                    {value: 4, name: "Sappy"},
+                    {value: 5, name: "Breezy"},
+                    {value: 6, name: "Scummy"},
+                    {value: 7, name: "Achey"},
+                    {value: 8, name: "\u{0027}Splodey"},
+                ],
+                offsetX: 0,offsetY: 0,
+                downloads:[
+                    "encounter_realms_rey_virus_009_swordy.zip"
+                ]
+            },
+            { name: "Skarab", image: "Object_skarab.png", 
+            package:"com.louise.enemy.Skarab",
+                ranks: [
+                    {value: 1, name: "Skarab"},
+                    {value: 4, name: "SkarabSP"},
+                    {value: 6, name: "RareSkarab"},
+                    {value: 7, name: "RareSkarab2"},
+                    {value: 8, name: "SkarabNM"}
+                ],
+                rankImages:{
+                    4:"Object_skelly-sp.png",
+                    6:"Object_skelly-r1.png",
+                    7:"Object_skelly-r2.png",
+                    8:"Object_skelly-nm.png",
+                },
+                offsetX: 0,offsetY: 55,
+                downloads:["com_louise_Skarab.zip"], 
+            },
+            { name: "Skarry", image: "Skarry1.webp", 
+            package:"com.louise.enemy.Skarry",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 25,
+                downloads:["com_louise_Skarab.zip"], 
+            },
+            { name: "Skelly", image: "Skelly1.webp", 
+            package:"com.louise.enemy.Skelly",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 25,
+                downloads:["com_louise_Skarab.zip"], 
+            },
+            { name: "Scuttle", image: "Scuttle1.webp", 
+            package:"com.louise.enemy.Scuttle",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 50,
+                downloads:["com_louise_Scutz.zip"], 
+            },
+            { name: "Scutz", image: "Scutz1.webp", 
+            package:"com.louise.enemy.Scutz",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 50,
+                downloads:["com_louise_Scutz.zip"], 
+            },
+            { name: "Scuttler", image: "Scuttler1.webp", 
+            package:"com.louise.enemy.Scuttler",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 50,
+                downloads:["com_louise_Scutz.zip"], 
+            },
+            { name: "Scuttzer", image: "Scutzer1.webp", 
+            package:"com.louise.enemy.Scuttzer",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 50,
+                downloads:["com_louise_Scutz.zip"], 
+            },
+            { name: "Scuttlest", image: "Scuttlest1.webp", 
+            package:"com.louise.enemy.Scuttlest",
+                ranks: [
+                    {value: 1, name: "Scuttlest"},
+                    {value: 4, name: "ScuttlestSP"}
+                ],
+                offsetX: 0,offsetY: 50,
+                downloads:["com_louise_Scutz.zip"], 
+            },
+            { name: "Lark", image: "Lark1.webp", 
+            package:"com.louise.enemy.Lark",
+                ranks: [
+                    {value: 1, name: "Lark"},
+                    {value: 4, name: "LarkSP"},
+                    {value: 6, name: "RareLark1"},
+                    {value: 7, name: "RareLark2"},
+                    {value: 8, name: "LarkNM"}
+                ],
+                rankImages: {
+                    4: "Lark-sp.webp",
+                    6: "Lark-r1.webp",
+                    7: "Lark-r2.webp",
+                    8: "Lark-nm.webp",
+                },
+                offsetX: 0,offsetY: 50,
+                downloads:["com_louise_Lark.zip"], 
+            },
+            { name: "Bark", image: "Bark1.webp", 
+            package:"com.louise.enemy.Bark",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 50,
+                downloads:["com_louise_Lark.zip"], 
+            },
+            { name: "Tark", image: "Tark1.webp", 
+            package:"com.louise.enemy.Tark",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 50,
+                downloads:["com_louise_Lark.zip"], 
+            },
+            { name: "Flashy", image: "Flashy1.webp", 
+            package:"com.louise.enemy.Flashy",
+                ranks: [
+                    {value: 1, name: "Flashy"},
+                    {value: 2, name: "Flashy2"},
+                    {value: 3, name: "Flashy3"},
+                    {value: 6, name: "RareFlashy1"},
+                    {value: 7, name: "RareFlashy2"},
+                    {value: 4, name: "FlashySP"},
+                    {value: 8, name: "FlashyNM"}
+                ],
+                offsetX: 0,offsetY: 10,
+                downloads:["com_louise_Flashy.zip"], 
+            },
+            { name: "MetFire", image: "MetFire1.webp", 
+            package:"com.louise.enemy.MetFire",
+                ranks: [
+                    {value: 1, name: "MetFire"},
+                    {value: 4, name: "MetFireSP"},
+                    {value: 6, name: "RareMetFire1"},
+                    {value: 7, name: "RateMetFire2"},
+                    {value: 8, name: "MetFireNM"}
+                ],
+                rankImages:{
+                    4:"MetFire1_SP.webp",
+                    6:"MetFire1_R1.webp",
+                    7:"MetFire1_R2.webp",
+                    8:"MetFire1_NM.webp",
+                },
+
+                offsetX: 0,offsetY: 0,
+                downloads:["com_louise_exe2_MetFire.zip"]
+            },
+            { name: "FulFire", image: "FulFire1.webp", 
+            package:"com.louise.enemy.FulFire",
+                ranks: [
+                    {value: 1, name: ""},
+                ],
+                offsetX: 0,offsetY: 0,
+                downloads:["com_louise_exe2_MetFire.zip"] 
+            },
+            { name: "DthFire", image: "DthFire1.webp", 
+            package:"com.louise.enemy.DthFire",
+                ranks: [
+                    {value: 1, name: ""},
+                ],
+                offsetX: 0,offsetY: 0,
+                downloads:["com_louise_exe2_MetFire.zip"]
+            },
+            { name: "Elemperor", image: "Object_elemperor.png", 
+            package:"com.louise.enemy.Elemperor",
+                ranks: [
+                    {value: 1, name: "Elemperor"},
+                    {value: 2, name: "Elemperor2"},
+                    {value: 3, name: "Elemperor3"},
+                    {value: 6, name: "Elemperor4"},
+                    {value: 7, name: "Elemperor5"},
+                    {value: 4, name: "ElemperorSP"},
+                    {value: 8, name: "ElemperorNM"}
+                ],
+                rankImages:{
+                    2:"Object_elemperor2.png",
+                    3:"Object_elemperor3.png",
+                    4:"Object_elemperorex.png",
+                    6:"Object_elemperor4.png",
+                    7:"Object_elemperor5.png",
+                    8:"Object_elemperornm.png",
+                },
+                offsetX: 0,offsetY: 30,
+                downloads:["com_louise_Elemperor.zip"], 
+            },
+            { name: "Dominerd", image: "Dominerd.webp", 
+            package:"com.louise.enemy.Dominerd",
+                ranks: [
+                    {value: 1, name: "Dominerd"},
+                    {value: 2, name: "Dominerd2"},
+                    {value: 3, name: "Dominerd3"},
+                    {value: 4, name: "Dominerd SP"},
+                    {value: 8, name: "Dominerd NM"}
+                ],
+                offsetX: 0,offsetY: 0,
+                downloads:["com_louise_Dominerd.zip"], 
+            },
+            { name: "Cragger", image: "Object_cragger.png", 
+            package:"com.louise.enemy.Cragger",
+                ranks: [
+                    {value: 1, name: "Cragger"},
+                    {value: 2, name: "MetalCragger"},
+                    {value: 3, name: "BigCragger"},
+                    {value: 4, name: "CraggerSP"},
+                    {value: 6, name: "RareCragger"},
+                    {value: 7, name: "RareCragger2"},
+                   // {value: 8, name: "CraggerNM"} //sprite missing from mod
+                ],
+                rankImages:{
+                    2:"Object_metalcragger.png",
+                    3:"Object_bigcragger.png",
+                    4:"Object_craggersp.png",
+                    6:"Object_rarecragger.png",
+                    7:"Object_rarecragger2.png",
+                },
+                offsetX: 0,offsetY: 15,
+                downloads:["com_louise_Cragger.zip"], 
+            },
+            { name: "Juraigon", name: "Juragon", image: "juraigon.png", 
+            package:"com.alrysc.enemy.juraigonVirus",
+                ranks: [
+                    {value: 1, name: "Juragon"},
+                    {value: 2, name: "Juragon2"},
+                    {value: 3, name: "Juragon3"},
+                ],
+                rankImages:{
+                    2:"juraigon2.png",
+                    3:"juraigon3.png",
+                },
+                offsetX: 0,offsetY: 60,
+                downloads:["com_alrysc_enemy_juraigon.zip"], 
+            },
+            { name: "DarkMech", image: "Object_darkmech.png", 
+            package:"com.HNST_SGNL.enemy.DarkMech",
+                ranks: [
+                    {value: 1, name: "DarkMech"},
+                    {value: 2, name: "ElecMech"},
+                    {value: 3, name: "DoomMech"},
+                    {value: 4, name: "DarkMechSP"},
+                    {value: 6, name: "RareDarkMech"},
+                    {value: 7, name: "RareDarkMech2"}
+                ],
+                rankImages:{
+                    2:"Object_elecmech.png",
+                    3:"Object_doommech.png",
+                    4:"Object_darkmechsp.png",
+                    6:"Object_raredarkmech.png",
+                    7:"Object_raredarkmech2.png",
+                },
+                offsetX: 0,offsetY: 40,
+                downloads:["com_HNST_SGNL_DarkMech.zip"], 
+            },
+            { name: "CirKill", image: "Object_cirkill.png", 
+            package:"com.louise.enemy.CirKill",
+                ranks: [
+                    {value: 1, name: "CirKill"},
+                    {value: 4, name: "CirKillSP"},
+                    {value: 6, name: "RareCirKill"},
+                    {value: 7, name: "RareCirKill2"},
+                   /* {value: 8, name: ""} /* NM.png is misplaced, so won't load. */
+                ],
+                rankImages:{
+                    4:"Object_cirkill-sp.png",
+                    6:"Object_cirkill-rare1.png",
+                    7:"Object_cirkill-rare2.png",
+                },
+                offsetX: 0,offsetY: 50,
+                downloads:["com_louise_CirKill.zip"], 
+            },
+            { name: "CirCrush", image: "CirCrush.webp", 
+            package:"com.louise.enemy.CirCrush",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 35,
+                downloads:["com_louise_CirKill.zip"], 
+            },
+            { name: "CirSmash", image: "CirSmash.webp", 
+            package:"com.louise.enemy.CirSmash",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 35,
+                downloads:["com_louise_CirKill.zip"], 
+            },
+            { name: "WindBox", image: "WindBox1.png", 
+            package:"com.louise.enemy.WindBox",
+                ranks: [
+                    {value: 1, name: "WindBox"},
+                    {value: 2, name: "WindBox2"},
+                    {value: 3, name: "WindBox3"},
+                    {value: 4, name: "WindBoxSP"},
+                    {value: 8, name: "WindBoxNM"}
+                ],
+                rankImages:{
+                    2:"WindBox2.png",
+                    3:"WindBox3.png",
+                    4:"WindBox-sp.png",
+                    8:"WindBox-nm.png",
+                },
+                offsetX: 6,offsetY: 15,
+                downloads:["com_louise_WindBox.zip"], 
+            },
+            { name: "VacuumFan", image: "vacuum1.png", 
+            package:"com.louise.enemy.VacuumFan",
+                ranks: [
+                    {value: 1, name: "VacuumFan"},
+                    {value: 2, name: "VacuumFan2"},
+                    {value: 3, name: "VacuumFan3"},
+                    {value: 4, name: "VacuumFanSP"}
+                ],
+                rankImages:{
+                    2:"vacuum2.png",
+                    3:"vacuum3.png",
+                    4:"vacuumsp.png",
+                },
+                offsetX: 6,offsetY: 15,
+                downloads:["com_louise_WindBox.zip"],
+            },
+            { name: "OldStove", image: "OldStove.webp", 
+            package:"com.louise.enemy.OldStove",
+                ranks: [
+                    {value: 1, name: "OldStove"},
+                    {value: 4, name: "OldStoveSP"},
+                    {value: 6, name: "RareOldStove1"},
+                    {value: 7, name: "RareOldStove2"},
+                    {value: 8, name: "OldStoveNM"}
+                ],
+                offsetX: 0,offsetY: 10,
+                downloads:["com_louise_OldStove.zip"], 
+            },
+            { name: "OldHeater", image: "OldHeater.webp", 
+            package:"com.louise.enemy.OldHeater",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 10,
+                downloads:["com_louise_OldStove.zip"], 
+            },
+            { name: "OldBurner", image: "OldBurner.webp", 
+            package:"com.louise.enemy.OldBurner",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 10,
+                downloads:["com_louise_OldStove.zip"], 
+            },
+            { name: "Bunny", image: "Bunny1.webp", 
+            package:"com.louise.enemy.Bunny",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 0,
+                downloads:["com_louise_Bunny.zip"], 
+            },
+            { name: "TuffBunny", image: "Bunny2.webp", 
+            package:"com.louise.enemy.TuffBunny",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 0,
+                downloads:["com_louise_Bunny.zip"], 
+            },
+            { name: "MegaBunny", image: "Bunny3.webp", 
+            package:"com.louise.enemy.MegaBunny",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 0,
+                downloads:["com_louise_Bunny.zip"], 
+            },
+            { name: "Shrimpy", nickname:"Shrimpy (family)", image: "Shrimpy.webp", 
+            package:"com.louise.enemy.Shrimpy",
+                ranks: [
+                    {value: 1, name: "Shrimpy"},
+                    {value: 2, name: "Shrimpy2"},
+                    {value: 3, name: "Shrimpy3"},
+                    {value: 4, name: "ShrimpySP"},
+                    {value: 6, name: "RareShrimpy1"},
+                    {value: 7, name: "RareShrimpy2"},
+                    {value: 8, name: "ShrimpyNM"}
+                ],
+                offsetX: 0,offsetY: 0,
+                downloads:["com_louise_Shrimpy.zip"], 
+            },
+            { name: "Puffy", image: "Object_bn6puffy.png", 
+            package:"com.louise.enemy.Puffy",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 60,
+                downloads:["com_louise_Puffy.zip"], 
+            },
+            { name: "HardHead", image: "HardHead.webp", 
+            package:"com.louise.enemy.HardHead",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 40,
+                downloads:["com_louise_HardHead.zip"], 
+            },
+            { name: "HotHead", image: "HotHead.webp", 
+            package:"com.louise.enemy.HotHead",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 40,
+                downloads:["com_louise_HardHead.zip"], 
+            },
+            { name: "ColdHead", image: "ColdHead.webp", 
+            package:"com.louise.enemy.ColdHead",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 40,
+                downloads:["com_louise_HardHead.zip"], 
+            },
+            { name: "Boomer", image: "Boomer.webp", 
+            package:"com.louise.enemy.Boomer",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 0,
+                downloads:["com_louise_Boomer.zip"], 
+            },
+            { name: "Gloomer", image: "Gloomer.webp", 
+            package:"com.louise.enemy.Gloomer",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 0,
+                downloads:["com_louise_Boomer.zip"], 
+            },
+            { name: "Doomer", image: "Doomer.webp", 
+            package:"com.louise.enemy.Doomer",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 0,
+                downloads:["com_louise_Boomer.zip"], 
+            },
+            { name: "Piranha", image: "Piranha.webp", 
+            package:"com.louise.enemy.Piranha",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 30,
+                downloads:["com_louise_Piranha.zip"], 
+            },
+            { name: "Quaker", image: "Object_quaker-bn6.png", 
+            package:"com.louise.enemy.Quaker",
+                ranks: [
+                    {value: 1, name: "Quaker"},
+                    {value: 2, name: "Shaker"},
+                    {value: 3, name: "Breaker"},
+                    {value: 4, name: "QuakerSP"},
+                    {value: 4, name: "QuakerNM"}
+                ],
+                rankImages:{
+                    2:"Object_shaker-bn6.png",
+                    3:"Object_breaker-bn6.png",
+                    4:"Object_quakersp.png",
+                    8:"Object_rarequaker2.png",
+                },
+                offsetX: 0,offsetY: 30,
+                downloads:["com_louise_Quaker.zip"], 
+            },
+           /* { name: "Shaker", image: "Shaker.webp", 
+            package:"com.louise.enemy.Shaker",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 30,
+                downloads:["com_louise_Quaker.zip"], 
+            },
+            { name: "Breaker", image: "Breaker.webp", 
+            package:"com.louise.enemy.Breaker",
+                ranks: [
+                    {value: 1, name: ""}
+                ],
+                offsetX: 0,offsetY: 30,
+                downloads:["com_louise_Quaker.zip"], 
+            }*/
         ];
     
         //Defines obstacles with image paths and offsets
@@ -445,6 +2090,34 @@
     const DEBUG_MODE = true;
 
 // =============================================
+// Dark Mode Functions
+// =============================================
+
+function initializeDarkMode() {
+    const darkMode = localStorage.getItem('darkMode') === 'true';
+    toggleDarkMode(darkMode, false);
+    
+    $('#dark-mode-toggle').click(function() {
+        const newMode = !$('body').hasClass('dark-mode');
+        toggleDarkMode(newMode, true);
+    });
+}
+
+function toggleDarkMode(enabled, saveToStorage) {
+    if (enabled) {
+        $('body').addClass('dark-mode');
+        $('#dark-mode-toggle').text('Light Mode');
+    } else {
+        $('body').removeClass('dark-mode');
+        $('#dark-mode-toggle').text('Dark Mode');
+    }
+    
+    if (saveToStorage) {
+        localStorage.setItem('darkMode', enabled);
+    }
+}
+
+// =============================================
 // Configuration and Data Structures
 // =============================================
 
@@ -465,6 +2138,137 @@ const defaultTeamPositions = [
     [2, 2, 2, 1, 1, 1],
     [2, 2, 2, 1, 1, 1]
 ];
+
+// =============================================
+// Mod Download Functions
+// =============================================
+
+function showDownloadInfoModal() {
+    if ($('#download-mods').is(':checked')) {
+        const modal = $(`
+            <div class="modal-overlay">
+                <div class="modal-content">
+                    <span class="modal-close">&times;</span>
+                    <h2>Mod Downloads</h2>
+                    <p>If checked, all required mod files will be automatically downloaded in a zip file when saving config.</p>
+                    <p>The zip will include all enemy mods used in your configuration plus the required master ezencounters.zip file.</p>
+                    <p>You must put these in your server's assets/ezlibs-assets/ezencounters/ folder.</p>
+                    <div class="progress-bar" style="display:none;">
+                        <div class="progress">0%</div>
+                    </div>
+                </div>
+            </div>
+        `);
+        
+        modal.find('.modal-close, .modal-overlay').click(function() {
+            modal.remove();
+        });
+        
+        $('body').append(modal);
+    }
+}
+
+function getRequiredDownloads() {
+    const downloads = new Set();
+    
+    // Add the required ezencounters.zip
+    downloads.add('ezencounters.zip');
+    
+    // Add downloads from all enemies in all variations
+    config.encounters.forEach(variation => {
+        if (variation.enemies) {
+            variation.enemies.forEach(enemy => {
+                const enemyDef = enemyDictionary.find(e => e.name === enemy.name);
+                if (enemyDef && enemyDef.downloads) {
+                    enemyDef.downloads.forEach(d => downloads.add(d));
+                }
+            });
+        }
+    });
+    
+    return Array.from(downloads);
+}
+
+async function downloadModFiles() {
+    if (!$('#download-mods').is(':checked')) {
+        return Promise.resolve();
+    }
+    
+    const downloads = getRequiredDownloads();
+    if (downloads.length === 0) {
+        return Promise.resolve();
+    }
+    
+    const modal = $('.modal-overlay');
+    const progressBar = modal.find('.progress-bar').show();
+    const progress = progressBar.find('.progress');
+    
+    try {
+        // Create a new JSZip instance
+        const JSZip = await loadJSZip();
+        const zip = new JSZip();
+        
+        // Download each file and add to zip
+        for (let i = 0; i < downloads.length; i++) {
+            const url = "mods/"+downloads[i];
+            //const filename = url.split('/').pop();
+            const filename = downloads[i];
+            try {
+                progress.text(`Downloading ${filename}... (${i+1}/${downloads.length})`);
+                progress.css('width', `${(i / downloads.length) * 100}%`);
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Failed to download ${url}`);
+                
+                const blob = await response.blob();
+                zip.file(filename, blob);
+                
+                progress.css('width', `${((i + 1) / downloads.length) * 100}%`);
+            } catch (err) {
+                console.error(`Failed to download ${url}:`, err);
+                // Continue with next file even if one fails
+            }
+        }
+        
+        // Generate the zip file
+        progress.text('Creating zip file...');
+        const content = await zip.generateAsync({ type: 'blob' }, metadata => {
+            progress.css('width', `${metadata.percent}%`);
+            progress.text(`Creating zip... ${Math.round(metadata.percent)}%`);
+        });
+        
+        // Download the zip
+        const zipUrl = URL.createObjectURL(content);
+        const a = document.createElement('a');
+        a.href = zipUrl;
+        a.download = 'required_mods.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(zipUrl);
+        
+        progress.text('Download complete!');
+        setTimeout(() => modal.remove(), 2000);
+    } catch (err) {
+        console.error('Error creating mod zip:', err);
+        progress.text('Error creating zip file');
+        progress.css('background-color', '#f44336');
+    }
+}
+
+function loadJSZip() {
+    return new Promise((resolve, reject) => {
+        if (window.JSZip) {
+            resolve(window.JSZip);
+        } else {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+            script.onload = () => resolve(window.JSZip);
+            script.onerror = reject;
+            document.body.appendChild(script);
+        }
+    });
+}
 
 // =============================================
 // Initialization Functions
@@ -509,17 +2313,19 @@ function formatEnemyOption(enemy) {
     const enemyDef = enemyDictionary.find(e => e.name === enemy.id);
     if (!enemyDef) return enemy.text;
     
-    // Show rank in label only if multiple ranks exist
-    const rankText = enemyDef.ranks.length > 1 ? "" : ` (Rank ${enemyDef.ranks[0]})`;
+    let rankText = "";
+    if (enemyDef.ranks.length === 1) {
+        rankText = ` (${enemyDef.ranks[0].name})`;
+    }
     
-    const $option = $(
-        `<div class="enemy-option">
-            <div class="option-preview" style="background-image: url(${enemyDef.image})"></div>
-            <span>${enemy.text}${rankText}</span>
-        </div>`
-    );
-    return $option;
+    return $(`
+        <div class="enemy-option">
+            <div class="option-preview" style="background-image: url(enemies/${enemyDef.image})"></div>
+            <span>${enemy.text}</span>
+        </div>
+    `);
 }
+
 
 
 function formatObstacleOption(obstacle) {
@@ -563,7 +2369,11 @@ function populateEnemyDropdown() {
     dropdown.empty();
     
     enemyDictionary.forEach(enemy => {
-        dropdown.append(`<option value="${enemy.name}">${enemy.name}</option>`);
+        if (enemy.nickname === undefined) {
+            dropdown.append(`<option value="${enemy.name}">${enemy.name}</option>`);
+        } else
+        { dropdown.append(`<option value="${enemy.name}">${enemy.nickname}</option>`); }
+        
     });
 }
 
@@ -784,16 +2594,25 @@ function cleanupEnemies(variation) {
 function formatRankOption(rank) {
     if (!rank.id) return rank.text;
     
+    const enemyName = $('#enemy-type').val();
+    const enemy = enemyDictionary.find(e => e.name === enemyName);
+    if (!enemy) return rank.text;
+    
+    const rankInfo = enemy.ranks.find(r => r.value == rank.id);
+    const rankName = rankInfo ? rankInfo.name : `Rank ${rank.id}`;
     const imagePath = $(rank.element).data('image');
-    if (!imagePath) return rank.text;
     
     return $(`
         <div class="rank-option">
             <div class="option-preview" style="background-image: url(${imagePath})"></div>
-            <span>${rank.text}</span>
+            <div>
+                <div>${rankName}</div>
+               <!--<small>Rank ${rank.id}</small>-->
+            </div>
         </div>
     `);
 }
+
 function updateEnemyRankPreview(enemyName, rank) {
     const preview = $('#enemy-rank-preview');
     const imagePath = getEnemyImage(enemyName, rank);
@@ -805,24 +2624,28 @@ function updateEnemyRankPreview(enemyName, rank) {
 }
 function updateEnemyRankOptions(enemyName) {
     const rankSelect = $('#enemy-rank');
-    const rankContainer = $('#enemy-rank').closest('label'); // Get the parent label
+    const rankContainer = rankSelect.closest('label');
     
     rankSelect.empty();
     
     const enemy = enemyDictionary.find(e => e.name === enemyName);
     if (!enemy) return;
     
-    // Add available ranks from dictionary
+    // Add available ranks with their display names
     enemy.ranks.forEach(rank => {
-        const imagePath = getEnemyImage(enemyName, rank);
-        rankSelect.append(`<option value="${rank}" data-image="${imagePath}">Rank ${rank}</option>`);
+        const imagePath = getEnemyImage(enemyName, rank.value);
+        rankSelect.append(
+            `<option value="${rank.value}" data-image="${imagePath}">
+                ${rank.name} (Rank ${rank.value})
+             </option>`
+        );
     });
     
     // Show/hide based on number of ranks
     if (enemy.ranks.length <= 1) {
         rankContainer.hide();
         if (enemy.ranks.length === 1) {
-            rankSelect.val(enemy.ranks[0]).trigger('change');
+            rankSelect.val(enemy.ranks[0].value).trigger('change');
         }
     } else {
         rankContainer.show();
@@ -841,11 +2664,11 @@ function updateEnemyRankOptions(enemyName) {
         });
     }
     
-    // Default to first rank if multiple exist
     if (enemy.ranks.length > 0) {
-        rankSelect.val(enemy.ranks[0]).trigger('change');
+        rankSelect.val(enemy.ranks[0].value).trigger('change');
     }
 }
+
 
 
 
@@ -874,11 +2697,11 @@ function getEnemyImage(enemyName, rank) {
     
     // Check for rank-specific image first
     if (enemy.rankImages && enemy.rankImages[rank]) {
-        return enemy.rankImages[rank];
+        return "enemies/"+enemy.rankImages[rank];
     }
     
     // Fall back to default image
-    return enemy.image;
+    return "enemies/"+enemy.image;
 }
 
 function updateTileImage(row, col) {
@@ -924,7 +2747,8 @@ function updateTileImage(row, col) {
             if (imagePath) {
                 tile.find('.tile-entity').css({
                     'background-image': `url(${imagePath})`,
-                    'background-position': `${enemyDef.offsetX || 0}px ${enemyDef.offsetY || 0}px`
+                    'background-position': `${enemyDef.offsetX || 0}px ${enemyDef.offsetY || 0}px`,
+                    'transform': teamValue === 2 ? 'scaleX(-1)' : 'none' // Add this line
                 });
             }
         }
@@ -942,7 +2766,8 @@ function updateTileImage(row, col) {
         if (playerDef?.image) {
             tile.find('.tile-entity').css({
                 'background-image': `url(${playerDef.image})`,
-                'background-position': `${playerDef.offsetX || 0}px ${playerDef.offsetY || 0}px`
+                'background-position': `${playerDef.offsetX || 0}px ${playerDef.offsetY || 0}px`,
+                'transform': teamValue === 1 ? 'scaleX(-1)' : 'none' // Flip player on blue team
             });
         }
     }
@@ -1011,7 +2836,7 @@ function updateTileFields() {
         const enemy = variation.enemies[enemyIndex - 1];
         if (enemy) {
             $('#enemy-type').val(enemy.name).trigger('change');
-            $('#enemy-rank').val(enemy.rank || 1);
+            $('#enemy-rank').val(enemy.rank || 1).trigger('change');
             $('#enemy-nickname').val(enemy.nickname || '');
         }
     } else if (obstacleValue > 0 && variation.obstacles && obstacleValue <= variation.obstacles.length) {
@@ -1040,6 +2865,11 @@ function updateTileFields() {
 // =============================================
 
 function setupEventHandlers() {
+        $('#download-mods').change(function() {
+            if ($(this).is(':checked')) {
+                showDownloadInfoModal();
+            }
+        });
         // Toolbar buttons
         $('#new-config').click(function() {
             if (confirm("Create new configuration? Current changes will be lost.")) {
@@ -1377,7 +3207,9 @@ function updateEnemyOnTile() {
     
     // Get enemy properties
     const name = $('#enemy-type').val();
-    const rank = parseInt($('#enemy-rank').val()) || 1;
+    //const rank = parseInt($('#enemy-rank').val()) || 1;
+    const rank = parseInt($('#enemy-rank').val()) || enemy.ranks[0].value;
+
     const nickname = $('#enemy-nickname').val();
     
     // First check if an identical enemy already exists
@@ -1538,7 +3370,9 @@ function setupTilePropertyHandlers() {
         
         // Get enemy properties
         const name = $('#enemy-type').val();
-        const rank = parseInt($('#enemy-rank').val()) || 1;
+        //const rank = parseInt($('#enemy-rank').val()) || 1;
+        const rank = parseInt($('#enemy-rank').val()) || enemy.ranks[0].value;
+
         const nickname = $('#enemy-nickname').val();
         
         // Create or update enemy
@@ -1649,22 +3483,30 @@ function loadFromLocalStorage() {
     }
 }
 
-function saveToFile() {
-    // Convert config to Lua string
-    const luaString = generateLuaString();
-    
-    // Create download link
-    const blob = new Blob([luaString], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'battle_config.lua';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    showStatus("Configuration saved to file", 'success');
+async function saveToFile() {
+    try {
+        // Convert config to Lua string
+        const luaString = generateLuaString();
+        
+        // Create download link for config
+        const blob = new Blob([luaString], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'battle_config.lua';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        // Download mod files if enabled
+        await downloadModFiles();
+        
+        showStatus("Configuration saved successfully", 'success');
+    } catch (err) {
+        console.error('Error saving files:', err);
+        showStatus("Error saving files: " + err.message, 'error');
+    }
 }
 
 
@@ -2122,7 +3964,7 @@ function jsonToLuaTable(obj, indent = '    ', isGrid = false) {
         
         let result = '{\n';
         keys.forEach(key => {
-            // Special handling for enemies/obstacles
+            // Special handling for obstacles
             if (key === 'enemies' || key === 'obstacles') {
                 result += `${indent}${key}={\n`;
                 if (Array.isArray(obj[key])) {
@@ -2199,7 +4041,7 @@ function convertJsonToLua(obj, indent = '    ', isGrid = false) {
         
         let result = '{\n';
         keys.forEach(key => {
-            // Special handling for enemies/obstacles
+            // Special handling for obstacles
             if (key === 'enemies' || key === 'obstacles') {
                 result += `${indent}${key}={\n`;
                 obj[key].forEach(item => {
@@ -2409,7 +4251,8 @@ function showStatus(message, type) {
 $(document).ready(function() {
     initializeEditor();
     setupEventHandlers();
-    
+    initializeDarkMode(); // Add this line
+
     if (DEBUG_MODE) {
         console.log("Editor initialized in debug mode");
         window.debugGetConfig = () => config;
