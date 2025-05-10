@@ -298,6 +298,35 @@
             line-height: 20px;
             color: white;
         }
+        .tile-popup {
+            position: absolute;
+            background-color: #333;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            pointer-events: none;
+            z-index: 100;
+            font-size: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            max-width: 200px;
+            transform: translate(10px, 10px);
+        }
+
+        body.dark-mode .tile-popup {
+            background-color: #555;
+        }
+
+        .tile-popup-content {
+            margin-bottom: 4px;
+        }
+
+        .tile-popup-hint {
+            font-size: 11px;
+            color: #ccc;
+            border-top: 1px solid #666;
+            padding-top: 4px;
+            margin-top: 4px;
+        }
     </style>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 </head>
@@ -2107,15 +2136,18 @@ function toggleDarkMode(enabled, saveToStorage) {
     if (enabled) {
         $('body').addClass('dark-mode');
         $('#dark-mode-toggle').text('Light Mode');
+        $('#tile-popup').addClass('dark-mode');
     } else {
         $('body').removeClass('dark-mode');
         $('#dark-mode-toggle').text('Dark Mode');
+        $('#tile-popup').removeClass('dark-mode');
     }
     
     if (saveToStorage) {
         localStorage.setItem('darkMode', enabled);
     }
 }
+
 
 // =============================================
 // Configuration and Data Structures
@@ -2359,10 +2391,24 @@ function initializeGrid() {
                 selectTile(row, col);
             });
             
+            // Add hover and right-click handlers
+            tile.on('mousemove', function(e) {
+                updateTilePopup(e, $(this));
+            });
+            
+            tile.on('mouseleave', function() {
+                $('#tile-popup').hide();
+            });
+            
+            tile.on('contextmenu', function(e) {
+                handleTileRightClick(e, $(this));
+            });
+            
             grid.append(tile);
         }
     }
 }
+
 
 function populateEnemyDropdown() {
     const dropdown = $('#enemy-type');
@@ -2533,12 +2579,13 @@ function selectTile(row, col) {
     $('#variation-properties').hide();
     
     updateTileFields();
-
+    
     if (selectedTile) {
-    const variation = config.encounters[currentVariationIndex];
-    cleanupEnemies(variation);          
+        const variation = config.encounters[currentVariationIndex];
+        cleanupEnemies(variation);          
     }
 }
+
 
 function cleanupEnemies(variation) {
     // Collect all enemy indices currently in use
@@ -4227,6 +4274,116 @@ function generateLuaString() {
 }
 
 
+// =============================================
+// Pop-Over Controls
+// =============================================
+
+
+// Add to utility functions section
+function updateTilePopup(event, tile) {
+    const popup = $('#tile-popup');
+    const content = popup.find('.tile-popup-content');
+    const hint = popup.find('.tile-popup-hint');
+    
+    const row = parseInt(tile.attr('data-row'));
+    const col = parseInt(tile.attr('data-col'));
+    const variation = config.encounters[currentVariationIndex];
+    
+    // Get tile state
+    const tileType = variation.tiles[row][col] || 1;
+    const enemyIndex = variation.positions[row][col];
+    const obstacleValue = variation.obstacle_positions[row][col];
+    const playerValue = variation.player_positions[row][col];
+    
+    let popupText = '';
+    let hintText = '';
+    let showPopup = false;
+    
+    // Check for content first
+    if (enemyIndex > 0 && variation.enemies && enemyIndex <= variation.enemies.length) {
+        const enemy = variation.enemies[enemyIndex - 1];
+        const enemyDef = enemyDictionary.find(e => e.name === enemy.name);
+        if (enemyDef) {
+            const rankInfo = enemyDef.ranks.find(r => r.value === enemy.rank);
+            if (rankInfo.name == ""){
+                popupText = enemy.name;
+
+            }else{
+                popupText = enemy.name + (rankInfo ? ` (${rankInfo.name})` : '');
+
+            }
+            hintText = 'Right click to clear enemy';
+            showPopup = true;
+        }
+    } else if (obstacleValue > 0 && variation.obstacles && obstacleValue <= variation.obstacles.length) {
+        const obstacle = variation.obstacles[obstacleValue - 1];
+        popupText = obstacle.name;
+        hintText = 'Right click to clear obstacle';
+        showPopup = true;
+    } else if (playerValue > 0) {
+        popupText = 'Player';
+        hintText = 'Right click to clear player';
+        showPopup = true;
+    } 
+    // Check for non-default tile type if no content
+    else if (tileType !== 1) {
+        const tileDef = tileDictionary[tileType];
+        popupText = tileDef?.name || `Tile ${tileType}`;
+        hintText = 'Right click to reset tile';
+        showPopup = true;
+    }
+    
+    if (showPopup) {
+        content.text(popupText);
+        hint.text(hintText);
+        popup.css({
+            left: event.pageX + 'px',
+            top: event.pageY + 'px',
+            display: 'block'
+        });
+    } else {
+        popup.hide();
+    }
+}
+
+function handleTileRightClick(event, tile) {
+    event.preventDefault();
+    
+    const row = parseInt(tile.attr('data-row'));
+    const col = parseInt(tile.attr('data-col'));
+    
+    // First select the tile (this will show its properties panel)
+    selectTile(row, col);
+    
+    const variation = config.encounters[currentVariationIndex];
+    
+    // Get tile state
+    const tileType = variation.tiles[row][col] || 1;
+    const enemyIndex = variation.positions[row][col];
+    const obstacleValue = variation.obstacle_positions[row][col];
+    const playerValue = variation.player_positions[row][col];
+    
+    // Handle content clearing
+    if (enemyIndex > 0 || obstacleValue > 0 || playerValue > 0) {
+        variation.positions[row][col] = 0;
+        variation.obstacle_positions[row][col] = 0;
+        variation.player_positions[row][col] = 0;
+        $('#content-type').val('none').trigger('change');
+    } 
+    // Handle tile reset
+    else if (tileType !== 1) {
+        variation.tiles[row][col] = 1;
+        $('#tile-type').val(1).trigger('change');
+    }
+    
+    updateTileImage(row, col);
+    saveToLocalStorage();
+    $('#tile-popup').hide();
+    
+    // Update the tile properties panel to reflect changes
+    updateTileFields();
+}
+
 
 // =============================================
 // Utility Functions
@@ -4265,5 +4422,9 @@ $(document).ready(function() {
 
 </script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<div id="tile-popup" class="tile-popup" style="display: none;">
+    <div class="tile-popup-content"></div>
+    <div class="tile-popup-hint"></div>
+</div>
 </body>
 </html>
