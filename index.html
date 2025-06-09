@@ -2973,11 +2973,12 @@ function setupEventHandlers() {
         });
         
         $('#add-variation').click(function() {
-            const name = prompt("Enter a name for the new scenario:");
+            const name = prompt("Enter a name for the new scenario (letters and numbers only):");
             const nameWithoutSpaces = name.replace(/\s/g, "");
+            const sanitizedInput = nameWithoutSpaces.replace(/[^a-zA-Z0-9]/g, '');
 
-            if (nameWithoutSpaces) {
-                addNewVariation(nameWithoutSpaces);
+            if (sanitizedInput) {
+                addNewVariation(sanitizedInput);
             }
         });
         
