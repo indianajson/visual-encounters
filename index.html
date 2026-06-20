@@ -1257,40 +1257,25 @@
                 downloads:["com_OFC_mob_EXEPoN_002_Cannodumb.zip"]
             },
             { name: "Gunner", image: "Object_gunner.png", 
-            package:"com.keristero.char.Gunner",
+            package:"com.OFC.char.EXE6-023-Gunner",
                 ranks: [
                     {value: 1, name: "Gunner"},
-                    {value: 6, name: "RareGunner1"},
+                    {value: 2, name: "Shooter"},
+                    {value: 3, name: "Sniper"},
                     {value: 4, name: "GunnerSP"},
+                    {value: 6, name: "RareGunner1"},
                     {value: 7, name: "RareGunner2"}
                 ],
                 rankImages:{
-                    4:"Object_gunnersp.png",
+                    1:"Object_gunner.png",
+                    2:"shooter.png",
+                    3:"sniper.png",
+					4:"Object_gunnersp.png",
                     6:"Object_raregunner.png",
                     7:"Object_raregunner2.png",
                 },  
                 offsetX: 0,offsetY: 23,
-                downloads:["com_keristero_mob_Gunner.zip"],
-            },
-            { name: "Shooter", image: "shooter.png", 
-            package:"com.keristero.char.Shooter",
-                ranks: [
-                    {value: 1, name: "Shooter"},
-                    {value: 4, name: "ShooterSP"},
-                ],
-                rankImages:{
-                    4:"shooter_sp.png"
-                },
-                downloads:["com_keristero_mob_Gunner.zip"],
-                offsetX: 0,offsetY: 23 
-            },
-            { name: "Sniper", image: "sniper.png", 
-            package:"com.keristero.char.Sniper",
-                ranks: [
-                    {value: 1, name: "Sniper"}
-                ],
-                offsetX: 0,offsetY: 23,
-                downloads:["com_keristero_mob_Gunner.zip"],
+                downloads:["com_OFC_mob_EXE6_023_Gunner.zip"],
             },
             { name: "BigBrute", image: "bigbrute.png", 
             package:"com.keristero.char.BigBrute",
@@ -1967,29 +1952,22 @@
                 offsetX: 0,offsetY: 10,
                 downloads:["com_louise_OldStove.zip"], 
             },
-            { name: "Bunny", image: "Bunny1.webp", 
-            package:"com.louise.enemy.Bunny",
+            { name: "Bunny / Rabiree", image: "Bunny1.webp", 
+            package:"com.OFC.char.EXE3-010-Rabiree",
                 ranks: [
-                    {value: 1, name: ""}
+                    {value: 1, name: "Bunny"},
+                    {value: 2, name: "High Bunny"}, 
+                    {value: 3, name: "Mega Bunny"}, 
+                    {value: 4, name: "BunnySP"}, 
                 ],
                 offsetX: 0,offsetY: 0,
-                downloads:["com_louise_Bunny.zip"], 
-            },
-            { name: "TuffBunny", image: "Bunny2.webp", 
-            package:"com.louise.enemy.TuffBunny",
-                ranks: [
-                    {value: 1, name: ""}
-                ],
-                offsetX: 0,offsetY: 0,
-                downloads:["com_louise_Bunny.zip"], 
-            },
-            { name: "MegaBunny", image: "Bunny3.webp", 
-            package:"com.louise.enemy.MegaBunny",
-                ranks: [
-                    {value: 1, name: ""}
-                ],
-                offsetX: 0,offsetY: 0,
-                downloads:["com_louise_Bunny.zip"], 
+                rankImages: {
+                    1: "Bunny1.webp",
+                    2: "Bunny2.webp",
+                    3: "Bunny3.webp",
+                    4: "RabireeSP.png",
+                },
+                downloads:["com_OFC_mob_EXE3_010_Rabiree.zip"], 
             },
             { name: "Shrimpy", nickname:"Shrimpy (family)", image: "Shrimpy.webp", 
             package:"com.louise.enemy.Shrimpy",
@@ -2100,6 +2078,27 @@
                 },
                 offsetX: 0,offsetY: 50,
                 downloads:["com_louise_Quaker.zip"], 
+            },
+            { name: "Zomon / Zaemon", image: "Zomon.png", 
+            package:"com.OFC.char.EXE5-013-Zaemon",
+                ranks: [
+                    {value: 1, name: "Zomon"},
+                    {value: 2, name: "ZomonEX"},
+                    {value: 3, name: "Zemon"},
+                    {value: 4, name: "ZemonEX"},
+                    {value: 5, name: "Zymon"},
+                    {value: 6, name: "ZymonEX"},
+                ],
+                rankImages:{
+                    1:"Zomon.png",
+                    2:"ZomonEX.png",
+                    3:"Zemon.png",
+                    4:"ZemonEX.png",
+                    5:"Zymon.png",
+                    6:"ZymonEX.png",
+                },
+                offsetX: 6,offsetY: 0,
+                downloads:["com_OFC_mob_EXE5_013_Zaemon.zip"], 
             },
         ];
     
