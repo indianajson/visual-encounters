@@ -38,4 +38,5 @@ Feel free to ping @indianajson on the Discord if you have any problems. </p>
 - **[Keristero](http://github.com/keristero/)** for making ezEncounters.
 - **[CyanMan.EXE](https://x.com/CyanmanEXE)** for extensive bug testing.
 - **[Head DM](https://github.com/headdm/)** for finding the first serious bug after release.
+- **[ShaDisNX255](https://github.com/ShaDisNX255/)** for updating and adding viruses!
 
