@@ -2261,53 +2261,54 @@ function getRequiredDownloads() {
 
 async function downloadModFiles() {
     if (!$('#download-mods').is(':checked')) {
-        return Promise.resolve();
+        return { downloaded: [], failed: [] };
     }
-    
+
     const downloads = getRequiredDownloads();
     if (downloads.length === 0) {
-        return Promise.resolve();
+        return { downloaded: [], failed: [] };
     }
-    
+
     const modal = $('.modal-overlay');
     const progressBar = modal.find('.progress-bar').show();
     const progress = progressBar.find('.progress');
-    
+    const downloaded = [];
+    const failed = [];
+
     try {
-        // Create a new JSZip instance
         const JSZip = await loadJSZip();
         const zip = new JSZip();
-        
-        // Download each file and add to zip
+
         for (let i = 0; i < downloads.length; i++) {
-            const url = "mods/"+downloads[i];
-            //const filename = url.split('/').pop();
             const filename = downloads[i];
+            const url = 'mods/' + encodeURIComponent(filename);
             try {
-                progress.text(`Downloading ${filename}... (${i+1}/${downloads.length})`);
+                progress.text(`Downloading ${filename}... (${i + 1}/${downloads.length})`);
                 progress.css('width', `${(i / downloads.length) * 100}%`);
-                
+
                 const response = await fetch(url);
-                if (!response.ok) throw new Error(`Failed to download ${url}`);
-                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const blob = await response.blob();
+                if (!blob.size) throw new Error('Downloaded file was empty');
                 zip.file(filename, blob);
-                
+                downloaded.push(filename);
                 progress.css('width', `${((i + 1) / downloads.length) * 100}%`);
             } catch (err) {
                 console.error(`Failed to download ${url}:`, err);
-                // Continue with next file even if one fails
+                failed.push(filename);
             }
         }
-        
-        // Generate the zip file
-        progress.text('Creating zip file...');
+
+        if (!downloaded.includes('ezencounters.zip')) {
+            throw new Error('The bundled mods/ezencounters.zip could not be downloaded. Check that the mods folder is beside index.html.');
+        }
+
+        progress.text('Creating required_mods.zip...');
         const content = await zip.generateAsync({ type: 'blob' }, metadata => {
             progress.css('width', `${metadata.percent}%`);
             progress.text(`Creating zip... ${Math.round(metadata.percent)}%`);
         });
-        
-        // Download the zip
+
         const zipUrl = URL.createObjectURL(content);
         const a = document.createElement('a');
         a.href = zipUrl;
@@ -2315,14 +2316,21 @@ async function downloadModFiles() {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        URL.revokeObjectURL(zipUrl);
-        
-        progress.text('Download complete!');
-        setTimeout(() => modal.remove(), 2000);
+        setTimeout(() => URL.revokeObjectURL(zipUrl), 1000);
+
+        if (failed.length) {
+            progress.text(`ZIP ready. ${downloaded.length} files included; ${failed.length} unavailable. See browser console for names.`);
+            console.warn('Mod packages not present in the bundled mods/ folder:', failed);
+        } else {
+            progress.text('Download complete!');
+        }
+        setTimeout(() => modal.remove(), failed.length ? 6000 : 2000);
+        return { downloaded, failed };
     } catch (err) {
         console.error('Error creating mod zip:', err);
-        progress.text('Error creating zip file');
+        progress.text('Error creating zip file: ' + err.message);
         progress.css('background-color', '#f44336');
+        throw err;
     }
 }
 
@@ -4465,5 +4473,6 @@ $(document).ready(function() {
     <div class="tile-popup-content"></div>
     <div class="tile-popup-hint"></div>
 </div>
+<script src="liberation-editor.js"></script>
 </body>
 </html>
