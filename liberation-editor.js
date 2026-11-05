@@ -24,6 +24,7 @@
         bosses: 'Boss Encounters'
     };
     const DEFAULT_PATH = '/server/assets/ezlibs-assets/ezencounters/ezencounters.zip';
+    const MATRIX_KEYS = ['teams', 'tiles', 'positions', 'obstacle_positions'];
 
     const state = {
         activeView: 'legacy',
@@ -96,10 +97,7 @@
         });
         const loadInput = document.getElementById('load-file');
         if (loadInput) loadInput.disabled = isNebulous;
-        // Team ownership is generated from runtime terrain for liberation battles.
-        // Keep the legacy control intact, but prevent authoring a team override here.
-        const teamInput = document.getElementById('tile-team');
-        if (teamInput) teamInput.disabled = isNebulous;
+        updateManualControls();
         // Liberation music is configured by the Tiled Liberation Config object.
         // The callback field is not part of the current encounter table schema.
         ['#music-path', '#results-callback'].forEach(selector => {
@@ -109,6 +107,42 @@
         // Keep the original Download Mods checkbox available in both modes.
         const downloadMods = document.querySelector('label:has(#download-mods)');
         if (downloadMods) downloadMods.style.display = '';
+    }
+
+    function activeEncounter() {
+        return state.activeView === 'new' && typeof config !== 'undefined' &&
+            currentVariationIndex >= 0 && config.encounters[currentVariationIndex];
+    }
+
+    function manualEnabled(variation) {
+        return !!(variation && variation.manual_battlefield_override);
+    }
+
+    function updateManualControls() {
+        const variation = activeEncounter();
+        const enabled = manualEnabled(variation);
+        const toggle = document.getElementById('ve-manual-battlefield');
+        if (toggle) {
+            toggle.checked = enabled;
+            toggle.disabled = !variation;
+        }
+        ['tile-team', 'tile-type'].forEach(id => {
+            const input = document.getElementById(id);
+            if (input) input.disabled = state.activeView === 'new' && !enabled;
+        });
+        const note = document.getElementById('ve-manual-note');
+        if (note) note.textContent = enabled
+            ? 'Manual: Teams, tile types, enemy positions and obstacles are exported. Player spawn is always editable.'
+            : 'Automatic: Runtime chooses teams, tile types and enemy/obstacle positions. Player spawn is always exported.';
+    }
+
+    function ensureMatrix(variation, key) {
+        if (!Array.isArray(variation[key])) {
+            variation[key] = key === 'teams'
+                ? defaultTeamPositions.map(row => [...row])
+                : Array.from({ length: 3 }, () => Array(6).fill(key === 'tiles' ? 1 : 0));
+        }
+        return variation[key];
     }
 
     function updateTopTabs() {
@@ -172,6 +206,7 @@
             $('#freedom-mission-options').hide();
         }
         refreshSectionTabs();
+        updateManualControls();
     }
 
     function activateView(view) {
@@ -314,12 +349,16 @@
         });
         const allowedKeys = [
             'name', 'path', 'weight', 'enemies', 'obstacles',
-            'positions', 'obstacle_positions', 'player_positions', 'tiles',
+            'positions', 'obstacle_positions', 'player_positions', 'tiles', 'teams',
             'freedom_mission'
         ];
         const cleanEntries = section => (state.data[section] || []).map(entry => {
             const clean = {};
-            allowedKeys.forEach(key => { if (entry[key] !== undefined) clean[key] = entry[key]; });
+            allowedKeys.forEach(key => {
+                if (entry[key] !== undefined && (key === 'player_positions' || !MATRIX_KEYS.includes(key) || manualEnabled(entry))) {
+                    clean[key] = entry[key];
+                }
+            });
             if (clean.freedom_mission && typeof clean.freedom_mission === 'object') {
                 if (!clean.freedom_mission.enabled) delete clean.freedom_mission;
                 else clean.freedom_mission = {
@@ -422,10 +461,8 @@
         delete value.terrain;
         delete value.music;
         delete value.results_callback;
-        // A teams matrix is authoritative in ezencounters and disables the
-        // runtime terrain-based team formation. Never retain it in this editor.
-        delete value.teams;
-        ['positions', 'obstacle_positions', 'player_positions', 'tiles'].forEach(key => {
+        value.manual_battlefield_override = !!value.manual_battlefield_override || Array.isArray(value.teams);
+        ['positions', 'obstacle_positions', 'player_positions', 'tiles', 'teams'].forEach(key => {
             if (Array.isArray(value[key])) value[key] = grid(value[key], key === 'tiles' ? 1 : 0);
             else delete value[key];
         });
@@ -488,7 +525,22 @@
         });
         return el('div', { id: 've-nebulous-controls' }, [
             tabs,
-            el('div', { class: 've-schema-note', text: 'Terrain is supplied at runtime. The default preview shows the player-side 3×3 field on the left and enemy-side 3×3 field on the right. Place one player marker and enemies as needed; positions are optional manual preferences that runtime terrain may relocate. Editing Teams or Tiles creates a manual override. Liberation music comes from the Tiled Liberation Config → Encounter Music reference.' }),
+            el('div', { class: 've-schema-note', text: 'Runtime terrain determines the automatic battlefield. The player marker is editable in either mode and runtime relocates it to the nearest valid player-team tile if necessary. Liberation music comes from the Tiled Liberation Config → Encounter Music reference.' }),
+            el('label', { class: 've-manual-toggle' }, [
+                el('input', { id: 've-manual-battlefield', type: 'checkbox', onChange: event => {
+                    const variation = activeEncounter();
+                    if (!variation) return;
+                    variation.manual_battlefield_override = event.target.checked;
+                    if (event.target.checked) {
+                        MATRIX_KEYS.forEach(key => ensureMatrix(variation, key));
+                    }
+                    updateManualControls();
+                    updateGrid();
+                    saveToLocalStorage();
+                } }),
+                ' Manual Battlefield Override'
+            ]),
+            el('div', { id: 've-manual-note', class: 've-schema-note' }),
             el('button', { type: 'button', class: 've-action', onClick: () => {
                 const name = prompt('Enter a name for the new encounter (letters and numbers only):');
                 if (name === null) return;
@@ -573,14 +625,7 @@
             const row = selectedTile.row, col = selectedTile.col;
             const makeGrid = () => Array.from({ length: 3 }, () => Array(6).fill(0));
             // Liberation team ownership comes from runtime terrain, not editor data.
-            const team = defaultTeamPositions[row][col];
-
-            // Preserve the previous player marker if the requested cell is invalid.
-            if (type === 'player' && team !== 2) {
-                showStatus('Player can only be placed on the default player-side 3×3 field (or a manually assigned player team).', 'error');
-                withPreviewMatrices(variation, () => originalUpdateTileFields());
-                return;
-            }
+            // Player spawn is a preference; runtime relocates it if its team is invalid.
 
             if (type === 'player') {
                 if (!Array.isArray(variation.player_positions)) variation.player_positions = makeGrid();
@@ -606,10 +651,12 @@
                 $('#enemy-properties').show(); $('#obstacle-properties').hide();
                 const firstEnemy = enemyDictionary[0].name;
                 $('#enemy-type').val(firstEnemy).trigger('change');
+                updateEnemyOnTile();
             } else if (type === 'obstacle') {
                 $('#enemy-properties').hide(); $('#obstacle-properties').show();
                 const firstObstacle = obstacleDictionary[1].name;
                 $('#obstacle-type').val(firstObstacle).trigger('change');
+                updateObstacleOnTile();
             } else {
                 $('#enemy-properties').hide(); $('#obstacle-properties').hide();
             }
@@ -631,14 +678,49 @@
                     [0, 1, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0]
                 ],
-                freedom_mission: { enabled: false, turn_count: 5, player_can_flip: false }
+                freedom_mission: { enabled: false, turn_count: 5, player_can_flip: false },
+                manual_battlefield_override: false
             };
             config.encounters.push(entry);
             currentVariationIndex = config.encounters.length - 1;
             refreshVariationDropdown();
             selectVariation(currentVariationIndex);
+            updateManualControls();
             saveToLocalStorage();
             status('Added ' + uniqueName + '. Place the player and enemies on the default 3×3 sides, or leave positions empty for runtime generation.', true);
+        };
+
+        // The legacy editor registers multiple change handlers for these controls.
+        // Capture our Nebulous edits first and stop those handlers from applying
+        // legacy-only player deletion and matrix creation rules.
+        ['tile-team', 'tile-type', 'content-type'].forEach(id => {
+            const input = document.getElementById(id);
+            if (!input) return;
+            input.addEventListener('change', event => {
+                if (id === 'content-type') {
+                    if (!window.__veNebulousMode) return;
+                    event.stopImmediatePropagation();
+                    window.handleNebulousContentType(input.value);
+                    return;
+                }
+                if (!window.__veNebulousMode) return;
+                event.stopImmediatePropagation();
+                const variation = activeEncounter();
+                if (!variation || !selectedTile || !manualEnabled(variation)) return;
+                const key = id === 'tile-team' ? 'teams' : 'tiles';
+                const fallback = key === 'tiles' ? 1 : 0;
+                const value = Number.parseInt(input.value, 10);
+                ensureMatrix(variation, key)[selectedTile.row][selectedTile.col] = Number.isFinite(value) ? value : fallback;
+                updateTileImage(selectedTile.row, selectedTile.col);
+                saveToLocalStorage();
+            }, true);
+        });
+
+        const originalSelectVariation = window.selectVariation;
+        window.selectVariation = function(index) {
+            const result = originalSelectVariation(index);
+            updateManualControls();
+            return result;
         };
 
         window.saveToLocalStorage = function() {
