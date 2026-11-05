@@ -220,23 +220,65 @@
     function serializeLua(value, depth) {
         const indent = '    '.repeat(depth);
         const childIndent = '    '.repeat(depth + 1);
-        if (value === null || value === undefined) return 'nil';
-        if (typeof value === 'string') return luaString(value);
-        if (typeof value === 'number') {
-            if (!Number.isFinite(value)) throw new Error('Cannot export NaN or Infinity.');
-            return String(value);
+        const inlineLimit = 112;
+
+        function keyFor(key) {
+            return /^[A-Za-z_][A-Za-z0-9_]*$/.test(key) ? key : '[' + luaString(key) + ']';
         }
-        if (typeof value === 'boolean') return value ? 'true' : 'false';
+
+        function primitive(item) {
+            if (item === null || item === undefined) return 'nil';
+            if (typeof item === 'string') return luaString(item);
+            if (typeof item === 'number') {
+                if (!Number.isFinite(item)) throw new Error('Cannot export NaN or Infinity.');
+                return String(item);
+            }
+            if (typeof item === 'boolean') return item ? 'true' : 'false';
+            return null;
+        }
+
+        // Keep short values (enemy definitions, options, and simple arrays) on
+        // one line. Larger tables fall back to the structured layout below.
+        function inline(item) {
+            const scalar = primitive(item);
+            if (scalar !== null) return scalar;
+            if (Array.isArray(item)) {
+                const values = item.map(inline);
+                if (values.some(value => value === null)) return null;
+                return '{ ' + values.join(', ') + ' }';
+            }
+            if (item && typeof item === 'object') {
+                const entries = Object.entries(item).filter(([, child]) => child !== undefined);
+                const values = entries.map(([key, child]) => {
+                    const serialized = inline(child);
+                    return serialized === null ? null : keyFor(key) + ' = ' + serialized;
+                });
+                if (values.some(value => value === null)) return null;
+                return entries.length ? '{ ' + values.join(', ') + ' }' : '{}';
+            }
+            return null;
+        }
+
+        const scalar = primitive(value);
+        if (scalar !== null) return scalar;
+
+        const compact = inline(value);
+        if (compact !== null && compact.length <= inlineLimit) return compact;
+
         if (Array.isArray(value)) {
             if (!value.length) return '{}';
-            return '{\n' + value.map(item => childIndent + serializeLua(item, depth + 1) + ',').join('\n') + '\n' + indent + '}';
+            // Grid rows stay compact, while the 3-row grid remains easy to scan.
+            const lines = value.map(item => {
+                const itemInline = inline(item);
+                return childIndent + (itemInline !== null ? itemInline : serializeLua(item, depth + 1)) + ',';
+            });
+            return '{\n' + lines.join('\n') + '\n' + indent + '}';
         }
-        if (typeof value === 'object') {
+        if (value && typeof value === 'object') {
             const entries = Object.entries(value).filter(([, item]) => item !== undefined);
             if (!entries.length) return '{}';
             return '{\n' + entries.map(([key, item]) => {
-                const luaKey = /^[A-Za-z_][A-Za-z0-9_]*$/.test(key) ? key : '[' + luaString(key) + ']';
-                return childIndent + luaKey + ' = ' + serializeLua(item, depth + 1) + ',';
+                return childIndent + keyFor(key) + ' = ' + serializeLua(item, depth + 1) + ',';
             }).join('\n') + '\n' + indent + '}';
         }
         throw new Error('Unsupported encounter value: ' + typeof value);
