@@ -220,8 +220,7 @@
     function serializeLua(value, depth) {
         const indent = '    '.repeat(depth);
         const childIndent = '    '.repeat(depth + 1);
-        const inlineLimit = 112;
-
+        const inlineEntryLimit = 112;
         function keyFor(key) {
             return /^[A-Za-z_][A-Za-z0-9_]*$/.test(key) ? key : '[' + luaString(key) + ']';
         }
@@ -262,21 +261,23 @@
         const scalar = primitive(value);
         if (scalar !== null) return scalar;
 
-        const compact = inline(value);
-        if (compact !== null && compact.length <= inlineLimit) return compact;
-
         if (Array.isArray(value)) {
             if (!value.length) return '{}';
-            // Grid rows stay compact, while the 3-row grid remains easy to scan.
+            // Keep each list entry on its own line. Object entries (enemy and
+            // obstacle definitions) and nested arrays (battlefield rows) stay
+            // inline, matching the encounter-table layout used by the server.
             const lines = value.map(item => {
                 const itemInline = inline(item);
-                return childIndent + (itemInline !== null ? itemInline : serializeLua(item, depth + 1)) + ',';
+                const useInline = itemInline !== null && itemInline.length <= inlineEntryLimit;
+                return childIndent + (useInline ? itemInline : serializeLua(item, depth + 1)) + ',';
             });
             return '{\n' + lines.join('\n') + '\n' + indent + '}';
         }
         if (value && typeof value === 'object') {
             const entries = Object.entries(value).filter(([, item]) => item !== undefined);
             if (!entries.length) return '{}';
+            // Encounter/configuration tables use one property per line. Only
+            // their contained short records and row arrays are kept inline.
             return '{\n' + entries.map(([key, item]) => {
                 return childIndent + keyFor(key) + ' = ' + serializeLua(item, depth + 1) + ',';
             }).join('\n') + '\n' + indent + '}';
