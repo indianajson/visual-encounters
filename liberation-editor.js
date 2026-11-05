@@ -29,6 +29,7 @@
     const state = {
         activeView: 'legacy',
         activeSection: 'encounters',
+        categoryBattlefieldDefaults: { encounters: false, special_encounters: false, bosses: false },
         legacyConfig: null,
         data: {
             minimum_steps_before_encounter: 80,
@@ -114,17 +115,35 @@
             currentVariationIndex >= 0 && config.encounters[currentVariationIndex];
     }
 
+    // An encounter can inherit its category setting or explicitly override it.
+    // Category defaults are editor workspace settings, never Lua runtime fields.
     function manualEnabled(variation) {
-        return !!(variation && variation.manual_battlefield_override);
+        if (!variation) return false;
+        if (variation.manual_battlefield_override === true) return true;
+        if (variation.manual_battlefield_override === false) return false;
+        return !!state.categoryBattlefieldDefaults[state.activeSection];
+    }
+
+    function manualEnabledForSection(variation, section) {
+        if (variation.manual_battlefield_override === true) return true;
+        if (variation.manual_battlefield_override === false) return false;
+        return !!state.categoryBattlefieldDefaults[section];
+    }
+
+    function initializeManualMatrices(variation) {
+        MATRIX_KEYS.forEach(key => ensureMatrix(variation, key));
     }
 
     function updateManualControls() {
         const variation = activeEncounter();
         const enabled = manualEnabled(variation);
-        const toggle = document.getElementById('ve-manual-battlefield');
-        if (toggle) {
-            toggle.checked = enabled;
-            toggle.disabled = !variation;
+        const categoryToggle = document.getElementById('ve-category-manual-battlefield');
+        if (categoryToggle) categoryToggle.checked = !!state.categoryBattlefieldDefaults[state.activeSection];
+        const mode = document.getElementById('ve-encounter-battlefield-mode');
+        if (mode) {
+            mode.disabled = !variation;
+            mode.value = !variation || variation.manual_battlefield_override == null ? 'inherit'
+                : variation.manual_battlefield_override ? 'manual' : 'automatic';
         }
         ['tile-team', 'tile-type'].forEach(id => {
             const input = document.getElementById(id);
@@ -132,8 +151,8 @@
         });
         const note = document.getElementById('ve-manual-note');
         if (note) note.textContent = enabled
-            ? 'Manual: Teams, tile types, enemy positions and obstacles are exported. Player spawn is always editable.'
-            : 'Automatic: Runtime chooses teams, tile types and enemy/obstacle positions. Player spawn is always exported.';
+            ? 'Manual battlefield: Teams, tiles, enemy positions and obstacles are exported. Player spawn is always editable.'
+            : 'Automatic battlefield: Runtime chooses teams, tiles and enemy/obstacle positions. Player spawn is always exported.';
     }
 
     function ensureMatrix(variation, key) {
@@ -355,7 +374,7 @@
         const cleanEntries = section => (state.data[section] || []).map(entry => {
             const clean = {};
             allowedKeys.forEach(key => {
-                if (entry[key] !== undefined && (key === 'player_positions' || !MATRIX_KEYS.includes(key) || manualEnabled(entry))) {
+                if (entry[key] !== undefined && (key === 'player_positions' || !MATRIX_KEYS.includes(key) || manualEnabledForSection(entry, section))) {
                     clean[key] = entry[key];
                 }
             });
@@ -461,7 +480,11 @@
         delete value.terrain;
         delete value.music;
         delete value.results_callback;
-        value.manual_battlefield_override = !!value.manual_battlefield_override || Array.isArray(value.teams);
+        // Preserve explicit true/false; imported Lua has no editor metadata,
+        // so authored teams indicate a manual encounter on import.
+        if (value.manual_battlefield_override !== true && value.manual_battlefield_override !== false) {
+            value.manual_battlefield_override = Array.isArray(value.teams) ? true : null;
+        }
         ['positions', 'obstacle_positions', 'player_positions', 'tiles', 'teams'].forEach(key => {
             if (Array.isArray(value[key])) value[key] = grid(value[key], key === 'tiles' ? 1 : 0);
             else delete value[key];
@@ -493,6 +516,7 @@
     }
 
     function loadNebulousData(data) {
+        state.categoryBattlefieldDefaults = { encounters: false, special_encounters: false, bosses: false };
         state.data = {
             minimum_steps_before_encounter: Number(data.minimum_steps_before_encounter ?? 80),
             encounter_chance_per_step: Number(data.encounter_chance_per_step ?? 0.05),
@@ -527,18 +551,36 @@
             tabs,
             el('div', { class: 've-schema-note', text: 'Runtime terrain determines the automatic battlefield. The player marker is editable in either mode and runtime relocates it to the nearest valid player-team tile if necessary. Liberation music comes from the Tiled Liberation Config → Encounter Music reference.' }),
             el('label', { class: 've-manual-toggle' }, [
-                el('input', { id: 've-manual-battlefield', type: 'checkbox', onChange: event => {
-                    const variation = activeEncounter();
-                    if (!variation) return;
-                    variation.manual_battlefield_override = event.target.checked;
+                el('input', { id: 've-category-manual-battlefield', type: 'checkbox', onChange: event => {
+                    state.categoryBattlefieldDefaults[state.activeSection] = event.target.checked;
+                    // Only inherited encounters are affected. Explicit per-encounter
+                    // overrides remain untouched.
                     if (event.target.checked) {
-                        MATRIX_KEYS.forEach(key => ensureMatrix(variation, key));
+                        (state.data[state.activeSection] || []).forEach(variation => {
+                            if (variation.manual_battlefield_override == null) initializeManualMatrices(variation);
+                        });
                     }
                     updateManualControls();
                     updateGrid();
                     saveToLocalStorage();
                 } }),
-                ' Manual Battlefield Override'
+                ' Manual battlefield default for this category'
+            ]),
+            el('label', { class: 've-manual-toggle' }, [
+                'Selected encounter: ',
+                el('select', { id: 've-encounter-battlefield-mode', onChange: event => {
+                    const variation = activeEncounter();
+                    if (!variation) return;
+                    variation.manual_battlefield_override = event.target.value === 'inherit' ? null : event.target.value === 'manual';
+                    if (manualEnabled(variation)) initializeManualMatrices(variation);
+                    updateManualControls();
+                    updateGrid();
+                    saveToLocalStorage();
+                } }, [
+                    el('option', { value: 'inherit', text: 'Use category default' }),
+                    el('option', { value: 'manual', text: 'Manual override' }),
+                    el('option', { value: 'automatic', text: 'Automatic override' })
+                ])
             ]),
             el('div', { id: 've-manual-note', class: 've-schema-note' }),
             el('button', { type: 'button', class: 've-action', onClick: () => {
@@ -679,8 +721,9 @@
                     [0, 0, 0, 0, 0, 0]
                 ],
                 freedom_mission: { enabled: false, turn_count: 5, player_can_flip: false },
-                manual_battlefield_override: false
+                manual_battlefield_override: null
             };
+            if (manualEnabled(entry)) initializeManualMatrices(entry);
             config.encounters.push(entry);
             currentVariationIndex = config.encounters.length - 1;
             refreshVariationDropdown();
@@ -728,7 +771,9 @@
             state.data[state.activeSection] = config.encounters;
             state.data.minimum_steps_before_encounter = config.minimum_steps_before_encounter;
             state.data.encounter_chance_per_step = config.encounter_chance_per_step;
-            localStorage.setItem('nebulousEncounterConfig', JSON.stringify(state.data));
+            localStorage.setItem('nebulousEncounterConfig', JSON.stringify({
+                ...state.data, categoryBattlefieldDefaults: state.categoryBattlefieldDefaults
+            }));
         };
     }
 
@@ -750,6 +795,9 @@
             const saved = localStorage.getItem('nebulousEncounterConfig');
             if (saved) {
                 const data = JSON.parse(saved);
+                state.categoryBattlefieldDefaults = Object.fromEntries(SECTION_KEYS.map(section => [
+                    section, !!(data.categoryBattlefieldDefaults && data.categoryBattlefieldDefaults[section])
+                ]));
                 state.data = {
                     minimum_steps_before_encounter: Number(data.minimum_steps_before_encounter ?? 80),
                     encounter_chance_per_step: Number(data.encounter_chance_per_step ?? 0.05),
