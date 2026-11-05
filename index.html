@@ -439,6 +439,9 @@
                     <label>Nickname (optional):
                         <input type="text" id="enemy-nickname">
                     </label>
+                    <label>Starting Health (optional):
+                        <input type="number" id="enemy-health" min="1" step="1">
+                    </label>
                 </div>
                 
                 <div id="obstacle-properties" style="display:none;">
@@ -2931,6 +2934,7 @@ function updateTileFields() {
             $('#enemy-type').val(enemy.name).trigger('change');
             $('#enemy-rank').val(enemy.rank || 1).trigger('change');
             $('#enemy-nickname').val(enemy.nickname || '');
+            $('#enemy-health').val(enemy.health === undefined || enemy.health === null ? '' : enemy.health);
         }
     } else if (obstacleValue > 0 && variation.obstacles && obstacleValue <= variation.obstacles.length) {
         $('#content-type').val('obstacle');
@@ -2949,6 +2953,7 @@ function updateTileFields() {
         $('#content-type').val('none');
         $('#enemy-properties').hide();
         $('#obstacle-properties').hide();
+        $('#enemy-health').val('');
     }
 }
 
@@ -3089,7 +3094,9 @@ function setupEventHandlers() {
         $('#tile-type').change(function() {
             if (!selectedTile || currentVariationIndex === -1) return;
             const value = parseInt($(this).val()) || 1;
-            config.encounters[currentVariationIndex].tiles[selectedTile.row][selectedTile.col] = value;
+            const variation = config.encounters[currentVariationIndex];
+            if (!variation.tiles) variation.tiles = Array.from({ length: 3 }, () => Array(6).fill(1));
+            variation.tiles[selectedTile.row][selectedTile.col] = value;
             updateTileImage(selectedTile.row, selectedTile.col);
             saveToLocalStorage();
         });
@@ -3122,6 +3129,10 @@ function setupEventHandlers() {
         
         $('#content-type').change(function() {
             if (!selectedTile || currentVariationIndex === -1) return;
+            if (window.__veNebulousMode && typeof window.handleNebulousContentType === 'function') {
+                window.handleNebulousContentType($(this).val());
+                return;
+            }
             
             const type = $(this).val();
             const variation = config.encounters[currentVariationIndex];
@@ -3171,6 +3182,15 @@ function setupEventHandlers() {
 
         $('#enemy-rank').change(updateEnemyOnTile);
         $('#enemy-nickname').change(updateEnemyOnTile);
+        $('#enemy-health').change(function() {
+            const raw = String($(this).val()).trim();
+            if (raw && (!Number.isFinite(Number(raw)) || Number(raw) <= 0)) {
+                showStatus('Starting health must be a positive number.', 'error');
+                $(this).val('');
+                return;
+            }
+            updateEnemyOnTile();
+        });
         
         // Obstacle properties
         $('#obstacle-type').change(updateObstacleOnTile);
@@ -3302,9 +3322,12 @@ function updateEnemyOnTile() {
     // Get enemy properties
     const name = $('#enemy-type').val();
     //const rank = parseInt($('#enemy-rank').val()) || 1;
-    const rank = parseInt($('#enemy-rank').val()) || enemy.ranks[0].value;
+    const selectedEnemyDef = enemyDictionary.find(item => item.name === name);
+    const rank = parseInt($('#enemy-rank').val()) || (selectedEnemyDef && selectedEnemyDef.ranks.length ? selectedEnemyDef.ranks[0].value : 1);
 
     const nickname = $('#enemy-nickname').val();
+    const healthRaw = $('#enemy-health').val();
+    const health = healthRaw === '' ? undefined : Number(healthRaw);
     
     // First check if an identical enemy already exists
     let enemyIndex = -1;
@@ -3317,10 +3340,13 @@ function updateEnemyOnTile() {
     // Create or update enemy
     const enemy = { name, rank };
     if (nickname) enemy.nickname = nickname;
+    if (Number.isFinite(health) && health > 0) enemy.health = health;
     
     if (enemyIndex >= 0) {
         // Update existing enemy (preserve any additional properties)
-        variation.enemies[enemyIndex] = { ...variation.enemies[enemyIndex], ...enemy };
+        const previousEnemy = variation.enemies[enemyIndex];
+        variation.enemies[enemyIndex] = { ...previousEnemy, ...enemy };
+        if (healthRaw === '' && previousEnemy.health !== undefined) variation.enemies[enemyIndex].health = previousEnemy.health;
         variation.positions[row][col] = enemyIndex + 1; // +1 because positions are 1-based
     } else {
         // Add new enemy
