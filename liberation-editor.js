@@ -96,6 +96,10 @@
         });
         const loadInput = document.getElementById('load-file');
         if (loadInput) loadInput.disabled = isNebulous;
+        // Team ownership is generated from runtime terrain for liberation battles.
+        // Keep the legacy control intact, but prevent authoring a team override here.
+        const teamInput = document.getElementById('tile-team');
+        if (teamInput) teamInput.disabled = isNebulous;
         // Liberation music is configured by the Tiled Liberation Config object.
         // The callback field is not part of the current encounter table schema.
         ['#music-path', '#results-callback'].forEach(selector => {
@@ -310,7 +314,7 @@
         });
         const allowedKeys = [
             'name', 'path', 'weight', 'enemies', 'obstacles',
-            'positions', 'obstacle_positions', 'player_positions', 'tiles', 'teams',
+            'positions', 'obstacle_positions', 'player_positions', 'tiles',
             'freedom_mission'
         ];
         const cleanEntries = section => (state.data[section] || []).map(entry => {
@@ -418,10 +422,27 @@
         delete value.terrain;
         delete value.music;
         delete value.results_callback;
-        ['positions', 'obstacle_positions', 'player_positions', 'tiles', 'teams'].forEach(key => {
+        // A teams matrix is authoritative in ezencounters and disables the
+        // runtime terrain-based team formation. Never retain it in this editor.
+        delete value.teams;
+        ['positions', 'obstacle_positions', 'player_positions', 'tiles'].forEach(key => {
             if (Array.isArray(value[key])) value[key] = grid(value[key], key === 'tiles' ? 1 : 0);
             else delete value[key];
         });
+        // Nebulous Liberation encounters are single-player. Keep the first
+        // imported player marker and clear any additional markers, matching
+        // the legacy editor's one-player placement behavior.
+        if (value.player_positions) {
+            let foundPlayer = false;
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 6; col++) {
+                    if (Number(value.player_positions[row][col]) > 0) {
+                        if (foundPlayer) value.player_positions[row][col] = 0;
+                        else foundPlayer = true;
+                    }
+                }
+            }
+        }
         if (!value.freedom_mission || typeof value.freedom_mission !== 'object') {
             value.freedom_mission = { enabled: false, turn_count: 5, player_can_flip: false };
         } else {
@@ -551,7 +572,8 @@
             const variation = config.encounters[currentVariationIndex];
             const row = selectedTile.row, col = selectedTile.col;
             const makeGrid = () => Array.from({ length: 3 }, () => Array(6).fill(0));
-            const team = variation.teams ? variation.teams[row][col] : defaultTeamPositions[row][col];
+            // Liberation team ownership comes from runtime terrain, not editor data.
+            const team = defaultTeamPositions[row][col];
 
             // Preserve the previous player marker if the requested cell is invalid.
             if (type === 'player' && team !== 2) {
@@ -602,6 +624,13 @@
             while (names.has(uniqueName)) uniqueName = name + '_' + suffix++;
             const entry = {
                 name: uniqueName, path: DEFAULT_PATH, weight: 10, enemies: [], obstacles: [],
+                // Legacy-compatible single-player spawn at the center of the
+                // player-side 3x3 field (row 2, column 2; Lua indices).
+                player_positions: [
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 1, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0]
+                ],
                 freedom_mission: { enabled: false, turn_count: 5, player_can_flip: false }
             };
             config.encounters.push(entry);
