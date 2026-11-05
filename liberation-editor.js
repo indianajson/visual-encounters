@@ -76,6 +76,40 @@
             #ve-nebulous-status.bad{display:block;background:#f2dede;color:#8a2525}
             body.dark-mode #ve-nebulous-status.ok{background:#29432a;color:#d8f2d2}
             body.dark-mode #ve-nebulous-status.bad{background:#4a2929;color:#ffdede}
+            /* Nebulous-only workspace: keep the legacy grid and controls intact. */
+            #ve-nebulous-view{--ve-border:#d9dee7;--ve-muted:#64748b;--ve-surface:#fff;--ve-soft:#f4f7fb}
+            #ve-nebulous-view .toolbar{margin:0 0 12px;align-items:center}
+            #ve-nebulous-view .toolbar #variation-select{min-width:180px;max-width:320px;flex:1}
+            #ve-nebulous-view #ve-nebulous-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 20px;padding:16px;margin-bottom:12px;background:var(--ve-surface);border:1px solid var(--ve-border);border-radius:10px}
+            #ve-nebulous-view #ve-nebulous-controls .ve-section-tabs{grid-column:1/-1;border-bottom:1px solid var(--ve-border);padding-bottom:12px}
+            #ve-nebulous-view #ve-nebulous-controls .ve-schema-note{grid-column:1/-1;margin:0}
+            #ve-nebulous-view #ve-nebulous-controls .ve-manual-toggle{display:flex;align-items:center;gap:8px;min-width:0;font-size:13px}
+            #ve-nebulous-view #ve-nebulous-controls .ve-manual-toggle select{max-width:100%;padding:7px;border-radius:5px}
+            #ve-nebulous-view #ve-nebulous-controls button{min-height:34px}
+            #ve-nebulous-view #ve-nebulous-controls .ve-actions{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--ve-border);padding-top:12px}
+            #ve-nebulous-view #grid-panel{padding:16px;min-width:0}
+            #ve-nebulous-view .ve-workspace{display:grid;grid-template-columns:minmax(0, 1fr) minmax(290px,350px);gap:16px;align-items:start}
+            #ve-nebulous-view .ve-battlefield,#ve-nebulous-view .ve-sidebar-section,#ve-nebulous-view .ve-details{background:var(--ve-surface);border:1px solid var(--ve-border);border-radius:9px;padding:14px;min-width:0}
+            #ve-nebulous-view .ve-battlefield h2,#ve-nebulous-view .ve-sidebar-section h3,#ve-nebulous-view .ve-details h3{margin:0 0 12px;font-size:17px}
+            #ve-nebulous-view .ve-battlefield .ve-help{font-size:12px;color:var(--ve-muted);margin:0 0 12px;line-height:1.5}
+            #ve-nebulous-view .ve-grid-scroll{overflow-x:auto;overflow-y:visible;padding:6px 4px 14px;max-width:100%}
+            #ve-nebulous-view .ve-grid-scroll #battle-grid{width:max-content;margin-bottom:0}
+            #ve-nebulous-view .ve-sidebar{display:flex;flex-direction:column;gap:14px;min-width:0}
+            #ve-nebulous-view .ve-sidebar-section .properties-panel{margin:0;padding:0;box-shadow:none}
+            #ve-nebulous-view .ve-sidebar-section label,#ve-nebulous-view .ve-details label{display:block;margin:0 0 10px;font-size:13px}
+            #ve-nebulous-view .ve-sidebar-section input:not([type=checkbox]),#ve-nebulous-view .ve-sidebar-section select,#ve-nebulous-view .ve-details input:not([type=checkbox]){box-sizing:border-box;width:100%;max-width:100%;padding:8px;min-height:34px;border:1px solid var(--ve-border);border-radius:5px}
+            #ve-nebulous-view .ve-sidebar-section input[type=checkbox],#ve-nebulous-view .ve-details input[type=checkbox]{width:auto;margin-right:6px}
+            #ve-nebulous-view .ve-details{margin-top:16px}
+            #ve-nebulous-view .ve-details .properties-panel{margin:0;padding:0;box-shadow:none}
+            #ve-nebulous-view .ve-details .ve-config-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+            #ve-nebulous-view .ve-details h3{margin-top:8px}
+            #ve-nebulous-view .ve-details .freedom-mission-options{padding:12px;border-radius:6px}
+            #ve-nebulous-view .ve-sidebar-empty{color:var(--ve-muted);font-size:13px;line-height:1.5}
+            body.dark-mode #ve-nebulous-view{--ve-border:#525866;--ve-muted:#b8c1ce;--ve-surface:#30343b;--ve-soft:#383d45}
+            body.dark-mode #ve-nebulous-view #ve-nebulous-controls{background:var(--ve-surface);color:#eee}
+            body.dark-mode #ve-nebulous-view .ve-battlefield,body.dark-mode #ve-nebulous-view .ve-sidebar-section,body.dark-mode #ve-nebulous-view .ve-details{background:var(--ve-surface)}
+            @media(max-width:1150px){#ve-nebulous-view .ve-workspace{grid-template-columns:minmax(0,1fr)}#ve-nebulous-view .ve-sidebar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
+            @media(max-width:700px){#ve-nebulous-view #ve-nebulous-controls{grid-template-columns:1fr}#ve-nebulous-view .ve-sidebar{display:flex}#ve-nebulous-view .ve-details .ve-config-grid{grid-template-columns:1fr}#ve-nebulous-view .ve-workspace{gap:10px}}
         `;
         document.head.appendChild(el('style', { id: 'nebulous-editor-styles', text: css }));
     }
@@ -228,6 +262,59 @@
         updateManualControls();
     }
 
+    // Move the original DOM controls, rather than cloning them: existing event
+    // listeners and Select2 instances continue to operate on the same nodes.
+    function arrangeNebulousWorkspace() {
+        const panel = document.getElementById('grid-panel');
+        if (!panel || panel.querySelector('.ve-workspace')) return;
+        const heading = panel.querySelector(':scope > h2');
+        const grid = document.getElementById('battle-grid');
+        const variation = document.getElementById('variation-properties');
+        const tile = document.getElementById('tile-properties');
+        const statusBox = panel.querySelector(':scope > .status-container');
+        if (!heading || !grid || !variation || !tile) return;
+        const workspace = el('div', { class: 've-workspace' });
+        const battlefield = el('section', { class: 've-battlefield' });
+        const gridScroll = el('div', { class: 've-grid-scroll' });
+        const sidebar = el('aside', { class: 've-sidebar' });
+        const tools = el('section', { class: 've-sidebar-section' }, [
+            el('h3', { text: 'Selected Tile & Editing Tools' }),
+            el('p', { class: 've-sidebar-empty', text: 'Select a battlefield tile to edit its team, tile type, or occupant. Player spawn is editable in either battlefield mode.' })
+        ]);
+        const details = el('section', { class: 've-details' });
+        const detailGrid = el('div', { class: 've-config-grid' });
+        battlefield.appendChild(heading);
+        battlefield.appendChild(el('p', { class: 've-help', text: '6 × 3 battlefield · Click a tile to configure its contents. The runtime adjusts player spawn to the nearest valid team tile.' }));
+        gridScroll.appendChild(grid);
+        battlefield.appendChild(gridScroll);
+        tools.appendChild(tile);
+        sidebar.appendChild(tools);
+        workspace.appendChild(battlefield);
+        workspace.appendChild(sidebar);
+        details.appendChild(el('h3', { text: 'Encounter Configuration' }));
+        detailGrid.appendChild(variation);
+        details.appendChild(detailGrid);
+        panel.appendChild(workspace);
+        panel.appendChild(details);
+        if (statusBox) panel.appendChild(statusBox);
+    }
+
+    function restoreLegacyWorkspace() {
+        const panel = document.getElementById('grid-panel');
+        const workspace = panel && panel.querySelector('.ve-workspace');
+        if (!workspace) return;
+        const heading = workspace.querySelector('.ve-battlefield > h2');
+        const grid = document.getElementById('battle-grid');
+        const variation = document.getElementById('variation-properties');
+        const tile = document.getElementById('tile-properties');
+        const details = panel.querySelector('.ve-details');
+        const statusBox = panel.querySelector(':scope > .status-container');
+        [heading, grid, variation, tile].forEach(node => { if (node) panel.insertBefore(node, workspace); });
+        workspace.remove();
+        if (details) details.remove();
+        if (statusBox) panel.appendChild(statusBox);
+    }
+
     function activateView(view) {
         if (view === state.activeView) return;
         if (state.activeView === 'new') {
@@ -253,10 +340,12 @@
             const root = document.getElementById('ve-nebulous-view');
             root.appendChild(state.legacyToolbar);
             root.appendChild(state.legacyContainer);
+            arrangeNebulousWorkspace();
             setLegacyControlsForMode(true);
             refreshEditorForActiveData();
             status('Nebulous Liberations mode. Build encounters with the same visual battle grid and property panels.', true);
         } else {
+            restoreLegacyWorkspace();
             config = state.legacyConfig || config;
             const root = document.getElementById('ve-legacy-view');
             root.appendChild(state.legacyToolbar);
@@ -583,6 +672,7 @@
                 ])
             ]),
             el('div', { id: 've-manual-note', class: 've-schema-note' }),
+            el('div', { class: 've-actions' }, [
             el('button', { type: 'button', class: 've-action', onClick: () => {
                 const name = prompt('Enter a name for the new encounter (letters and numbers only):');
                 if (name === null) return;
@@ -604,7 +694,8 @@
                 } catch (error) {
                     status('Save failed: ' + error.message, false);
                 }
-            } }, ['Save Lua + Mods']),
+            } }, ['Save Lua + Mods'])
+            ]),
             importInput
         ]);
     }
