@@ -149,19 +149,16 @@
             currentVariationIndex >= 0 && config.encounters[currentVariationIndex];
     }
 
-    // An encounter can inherit its category setting or explicitly override it.
-    // Category defaults are editor workspace settings, never Lua runtime fields.
+    // A checked category override forces manual battlefield authoring for
+    // every encounter in that category. Otherwise, each encounter chooses
+    // manual or automatic independently.
     function manualEnabled(variation) {
-        if (!variation) return false;
-        if (variation.manual_battlefield_override === true) return true;
-        if (variation.manual_battlefield_override === false) return false;
-        return !!state.categoryBattlefieldDefaults[state.activeSection];
+        return manualEnabledForSection(variation, state.activeSection);
     }
 
     function manualEnabledForSection(variation, section) {
-        if (variation.manual_battlefield_override === true) return true;
-        if (variation.manual_battlefield_override === false) return false;
-        return !!state.categoryBattlefieldDefaults[section];
+        if (state.categoryBattlefieldDefaults[section]) return true;
+        return !!(variation && variation.manual_battlefield_override === true);
     }
 
     function initializeManualMatrices(variation) {
@@ -174,11 +171,16 @@
         const categoryToggle = document.getElementById('ve-category-manual-battlefield');
         if (categoryToggle) categoryToggle.checked = !!state.categoryBattlefieldDefaults[state.activeSection];
         const mode = document.getElementById('ve-encounter-battlefield-mode');
+        const categoryForced = !!state.categoryBattlefieldDefaults[state.activeSection];
         if (mode) {
-            mode.disabled = !variation;
-            mode.value = !variation || variation.manual_battlefield_override == null ? 'inherit'
-                : variation.manual_battlefield_override ? 'manual' : 'automatic';
+            mode.disabled = !variation || categoryForced;
+            mode.value = categoryForced || (variation && variation.manual_battlefield_override === true)
+                ? 'manual' : 'automatic';
         }
+        const modeNote = document.getElementById('ve-encounter-mode-note');
+        if (modeNote) modeNote.textContent = categoryForced
+            ? 'Locked: the category-wide manual override is enabled.'
+            : 'Choose whether this encounter uses an authored or runtime-generated battlefield.';
         ['tile-team', 'tile-type'].forEach(id => {
             const input = document.getElementById(id);
             if (input) input.disabled = state.activeView === 'new' && !enabled;
@@ -283,6 +285,8 @@
         ]);
         const details = el('section', { class: 've-details' });
         const detailGrid = el('div', { class: 've-config-grid' });
+        const encounterMode = document.getElementById('ve-encounter-mode-settings');
+        if (encounterMode) variation.appendChild(encounterMode);
         battlefield.appendChild(heading);
         battlefield.appendChild(el('p', { class: 've-help', text: '6 × 3 battlefield · Click a tile to configure its contents. The runtime adjusts player spawn to the nearest valid team tile.' }));
         gridScroll.appendChild(grid);
@@ -308,6 +312,9 @@
         const variation = document.getElementById('variation-properties');
         const tile = document.getElementById('tile-properties');
         const details = panel.querySelector('.ve-details');
+        const encounterMode = document.getElementById('ve-encounter-mode-settings');
+        const controls = document.getElementById('ve-nebulous-controls');
+        if (encounterMode && controls) controls.insertBefore(encounterMode, document.getElementById('ve-manual-note'));
         const statusBox = panel.querySelector(':scope > .status-container');
         [heading, grid, variation, tile].forEach(node => { if (node) panel.insertBefore(node, workspace); });
         workspace.remove();
@@ -572,7 +579,7 @@
         // Preserve explicit true/false; imported Lua has no editor metadata,
         // so authored teams indicate a manual encounter on import.
         if (value.manual_battlefield_override !== true && value.manual_battlefield_override !== false) {
-            value.manual_battlefield_override = Array.isArray(value.teams) ? true : null;
+            value.manual_battlefield_override = Array.isArray(value.teams);
         }
         ['positions', 'obstacle_positions', 'player_positions', 'tiles', 'teams'].forEach(key => {
             if (Array.isArray(value[key])) value[key] = grid(value[key], key === 'tiles' ? 1 : 0);
@@ -642,34 +649,34 @@
             el('label', { class: 've-manual-toggle' }, [
                 el('input', { id: 've-category-manual-battlefield', type: 'checkbox', onChange: event => {
                     state.categoryBattlefieldDefaults[state.activeSection] = event.target.checked;
-                    // Only inherited encounters are affected. Explicit per-encounter
-                    // overrides remain untouched.
+                    // Category-wide manual mode takes precedence over every
+                    // encounter setting, without destroying individual choices.
                     if (event.target.checked) {
-                        (state.data[state.activeSection] || []).forEach(variation => {
-                            if (variation.manual_battlefield_override == null) initializeManualMatrices(variation);
-                        });
+                        (state.data[state.activeSection] || []).forEach(initializeManualMatrices);
                     }
                     updateManualControls();
                     updateGrid();
                     saveToLocalStorage();
                 } }),
-                ' Manual battlefield default for this category'
+                ' Force manual battlefield for this category'
             ]),
-            el('label', { class: 've-manual-toggle' }, [
-                'Selected encounter: ',
-                el('select', { id: 've-encounter-battlefield-mode', onChange: event => {
-                    const variation = activeEncounter();
-                    if (!variation) return;
-                    variation.manual_battlefield_override = event.target.value === 'inherit' ? null : event.target.value === 'manual';
-                    if (manualEnabled(variation)) initializeManualMatrices(variation);
-                    updateManualControls();
-                    updateGrid();
-                    saveToLocalStorage();
-                } }, [
-                    el('option', { value: 'inherit', text: 'Use category default' }),
-                    el('option', { value: 'manual', text: 'Manual override' }),
-                    el('option', { value: 'automatic', text: 'Automatic override' })
-                ])
+            el('div', { id: 've-encounter-mode-settings', class: 've-encounter-mode-settings' }, [
+                el('label', { class: 've-manual-toggle' }, [
+                    'Battlefield mode: ',
+                    el('select', { id: 've-encounter-battlefield-mode', onChange: event => {
+                        const variation = activeEncounter();
+                        if (!variation || state.categoryBattlefieldDefaults[state.activeSection]) return;
+                        variation.manual_battlefield_override = event.target.value === 'manual';
+                        if (manualEnabled(variation)) initializeManualMatrices(variation);
+                        updateManualControls();
+                        updateGrid();
+                        saveToLocalStorage();
+                    } }, [
+                        el('option', { value: 'manual', text: 'Manual battlefield' }),
+                        el('option', { value: 'automatic', text: 'Automatic battlefield' })
+                    ])
+                ]),
+                el('div', { id: 've-encounter-mode-note', class: 've-schema-note' })
             ]),
             el('div', { id: 've-manual-note', class: 've-schema-note' }),
             el('div', { class: 've-actions' }, [
@@ -812,7 +819,7 @@
                     [0, 0, 0, 0, 0, 0]
                 ],
                 freedom_mission: { enabled: false, turn_count: 5, player_can_flip: false },
-                manual_battlefield_override: null
+                manual_battlefield_override: false
             };
             if (manualEnabled(entry)) initializeManualMatrices(entry);
             config.encounters.push(entry);
