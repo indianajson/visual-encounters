@@ -1,0 +1,24 @@
+VisualEncounters required_mods.zip - download audit
+===============================================
+Source: this website's static mods/ directory
+The editor DOES NOT build or patch ezencounters.zip or enemy mods.
+Update mods/ezencounters.zip whenever the battle package changes.
+For max_hp overrides above native limits, updated character-mod presets are required.
+
+Included (8):
+  OK ezencounters.zip
+  OK EXE6-001-Metall.zip
+  OK com_keristero_mob_BigBrute.zip
+  OK com_OFC_mob_EXEPoN_014_Yura.zip
+  OK com_OFC_mob_EXEPoN_010_KillPlant.zip
+  OK com_louise_Quaker.zip
+  OK com_OFC_mob_EXEPoN_027_RollV1.zip
+  OK com_Dawn_Shademan.zip
+
+Unavailable (0):
+  None
+
+Encounter-specific HP support: Mettaur max_hp = 240 requires the
+updated EXE6-001-Metall.zip with the EZHP240 character definition.
+BigBrute max_hp = 240 similarly requires its Buffed240 mod variant.
+Other maximum HP values require compatible native character mods.
