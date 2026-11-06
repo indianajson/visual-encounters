@@ -2328,7 +2328,7 @@ async function downloadModFiles() {
             '===============================================',
             'Source: this website\'s static mods/ directory',
             'The editor DOES NOT build or patch ezencounters.zip or enemy mods.',
-            'Update mods/ezencounters.zip whenever the battle package changes.',
+            'This distribution ships the synchronized scale and HP ezencounters.zip.',
             'For max_hp overrides above native limits, updated character-mod presets are required.',
             '',
             'Included (' + downloaded.length + '):',
@@ -2608,7 +2608,7 @@ function addNewVariation(name) {
             results_callback: '',
             freedom_mission: {
                 enabled: false,
-                turn_count: 5,
+                turn_count: 3,
                 player_can_flip: false
             }
         };
@@ -2927,7 +2927,7 @@ function updateVariationFields() {
     $('#results-callback').val(variation.results_callback || '');
     
     // Freedom mission options
-    const freedomMission = variation.freedom_mission || { enabled: false, turn_count: 5, player_can_flip: false };
+    const freedomMission = variation.freedom_mission || { enabled: false, turn_count: 3, player_can_flip: false };
     $('#freedom-mission').prop('checked', freedomMission.enabled);
     $('#freedom-mission-options').toggle(freedomMission.enabled);
     $('#turn-count').val(freedomMission.turn_count);
@@ -3119,7 +3119,7 @@ function setupEventHandlers() {
         // Freedom mission options
         $('#turn-count').change(function() {
             if (currentVariationIndex === -1) return;
-            config.encounters[currentVariationIndex].freedom_mission.turn_count = parseInt($(this).val()) || 5;
+            config.encounters[currentVariationIndex].freedom_mission.turn_count = parseInt($(this).val()) || 3;
             saveToLocalStorage();
         });
         
@@ -3280,7 +3280,7 @@ function setupEventHandlers() {
                             results_callback: '',
                             freedom_mission: {
                                 enabled: false,
-                                turn_count: 5,
+                                turn_count: 3,
                                 player_can_flip: false
                             }
                         };
@@ -3625,7 +3625,7 @@ function loadFromLocalStorage() {
                     if (!variation.freedom_mission) {
                         variation.freedom_mission = {
                             enabled: false,
-                            turn_count: 5,
+                            turn_count: 3,
                             player_can_flip: false
                         };
                     }
@@ -3895,7 +3895,7 @@ function parseLuaFreedomMission(fmStr) {
     
     const fm = {
         enabled: false,
-        turn_count: 5,
+        turn_count: 3,
         player_can_flip: false
     };
     
@@ -4366,7 +4366,7 @@ function generateLuaString() {
         if (encounter.freedom_mission?.enabled) {
             output.push(`    freedom_mission={`);
             output.push(`        enabled=true,`);
-            output.push(`        turn_count=${encounter.freedom_mission.turn_count || 5},`);
+            output.push(`        turn_count=${encounter.freedom_mission.turn_count || 3},`);
             output.push(`        player_can_flip=${encounter.freedom_mission.player_can_flip ? 'true' : 'false'}`);
             output.push(`    },`);
         }

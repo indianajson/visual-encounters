@@ -31,6 +31,7 @@
         activeSection: 'encounters',
         selectedEnemyRewardAlias: '',
         selectedEnemyRewardRank: 'default',
+        templates: {},
         categoryBattlefieldDefaults: { encounters: false, special_encounters: false, bosses: false },
         legacyConfig: null,
         data: {
@@ -121,6 +122,24 @@
             body.dark-mode #ve-nebulous-view{--ve-border:#525866;--ve-muted:#b8c1ce;--ve-surface:#30343b;--ve-soft:#383d45}
             body.dark-mode #ve-nebulous-view #ve-nebulous-controls{background:var(--ve-surface);color:#eee}
             body.dark-mode #ve-nebulous-view .ve-battlefield,body.dark-mode #ve-nebulous-view .ve-sidebar-section,body.dark-mode #ve-nebulous-view .ve-details{background:var(--ve-surface)}
+
+            #ve-nebulous-view #ve-global-controls,#ve-nebulous-view .ve-template-editor{margin:0 0 16px;padding:16px 20px;border:1px solid var(--ve-border);border-radius:13px;background:var(--ve-surface);color:var(--ve-text)}
+            #ve-nebulous-view #ve-global-controls summary{cursor:pointer;font-weight:700;font-size:15px;padding:5px 0}
+            #ve-nebulous-view .ve-template-editor h2{font-size:20px;margin:0 0 6px}
+            #ve-nebulous-view .ve-template-toolbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:14px 0}
+            #ve-nebulous-view .ve-template-toolbar label{display:grid;gap:5px;min-width:170px;flex:1}
+            #ve-nebulous-view .ve-template-toolbar input,#ve-nebulous-view .ve-template-toolbar select,#ve-nebulous-view .ve-template-fields input,#ve-nebulous-view .ve-template-fields select{box-sizing:border-box;width:100%;padding:9px;border:1px solid var(--ve-border);border-radius:7px;background:var(--ve-surface);color:inherit}
+            #ve-nebulous-view .ve-template-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:12px 16px}
+            #ve-nebulous-view .ve-template-fields label{display:grid;gap:5px;font-size:13px}
+            #ve-nebulous-view .ve-template-toolbar button{border:1px solid var(--ve-border);border-radius:6px;padding:9px;background:var(--ve-soft);color:inherit;cursor:pointer}
+            #ve-nebulous-view #ve-nebulous-controls .ve-schema-note{max-width:1040px}
+            #ve-nebulous-view #ve-nebulous-controls{padding:14px 18px}
+            #ve-nebulous-view #ve-nebulous-controls .ve-actions{grid-column:1/-1;grid-row:2;border:0;padding:0}
+            #ve-nebulous-view #ve-nebulous-controls .ve-section-tabs{grid-row:1}
+            #ve-nebulous-view #ve-nebulous-controls>.ve-schema-note{grid-row:auto;font-size:12px}
+            #ve-nebulous-view #ve-global-controls #ve-area-basics{display:block;margin-top:12px}
+            #ve-nebulous-view #ve-global-controls #ve-area-basics>summary{font-size:13px}
+            #ve-nebulous-view .ve-template-editor[hidden],#ve-nebulous-view .container[hidden],#ve-nebulous-view .toolbar[hidden]{display:none!important}
             @media(max-width:1150px){#ve-nebulous-view .ve-workspace{grid-template-columns:minmax(0,1fr)}#ve-nebulous-view .ve-sidebar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
             @media(max-width:700px){#ve-nebulous-view #ve-nebulous-controls{grid-template-columns:1fr}#ve-nebulous-view .ve-sidebar{display:flex}#ve-nebulous-view .ve-details .ve-config-grid{grid-template-columns:1fr}#ve-nebulous-view .ve-workspace{gap:10px}}
         `;
@@ -359,6 +378,16 @@
         if (state.activeView === 'new' && typeof config !== 'undefined') {
             state.data[state.activeSection] = config.encounters;
         }
+        const templatePanel = document.getElementById('ve-template-editor');
+        if (templatePanel) {
+            templatePanel.hidden = true;
+            const panel = document.querySelector('#ve-nebulous-view > .container');
+            const tools = document.querySelector('#ve-nebulous-view > .toolbar');
+            if (panel) panel.hidden = false;
+            if (tools) tools.hidden = false;
+            const tab = document.getElementById('ve-template-tab');
+            if (tab) tab.classList.remove('active');
+        }
         state.activeSection = section;
         config = {
             minimum_steps_before_encounter: state.data.minimum_steps_before_encounter,
@@ -503,15 +532,15 @@
 
         const tileSection = el('section', { class: 've-sidebar-section ve-tile-section' });
         tileSection.appendChild(el('div', { class: 've-inspector-heading' }, [
-            el('span', { class: 've-step-number', text: '01' }),
-            el('div', {}, [el('h3', { text: 'Tile inspector' }), el('p', { id: 've-selection-summary', class: 've-inspector-subtitle', text: 'No tile selected' })])
+            el('span', { class: 've-step-number', text: '02' }),
+            el('div', {}, [el('h3', { text: 'Selected tile · Combatant' }), el('p', { id: 've-selection-summary', class: 've-inspector-subtitle', text: 'No tile selected' })])
         ]));
         tileSection.appendChild(el('p', { id: 've-tile-placeholder', class: 've-empty-state', text: 'Select a tile on the grid to edit its team, tile type, enemy, obstacle, or player spawn.' }));
         tileSection.appendChild(tile);
         const encounterSection = el('section', { class: 've-sidebar-section ve-encounter-section' });
         encounterSection.appendChild(el('div', { class: 've-inspector-heading' }, [
-            el('span', { class: 've-step-number', text: '02' }),
-            el('div', {}, [el('h3', { text: 'Encounter setup' }), el('p', { id: 've-encounter-summary', class: 've-inspector-subtitle', text: 'Scenario options remain available while editing tiles' })])
+            el('span', { class: 've-step-number', text: '01' }),
+            el('div', {}, [el('h3', { text: 'Encounter configuration' }), el('p', { id: 've-encounter-summary', class: 've-inspector-subtitle', text: 'Scenario options remain available while editing tiles' })])
         ]));
         encounterSection.appendChild(variation);
         if (isNebulous) {
@@ -519,25 +548,23 @@
             const battle = variation.querySelector('#ve-battle-options');
             if (mode && battle) battle.insertBefore(mode, battle.firstChild);
         }
-        sidebar.appendChild(tileSection);
         sidebar.appendChild(encounterSection);
+        sidebar.appendChild(tileSection);
+        if (isNebulous) {
+            const global = document.getElementById('ve-global-controls');
+            const frequency = variation.querySelector('#ve-area-basics');
+            if (global && frequency) global.insertBefore(frequency, global.querySelector('#ve-area-rewards') || null);
+        }
 
         if (isNebulous) {
             const rewards = el('section', { class: 've-sidebar-section ve-rewards-section' });
             rewards.appendChild(el('div', { class: 've-inspector-heading' }, [
                 el('span', { class: 've-step-number', text: '03' }),
-                el('div', {}, [el('h3', { text: 'Battle rewards' }), el('p', { class: 've-inspector-subtitle', text: 'For regular ezencounters and Endless Runner reuse' })])
+                el('div', {}, [el('h3', { text: 'Encounter rewards · Optional' }), el('p', { class: 've-inspector-subtitle', text: 'For regular ezencounters and Endless Runner reuse' })])
             ]));
             rewards.appendChild(el('p', { class: 've-info-note', text: 'Nebulous Liberation battles themselves never grant battle rewards; liberation panel loot is separate.' }));
             rewards.appendChild(el('div', { id: 've-encounter-rewards', class: 've-reward-editor' }));
             sidebar.appendChild(rewards);
-            const defaults = el('details', { class: 've-sidebar-section ve-area-section' }, [
-                el('summary', { text: 'Area-wide reward defaults' }),
-                el('p', { class: 've-small-help', text: 'These apply when an encounter has no more-specific rewards. Enemy fallback tables are preserved on import/export.' })
-            ]);
-            const areaRewards = document.getElementById('ve-area-rewards');
-            if (areaRewards) defaults.appendChild(areaRewards);
-            sidebar.appendChild(defaults);
         }
         workspace.appendChild(battlefield);
         workspace.appendChild(sidebar);
@@ -561,8 +588,11 @@
         const controls = document.getElementById('ve-nebulous-controls');
         if (mode && controls) controls.insertBefore(mode, document.getElementById('ve-manual-note'));
         const areaRewards = document.getElementById('ve-area-rewards');
-        if (areaRewards && controls) controls.insertBefore(areaRewards, controls.querySelector('.ve-actions'));
+        const globalPanel = document.getElementById('ve-global-controls');
+        if (areaRewards && globalPanel) globalPanel.appendChild(areaRewards);
         const statusBox = panel.querySelector(':scope > .status-container');
+        const globalFrequency = document.querySelector('#ve-global-controls #ve-area-basics');
+        if (globalFrequency && variation) variation.appendChild(globalFrequency);
         [heading, grid, variation, tile].forEach(node => { if (node) panel.insertBefore(node, workspace); });
         workspace.remove();
         if (statusBox) panel.appendChild(statusBox);
@@ -622,6 +652,8 @@
             state.legacyConfig = config;
         }
 
+        const templatePanel = document.getElementById('ve-template-editor');
+        if (templatePanel) templatePanel.hidden = true;
         state.activeView = view;
         window.__veNebulousMode = view === 'new';
         if (view === 'new') {
@@ -639,11 +671,15 @@
             root.appendChild(state.legacyToolbar);
             root.appendChild(state.legacyContainer);
             arrangeNebulousWorkspace();
+            state.legacyContainer.hidden = false;
+            state.legacyToolbar.hidden = false;
             setLegacyControlsForMode(true);
             refreshEditorForActiveData();
             status('Nebulous Liberations mode. Build encounters with the same visual battle grid and property panels.', true);
         } else {
             restoreLegacyWorkspace();
+            state.legacyContainer.hidden = false;
+            state.legacyToolbar.hidden = false;
             config = state.legacyConfig || config;
             const root = document.getElementById('ve-legacy-view');
             root.appendChild(state.legacyToolbar);
@@ -1069,6 +1105,11 @@ function validateEnemyRecords(entry) {
                 throw new Error(location + ': ' + key + ' must be a positive whole number.');
             }
         }
+        for (const modifier of ['attack_multiplier', 'defense_multiplier']) {
+            if (enemy[modifier] !== undefined && (!Number.isFinite(Number(enemy[modifier])) || Number(enemy[modifier]) < 0)) {
+                throw new Error(location + ': ' + modifier + ' must be non-negative.');
+            }
+        }
         if (enemy.scale !== undefined && (!Number.isFinite(Number(enemy.scale)) || Number(enemy.scale) <= 0)) {
             throw new Error(location + ': scale must be a positive number.');
         }
@@ -1150,7 +1191,7 @@ function validateEnemyRecords(entry) {
                 if (!clean.freedom_mission.enabled) delete clean.freedom_mission;
                 else clean.freedom_mission = {
                     enabled: true,
-                    turn_count: Number(clean.freedom_mission.turn_count ?? clean.freedom_mission.turns ?? 5),
+                    turn_count: Number(clean.freedom_mission.turn_count ?? clean.freedom_mission.turns ?? 3),
                     player_can_flip: false // server enables only for terrain == surrounded
                 };
             }
@@ -1246,7 +1287,7 @@ function validateEnemyRecords(entry) {
         const value = Object.assign({
             name: 'NewEncounter', path: DEFAULT_PATH, weight: 10,
             enemies: [], obstacles: [],
-            freedom_mission: { enabled: false, turn_count: 5, player_can_flip: false }
+            freedom_mission: { enabled: false, turn_count: 3, player_can_flip: false }
         }, entry || {});
         value.enemies = Array.isArray(value.enemies) ? value.enemies : [];
         value.obstacles = Array.isArray(value.obstacles) ? value.obstacles : [];
@@ -1288,11 +1329,11 @@ function validateEnemyRecords(entry) {
             }
         }
         if (!value.freedom_mission || typeof value.freedom_mission !== 'object') {
-            value.freedom_mission = { enabled: false, turn_count: 5, player_can_flip: false };
+            value.freedom_mission = { enabled: false, turn_count: 3, player_can_flip: false };
         } else {
             value.freedom_mission = {
                 enabled: !!value.freedom_mission.enabled,
-                turn_count: Number(value.freedom_mission.turn_count ?? value.freedom_mission.turns ?? 5),
+                turn_count: Number(value.freedom_mission.turn_count ?? value.freedom_mission.turns ?? 3),
                 player_can_flip: !!value.freedom_mission.player_can_flip
             };
         }
@@ -1322,12 +1363,164 @@ function validateEnemyRecords(entry) {
         status('Loaded Nebulous Liberations encounter table.', true);
     }
 
+    // Enemy templates are authorable Lua registry data, NOT an encounter-table field.
+    // They intentionally exclude behavior functions: named registered AI only.
+    const TEMPLATE_FIELDS = [
+        ['battle_name','Battle enemy alias','text','Mettaur'],
+        ['is_boss','Boss template','checkbox',''],
+        ['is_special_encounter','Special encounter enemy','checkbox',''],
+        ['health','Starting HP','number','120'],
+        ['max_health','Maximum HP','number','120'],
+        ['scale','Default OW scale','number','1'],
+        ['battle_scale','Default battle scale','number','1'],
+        ['texture_path','OW texture path','text','/server/assets/.../enemy.png'],
+        ['animation_path','OW animation path','text','/server/assets/.../enemy.animation'],
+        ['attack_damage','Overworld base attack damage','number','20'],
+        ['ai_type','Registered AI type','select','simple_charge'],
+        ['attack_texture','Attack texture path (optional)','text','/server/assets/.../attack.png'],
+        ['attack_animation_path','Attack animation path (optional)','text','/server/assets/.../attack.animation'],
+        ['death_message','Death message (optional)','text','Defeated!'],
+        ['shape','Selection shape (rows separated by /)','text','1,1,1 / 1,0,1 / 1,1,1'],
+        ['shape_offset_x','Selection offset X','number','0'],
+        ['shape_offset_y','Selection offset Y','number','-1'],
+        ['mug_texture','Boss mug texture (optional)','text','/server/assets/.../mug.png'],
+        ['mug_animation','Boss mug animation (optional)','text','/server/assets/.../mug.animation']
+    ];
+    const TEMPLATE_AI = ['simple_charge','ranged','shockwave_line'];
+    function templateModule(name, info) {
+        if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(name)) throw new Error('Template name must be a Lua-safe identifier (letters, digits, underscore).');
+        const def = { ...info };
+        for (const key of ['health','max_health','scale','battle_scale','attack_damage','shape_offset_x','shape_offset_y']) {
+            if (def[key] === undefined || def[key] === '') { delete def[key]; continue; }
+            def[key] = Number(def[key]);
+            if (!Number.isFinite(def[key]) || (key !== 'attack_damage' && !key.startsWith('shape_offset') && def[key] <= 0) || (key === 'attack_damage' && def[key] < 0)) throw new Error(key + ' must be valid and positive (damage may be zero).');
+            if (['health','max_health','attack_damage','shape_offset_x','shape_offset_y'].includes(key)) {
+                if (!Number.isInteger(def[key])) throw new Error(key + ' must be an integer.');
+            }
+        }
+        if (def.max_health && def.health && def.health > def.max_health) throw new Error('Starting HP must not exceed maximum HP.');
+        if (def.ai_type && !TEMPLATE_AI.includes(def.ai_type)) throw new Error('Choose a registered AI type.');
+        if (!def.texture_path || !def.animation_path) throw new Error('Overworld texture and animation paths are required.');
+        const config = {
+            battle_name: def.battle_name || name,
+            health: def.health || def.max_health || 100,
+            max_health: def.max_health || def.health || 100,
+            texture_path: def.texture_path,
+            animation_path: def.animation_path,
+            attack_damage: def.attack_damage ?? 20,
+            ai_type: def.ai_type || 'simple_charge',
+            scale: def.scale || 1,
+            battle_scale: def.battle_scale || def.scale || 1,
+            is_boss: !!def.is_boss,
+            is_special_encounter: !!def.is_special_encounter,
+            shape_offset_x: def.shape_offset_x ?? 0,
+            shape_offset_y: def.shape_offset_y ?? -1
+        };
+        if (def.shape) {
+            const rows = String(def.shape).split('/').map(row => row.trim().split(',').map(item => Number(item.trim())));
+            if (!rows.length || rows.some(row => !row.length || row.some(cell => ![0,1].includes(cell)))) throw new Error('Selection shape must contain 0s and 1s separated by commas and / between rows.');
+            if (rows.some(row => row.length !== rows[0].length)) throw new Error('Selection shape rows must be equally wide.');
+            config.shape = rows;
+        }
+        if (def.death_message) config.death_message = def.death_message;
+        if (def.mug_texture || def.mug_animation) {
+            if (!def.mug_texture || !def.mug_animation) throw new Error('Both mug texture and animation paths are required.');
+            config.mug = { texture_path: def.mug_texture, animation_path: def.mug_animation };
+        }
+        config.preload_assets = [def.texture_path, def.animation_path, def.attack_texture, def.attack_animation_path, def.mug_texture, def.mug_animation].filter(Boolean);
+        for (const k of ['attack_texture','attack_animation_path']) if (def[k]) config[k] = def[k];
+        // These fields are supported by EnemyTemplates.create.
+        return '-- Overworld template generated by VisualEncounters\n'
+            + '-- Apply OW/Battle Scale via Liberation Enemy Config in Tiled.\n'
+            + 'return function(EnemyTemplates)\n'
+            + '    EnemyTemplates.register(' + luaString(name) + ', '
+            + serializeLua(config, 1) + ')\nend\n';
+    }
+    function buildTemplateEditor() {
+        const panel = el('section', { id: 've-template-editor', class: 've-template-editor' });
+        panel.appendChild(el('div', { class: 've-heading-line' }, [
+            el('div', {}, [el('h2', { text: 'Enemy template workshop' }),
+                el('p', { class: 've-small-help', text: 'Build reusable overworld enemy registrations. Templates are separate Lua modules, not entries in encounters.lua. Battle grid enemies still use ezencounters aliases.' })])
+        ]));
+        const chooser = el('select', { id: 've-template-choose', 'aria-label': 'Choose a template' });
+        const name = el('input', { id: 've-template-name', type: 'text', placeholder: 'New template name, e.g. MyMettaur' });
+        const fields = {};
+        const fieldGrid = el('div', { class: 've-template-fields' });
+        TEMPLATE_FIELDS.forEach(([key,label,type,placeholder]) => {
+            const input = type === 'select' ? el('select', { 'data-template-field': key }, TEMPLATE_AI.map(ai => el('option', { value: ai, text: ai })))
+                : el('input', { type: type, placeholder, 'data-template-field': key, ...(type === 'number' ? { min: key === 'attack_damage' ? '0' : undefined, step: key.includes('scale') ? '0.05' : '1' } : {}) });
+            fields[key] = input;
+            fieldGrid.appendChild(el('label', {}, [label, input]));
+        });
+        const help = el('p', { class: 've-small-help', text: 'Templates define OW visuals, HP, scales, selection shapes, AI and attacks. A Tiled Liberation Enemy Config may override those template defaults for individual spawns. Custom AI such as Mettaur shockwave still requires the registered AI implementation.' });
+        const refresh = () => {
+            chooser.replaceChildren(el('option', { value: '', text: 'New enemy template...' }));
+            Object.keys(state.templates).sort().forEach(key => chooser.appendChild(el('option', { value: key, text: key })));
+        };
+        const load = key => {
+            const def = state.templates[key] || {};
+            name.value = key;
+            Object.entries(fields).forEach(([field,input]) => { if (input.type === 'checkbox') input.checked = !!def[field]; else input.value = def[field] ?? (field === 'ai_type' ? 'simple_charge' : ''); });
+        };
+        chooser.addEventListener('change', () => load(chooser.value));
+        const save = () => {
+            const key = name.value.trim();
+            if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(key)) throw new Error('Enter a template name using letters, digits or underscores.');
+            const def = {};
+            Object.entries(fields).forEach(([field,input]) => { if (input.type === 'checkbox') def[field] = input.checked; else if (input.value.trim() !== '') def[field] = input.value.trim(); });
+            templateModule(key, def); // validate before save
+            state.templates[key] = def;
+            refresh(); chooser.value = key;
+            saveToLocalStorage();
+            status('Saved template "' + key + '" in the editor. Export its Lua module to install it on your server.', true);
+            return [key,def];
+        };
+        const action = (label, fn) => el('button', { type: 'button', onClick: () => {
+            try { fn(); } catch (err) { status('Template editor: ' + err.message, false); }
+        }}, [label]);
+        const toolbar = el('div', { class: 've-template-toolbar' }, [
+            el('label', {}, ['Saved templates', chooser]),
+            el('label', {}, ['Template name', name]),
+            action('New', () => { chooser.value = ''; load(''); }),
+            action('Save template', save),
+            action('Export Lua module', () => {
+                const [key,def] = save();
+                downloadText('template_' + key.toLowerCase() + '.lua', templateModule(key, def));
+                status('Exported template_' + key.toLowerCase() + '.lua. Add a require in enemy_templates.lua to register it.', true);
+            }),
+            action('Delete', () => {
+                const key = chooser.value;
+                if (!key || !window.confirm('Delete template ' + key + ' from this editor?')) return;
+                delete state.templates[key]; refresh(); load(''); saveToLocalStorage();
+            })
+        ]);
+        panel.appendChild(toolbar);
+        panel.appendChild(fieldGrid);
+        panel.appendChild(help);
+        panel.appendChild(el('p', { class: 've-small-help', text: 'Registration example: require("scripts/ezlibs-custom/nebulous-liberations/liberations/enemies/template_myenemy")(EnemyTemplates). This template name is referenced by Boss/Spawns Tiled properties.' }));
+        panel.hidden = true;
+        refresh();
+        return panel;
+    }
+
     function buildNebulousControls() {
         const tabs = el('div', { class: 've-section-tabs' }, SECTION_KEYS.map(section =>
             el('button', { id: 've-section-' + section, type: 'button', class: section === state.activeSection ? 'active' : '', onClick: () => activateSection(section) }, [
                 SECTION_LABELS[section], ' ', el('span', { class: 've-count', text: '(' + state.data[section].length + ')' })
             ])
         ));
+        tabs.appendChild(el('button', { id: 've-template-tab', type: 'button', onClick: () => {
+            const editor = document.getElementById('ve-template-editor');
+            const controls = document.getElementById('ve-nebulous-controls');
+            const container = document.querySelector('#ve-nebulous-view > .container');
+            const tools = document.querySelector('#ve-nebulous-view > .toolbar');
+            const showing = editor.hidden;
+            editor.hidden = !showing;
+            if (container) container.hidden = showing;
+            if (tools) tools.hidden = showing;
+            document.getElementById('ve-template-tab').classList.toggle('active', showing);
+            document.querySelectorAll('#ve-nebulous-controls .ve-section-tabs button:not(#ve-template-tab)').forEach(b => b.classList.toggle('active', !showing && b.id === 've-section-' + state.activeSection));
+        } }, ['Enemy Templates']));
         const importInput = el('input', { id: 've-nebulous-import', type: 'file', accept: '.lua,.txt', style: 'display:none' });
         importInput.addEventListener('change', async event => {
             const file = event.target.files && event.target.files[0];
@@ -1372,7 +1565,7 @@ function validateEnemyRecords(entry) {
                 el('div', { id: 've-encounter-mode-note', class: 've-schema-note' })
             ]),
             el('div', { id: 've-manual-note', class: 've-schema-note' }),
-            el('p', { class: 've-schema-note', text: 'Save exports encounters.lua and optionally packages already hosted in mods/. It does NOT compile ezencounters.zip or regenerate character mod HP presets. Keep mods/ezencounters.zip and specialized mod ZIPs synchronized with your live server.' }),
+            el('p', { class: 've-schema-note', text: 'Save exports encounters.lua and optionally packages already hosted in mods/. It includes the bundled ezencounters.zip, already synchronized with the Liberation scale and HP changes. Some character mods require individual effect-scaling support; mod HP presets are not regenerated.' }),
             el('label', { class: 've-manual-toggle' }, [
                 el('input', { type: 'checkbox', id: 've-area-persistent-health', onChange: event => {
                     state.data.persistent_health = !!event.target.checked;
@@ -1428,7 +1621,7 @@ function setNebulousEnemyAtTile(variation, row, col, attributes) {
         values.some((value, c) => (r !== row || c !== col) && Number(value) === oldIndex));
     const updated = { ...(oldEnemy || {}), name: attributes.name, rank: attributes.rank };
     delete updated.starting_hp;
-    for (const key of ['nickname', 'health', 'max_hp', 'scale']) {
+    for (const key of ['nickname', 'health', 'max_hp', 'scale', 'attack_multiplier', 'defense_multiplier']) {
         if (attributes[key] === undefined) delete updated[key];
         else updated[key] = attributes[key];
     }
@@ -1451,6 +1644,14 @@ function parseEnemyField(id, integer, label) {
     }
     return number;
 }
+
+    function parseMultiplierField(id) {
+        const input = document.getElementById(id);
+        if (!input || input.value.trim() === '') return undefined;
+        const value = Number(input.value);
+        if (!Number.isFinite(value) || value < 0) throw new Error('Modifiers must be finite and non-negative.');
+        return value;
+    }
 
     function installNebulousEditorOverrides() {
         ['ve-encounter-persistent-health', 've-encounter-no-results'].forEach(id => {
@@ -1527,6 +1728,10 @@ function parseEnemyField(id, integer, label) {
             const scale = document.getElementById('enemy-scale');
             if (maxHp) maxHp.value = enemy && enemy.max_hp != null ? String(enemy.max_hp) : '';
             if (scale) scale.value = enemy && enemy.scale != null ? String(enemy.scale) : '';
+            for (const [id, key] of [['ve-battle-attack-multiplier','attack_multiplier'], ['ve-battle-defense-multiplier','defense_multiplier']]) {
+                const field = document.getElementById(id);
+                if (field) field.value = enemy && enemy[key] != null ? String(enemy[key]) : '';
+            }
         };
 
         // Hover and right-click handlers in the original grid read all four
@@ -1565,7 +1770,9 @@ window.updateEnemyOnTile = function() {
             nickname: nickname || undefined,
             health: parseEnemyField('enemy-health', true, 'Starting HP'),
             max_hp: parseEnemyField('enemy-max-hp', true, 'Maximum HP'),
-            scale: parseEnemyField('enemy-scale', false, 'Battle scale')
+            scale: parseEnemyField('enemy-scale', false, 'Battle scale'),
+            attack_multiplier: parseMultiplierField('ve-battle-attack-multiplier'),
+            defense_multiplier: parseMultiplierField('ve-battle-defense-multiplier')
         };
         if (attrs.health !== undefined && attrs.max_hp !== undefined && attrs.health > attrs.max_hp) {
             throw new Error('Starting HP cannot exceed maximum HP.');
@@ -1582,7 +1789,7 @@ window.updateEnemyOnTile = function() {
 
 // Legacy fields are handled by the original editor; these two are
 // intentionally Nebulous-only. No special handling by enemy name.
-['enemy-max-hp', 'enemy-scale'].forEach(id => {
+['enemy-max-hp', 'enemy-scale', 've-battle-attack-multiplier', 've-battle-defense-multiplier'].forEach(id => {
     const input = document.getElementById(id);
     if (input) input.addEventListener('change', () => {
         if (window.__veNebulousMode) updateEnemyOnTile();
@@ -1654,7 +1861,7 @@ window.updateEnemyOnTile = function() {
                     [0, 1, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0]
                 ],
-                freedom_mission: { enabled: false, turn_count: 5, player_can_flip: false },
+                freedom_mission: { enabled: false, turn_count: 3, player_can_flip: false },
                 manual_battlefield_override: false
             };
             if (manualEnabled(entry)) initializeManualMatrices(entry);
@@ -1738,7 +1945,7 @@ window.updateEnemyOnTile = function() {
             state.data.minimum_steps_before_encounter = config.minimum_steps_before_encounter;
             state.data.encounter_chance_per_step = config.encounter_chance_per_step;
             localStorage.setItem('nebulousEncounterConfig', JSON.stringify({
-                ...state.data, categoryBattlefieldDefaults: state.categoryBattlefieldDefaults
+                ...state.data, categoryBattlefieldDefaults: state.categoryBattlefieldDefaults, templates: state.templates
             }));
         };
     }
@@ -1753,6 +1960,13 @@ window.updateEnemyOnTile = function() {
         }
         addStyles();
         addUXStyles();
+        const scaleField = document.getElementById('enemy-scale');
+        if (scaleField && scaleField.closest('label')) {
+            const outer = scaleField.closest('label');
+            for (const [id, label] of [['ve-battle-attack-multiplier','Battle attack multiplier (mod dependent)'],['ve-battle-defense-multiplier','Battle defense multiplier (mod dependent)']]) {
+                outer.after(el('label', { class: 've-nebulous-enemy-advanced', style: 'display:none' }, [label, el('input', { type: 'number', id: id, min: '0', step: '0.1', placeholder: '1 = normal damage' })]));
+            }
+        }
         installNebulousEditorOverrides();
         window.__veNebulousMode = false;
         state.legacyToolbar = toolbar;
@@ -1763,6 +1977,7 @@ window.updateEnemyOnTile = function() {
             if (saved) {
                 const data = JSON.parse(saved);
                 if (Array.isArray(data.enemy_rewards) && data.enemy_rewards.length === 0) data.enemy_rewards = {};
+                state.templates = data.templates && typeof data.templates === 'object' && !Array.isArray(data.templates) ? data.templates : {};
                 state.categoryBattlefieldDefaults = Object.fromEntries(SECTION_KEYS.map(section => [
                     section, !!(data.categoryBattlefieldDefaults && data.categoryBattlefieldDefaults[section])
                 ]));
@@ -1795,6 +2010,22 @@ window.updateEnemyOnTile = function() {
         legacy.appendChild(toolbar);
         legacy.appendChild(container);
         nebulous.appendChild(controls);
+        nebulous.appendChild(buildTemplateEditor());
+        const globalPanel = el('details', { id: 've-global-controls', class: 've-global-controls' }, [
+            el('summary', { text: 'Global & category overrides · Encounter frequency, rewards and battlefield mode' }),
+            el('p', { class: 've-small-help', text: 'Global values apply across encounter categories. Category battlefield overrides apply only to the currently selected category and take precedence over encounter-level battlefield mode.' })
+        ]);
+        const frequency = document.getElementById('ve-area-basics');
+        // Existing controls are moved, not copied; their event listeners remain intact.
+        for (const id of ['ve-category-manual-battlefield','ve-area-persistent-health']) {
+            const input = controls.querySelector('#' + id);
+            if (input && input.closest('label')) globalPanel.appendChild(input.closest('label'));
+        }
+        for (const id of ['ve-area-rewards','ve-enemy-fallback-rewards']) {
+            const section = controls.querySelector('#' + id);
+            if (section) globalPanel.appendChild(section);
+        }
+        controls.after(globalPanel);
         nebulous.appendChild(statusNode);
 
         state.legacyLoadInput = document.getElementById('load-file');
