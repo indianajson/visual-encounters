@@ -64,6 +64,17 @@
             #ve-main-tabs button{background:#555;color:#fff}#ve-main-tabs button.active{background:#1769d2}
             #ve-nebulous-view[hidden],#ve-legacy-view[hidden]{display:none!important}
             #ve-nebulous-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;margin:0 0 10px;background:#e8e8e8;border-radius:5px;color:#222}
+            #ve-nebulous-view .ve-reward-editor{border:1px solid var(--ve-border,#d9dee7);border-radius:8px;padding:14px;margin-top:14px;background:var(--ve-surface,#fff)}
+            #ve-nebulous-view .ve-reward-editor h3{margin:0 0 8px;font-size:16px}
+            #ve-nebulous-view .ve-reward-editor .ve-reward-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:10px 0}
+            #ve-nebulous-view .ve-reward-editor label{display:block;font-size:12px;margin:0}
+            #ve-nebulous-view .ve-reward-editor input,#ve-nebulous-view .ve-reward-editor select{box-sizing:border-box;display:block;width:100%;padding:7px;margin-top:4px;border-radius:5px;border:1px solid var(--ve-border,#d9dee7);background:var(--ve-surface,#fff);color:inherit}
+            #ve-nebulous-view .ve-reward-editor button{padding:6px 10px;cursor:pointer}
+            #ve-nebulous-view .ve-reward-editor .ve-reward-kind{border-top:1px solid var(--ve-border,#d9dee7);margin-top:10px;padding-top:10px}
+            #ve-nebulous-view .ve-reward-editor .ve-reward-kind h4{margin:0;font-size:14px}
+            #ve-nebulous-view .ve-reward-editor .ve-reward-help{font-size:12px;line-height:1.5;opacity:.8;margin:6px 0}
+            #ve-nebulous-view .ve-reward-editor .ve-chip-row{padding:8px 0;border-top:1px dashed var(--ve-border,#d9dee7)}
+            #ve-nebulous-view #ve-area-rewards{grid-column:1/-1;margin-top:0}
             body.dark-mode #ve-nebulous-controls{background:#383838;color:#eee}
             #ve-nebulous-controls .ve-section-tabs{display:flex;gap:7px;flex-wrap:wrap}
             #ve-nebulous-controls .ve-schema-note{flex-basis:100%;font-size:12px;line-height:1.45;opacity:.85}
@@ -177,6 +188,27 @@
             mode.value = categoryForced || (variation && variation.manual_battlefield_override === true)
                 ? 'manual' : 'automatic';
         }
+        // The world-panel terrain is calculated at battle start. For Nebulous
+        // missions flip permission is derived from that terrain on the server,
+        // never from an authored encounter's saved checkbox state.
+        const freedom = document.getElementById('freedom-mission-options');
+        if (freedom && !document.getElementById('ve-nebulous-flip-help')) {
+            freedom.appendChild(el('p', { id: 've-nebulous-flip-help', class: 've-reward-help', text: 'Nebulous: flipping is automatically enabled ONLY when the player is surrounded by dark panels. Authored flip values are ignored.' }));
+        }
+        const flipInput = document.getElementById('player-can-flip');
+        if (flipInput && state.activeView === 'new') {
+            flipInput.checked = false;
+            flipInput.disabled = true;
+            const wrap = flipInput.closest('label');
+            if (wrap) wrap.style.display = 'none';
+        }
+        const flipLabel = document.getElementById('ve-nebulous-flip-help');
+        if (flipLabel) flipLabel.hidden = state.activeView !== 'new';
+        if (flipInput && state.activeView !== 'new') {
+            flipInput.disabled = false;
+            const wrap = flipInput.closest('label');
+            if (wrap) wrap.style.display = '';
+        }
         const modeNote = document.getElementById('ve-encounter-mode-note');
         if (modeNote) modeNote.textContent = categoryForced
             ? 'Locked: the category-wide manual override is enabled.'
@@ -262,6 +294,7 @@
         }
         refreshSectionTabs();
         updateManualControls();
+        updateRewardEditors();
     }
 
     // Move the original DOM controls, rather than cloning them: existing event
@@ -298,6 +331,7 @@
         details.appendChild(el('h3', { text: 'Encounter Configuration' }));
         detailGrid.appendChild(variation);
         details.appendChild(detailGrid);
+        details.appendChild(el('div', { id: 've-encounter-rewards', class: 've-reward-editor' }));
         panel.appendChild(workspace);
         panel.appendChild(details);
         if (statusBox) panel.appendChild(statusBox);
@@ -439,6 +473,250 @@
         throw new Error('Unsupported encounter value: ' + typeof value);
     }
 
+    // The legacy parser uses `pair.split('=')` and loses nested reward
+    // definitions. Parse only data-only Lua literals and local table aliases:
+    // no eval, no Lua execution, and no implicit callback/function evaluation.
+    function parseNebulousLiteralLua(source) {
+        let i = 0;
+        const aliases = Object.create(null);
+        const fail = message => { throw new Error(message + ' near character ' + i); };
+        const skip = () => {
+            while (i < source.length) {
+                if (/\s/.test(source[i])) { i++; continue; }
+                if (source.startsWith('--[[', i)) {
+                    const end = source.indexOf(']]', i + 4);
+                    if (end < 0) fail('Unterminated comment');
+                    i = end + 2; continue;
+                }
+                if (source.startsWith('--', i)) {
+                    const end = source.indexOf('\n', i + 2);
+                    i = end < 0 ? source.length : end + 1; continue;
+                }
+                break;
+            }
+        };
+        const id = () => {
+            skip(); const match = /^[A-Za-z_][A-Za-z0-9_]*/.exec(source.slice(i));
+            if (!match) fail('Expected identifier');
+            i += match[0].length; return match[0];
+        };
+        const stringValue = () => {
+            const quote = source[i++]; let result = '';
+            while (i < source.length) {
+                const c = source[i++];
+                if (c === quote) return result;
+                if (c !== '\\') { result += c; continue; }
+                if (i >= source.length) fail('Unterminated string escape');
+                const escaped = source[i++];
+                result += ({ n: '\n', r: '\r', t: '\t' })[escaped] ?? escaped;
+            }
+            fail('Unterminated string');
+        };
+        function value() {
+            skip();
+            if (source[i] === '{') return table();
+            if (source[i] === '"' || source[i] === "'") return stringValue();
+            const number = /^-?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/.exec(source.slice(i));
+            if (number) { i += number[0].length; return Number(number[0]); }
+            const name = id();
+            if (name === 'true') return true;
+            if (name === 'false') return false;
+            if (name === 'nil') return null;
+            if (Object.prototype.hasOwnProperty.call(aliases, name)) {
+                return JSON.parse(JSON.stringify(aliases[name]));
+            }
+            fail('Unsupported expression or unknown local: ' + name);
+        }
+        function table() {
+            if (source[i] !== '{') fail('Expected table');
+            i++; const array = []; const object = {}; let keyed = false;
+            while (true) {
+                skip();
+                if (source[i] === '}') { i++; break; }
+                if (i >= source.length) fail('Unterminated table');
+                let key;
+                if (source[i] === '[') {
+                    i++; key = value(); skip();
+                    if (source[i++] !== ']') fail('Missing ]');
+                    skip(); if (source[i++] !== '=') fail('Missing = after bracket key');
+                } else {
+                    const start = i;
+                    const test = /^[A-Za-z_][A-Za-z0-9_]*/.exec(source.slice(i));
+                    if (test) {
+                        i += test[0].length; skip();
+                        if (source[i] === '=') { i++; key = test[0]; }
+                        else i = start;
+                    }
+                }
+                if (key === undefined) array.push(value());
+                else { keyed = true; object[key] = value(); }
+                skip();
+                if (source[i] === ',' || source[i] === ';') { i++; continue; }
+                if (source[i] !== '}') fail('Expected comma or table closing brace');
+            }
+            if (!keyed) return array;
+            array.forEach((v, n) => { object[n + 1] = v; });
+            return object;
+        }
+        while (true) {
+            skip(); if (i >= source.length) fail('Missing return statement');
+            const directive = id();
+            if (directive === 'return') {
+                const output = value();
+                if (!output || Array.isArray(output) || typeof output !== 'object') fail('Expected return table');
+                skip(); if (i < source.length) fail('Unexpected content after return table');
+                return output;
+            }
+            if (directive !== 'local') fail('Only local encounter tables and return are supported');
+            const name = id(); skip();
+            if (source[i++] !== '=') fail('Expected = in local declaration');
+            aliases[name] = value();
+            if (!aliases[name] || typeof aliases[name] !== 'object') fail('Expected local table');
+            skip(); if (source[i] === ';') i++;
+        }
+    }
+
+    function validateRewardConfig(rewards, location) {
+        if (rewards === undefined || rewards === false) return;
+        if (!rewards || typeof rewards !== 'object' || Array.isArray(rewards)) {
+            throw new Error('Invalid rewards for ' + location + ': expected a table or false.');
+        }
+        for (const name of ['money', 'bugfrags', 'health']) {
+            const config = rewards[name];
+            if (config === undefined || config === false) continue;
+            if (!config || typeof config !== 'object' || Array.isArray(config)) {
+                if (!Number.isInteger(Number(config)) || Number(config) < 0) throw new Error('Invalid ' + name + ' reward for ' + location);
+                continue;
+            }
+            for (const field of ['base', 'score_multiplier', 'min_score', 'max_score', ...(name === 'health' ? ['threshold'] : [])]) {
+                if (config[field] !== undefined && (!Number.isFinite(Number(config[field])) || Number(config[field]) < 0)) {
+                    throw new Error('Invalid ' + name + '.' + field + ' for ' + location);
+                }
+            }
+        }
+        if (rewards.chips !== undefined) {
+            if (!Array.isArray(rewards.chips)) throw new Error('chips must be a list for ' + location);
+            for (const chip of rewards.chips) {
+                if (!chip || typeof chip.card_id !== 'string' || !chip.card_id.trim() || !chip.code || typeof chip.code !== 'string') {
+                    throw new Error('Every chip reward needs a card_id and code for ' + location);
+                }
+                if (chip.chance !== undefined && (chip.chance < 0 || chip.chance > 1)) throw new Error('Chip chance must be between 0 and 1.');
+            }
+        }
+    }
+
+    function makeRewardEditor(root, label, getCurrent, setCurrent, isEncounter) {
+        root.replaceChildren();
+        root.appendChild(el('h3', { text: label }));
+        root.appendChild(el('p', { class: 've-reward-help', text: 'These rewards apply to ezencounters and Endless Runner battles using this definition. Nebulous Liberations NEVER grants battle rewards; its panel and mission loot are independent. Chip packets do not yet persist inventory.' }));
+        const active = isEncounter ? activeEncounter() : state.data;
+        if (!active) { root.appendChild(el('p', { text: 'Choose an encounter first.' })); return; }
+        const current = getCurrent();
+        if (Array.isArray(current.config) && current.config.length === 0) current.config = {};
+        const mode = current.disabled ? 'disabled' : (current.config !== undefined ? 'configured' : 'inherit');
+        const select = el('select', { 'aria-label': label + ' mode' }, [
+            el('option', { value: 'inherit', text: isEncounter ? 'Inherit area / enemy rewards' : 'No area-wide default (use enemy fallback)' }),
+            el('option', { value: 'configured', text: 'Configure rewards' }),
+            el('option', { value: 'disabled', text: 'Disable rewards for this ' + (isEncounter ? 'encounter' : 'area') })
+        ]);
+        select.value = mode;
+        select.addEventListener('change', () => {
+            if (select.value === 'disabled') setCurrent(undefined, true);
+            else if (select.value === 'inherit') setCurrent(undefined, false);
+            else setCurrent(current.config && typeof current.config === 'object' ? current.config : {}, false);
+            saveToLocalStorage(); updateRewardEditors();
+        });
+        root.appendChild(el('label', {}, ['Reward mode', select]));
+        if (mode !== 'configured') return;
+        const rewards = current.config && typeof current.config === 'object' ? current.config : {};
+        for (const kind of ['money', 'bugfrags', 'health']) {
+            const section = el('section', { class: 've-reward-kind' });
+            section.appendChild(el('h4', { text: { money: 'Monies', bugfrags: 'BugFrags', health: 'HP recovery' }[kind] }));
+            const form = el('div', { class: 've-reward-grid' });
+            const previous = rewards[kind] && typeof rewards[kind] === 'object' ? rewards[kind] :
+                (typeof rewards[kind] === 'number' ? { base: rewards[kind] } : {});
+            const definitions = [
+                ['base', 'Base amount', 1],
+                ['score_multiplier', 'Per busting score', 1],
+                ['min_score', 'Minimum score', 1],
+                ['max_score', 'Maximum score', 1]
+            ];
+            if (kind === 'health') definitions.push(['threshold', 'Only if HP ≤', 1]);
+            for (const [key, title, step] of definitions) {
+                const input = el('input', { type: 'number', min: '0', step: String(step), placeholder: 'Unspecified' });
+                input.value = previous[key] ?? '';
+                input.addEventListener('change', () => {
+                    const value = input.value.trim();
+                    const next = { ...(rewards[kind] && typeof rewards[kind] === 'object' ? rewards[kind] : previous) };
+                    if (value === '') delete next[key];
+                    else if (!Number.isFinite(Number(value)) || Number(value) < 0) { status('Reward values must be nonnegative numbers.', false); return; }
+                    else next[key] = Number(value);
+                    if (Object.keys(next).length === 0) delete rewards[kind];
+                    else rewards[kind] = next;
+                    setCurrent(rewards, false); saveToLocalStorage();
+                });
+                form.appendChild(el('label', {}, [title, input]));
+            }
+            section.appendChild(form); root.appendChild(section);
+        }
+        const chipSection = el('section', { class: 've-reward-kind' });
+        chipSection.appendChild(el('h4', { text: 'BattleChip drops' }));
+        chipSection.appendChild(el('p', { class: 've-reward-help', text: 'Cards are selected using their package ID and code. Chance: 0–1. No native chip inventory persistence is implemented.' }));
+        (Array.isArray(rewards.chips) ? rewards.chips : []).forEach((chip, index) => {
+            const row = el('div', { class: 've-chip-row' });
+            const grid = el('div', { class: 've-reward-grid' });
+            for (const [key, title, kind] of [
+                ['card_id', 'Card package ID', 'text'], ['code', 'Code', 'text'],
+                ['chance', 'Chance (0–1)', 'number'], ['min_score', 'Minimum score', 'number'], ['max_score', 'Maximum score', 'number']
+            ]) {
+                const input = el('input', { type: kind, placeholder: 'Unspecified', ...(kind === 'number' ? { min: '0', step: key === 'chance' ? '0.01' : '1' } : {}) });
+                input.value = chip[key] ?? '';
+                input.addEventListener('change', () => {
+                    if (input.value.trim() === '') delete chip[key];
+                    else chip[key] = kind === 'number' ? Number(input.value) : input.value.trim();
+                    setCurrent(rewards, false); saveToLocalStorage();
+                });
+                grid.appendChild(el('label', {}, [title, input]));
+            }
+            row.appendChild(grid);
+            row.appendChild(el('button', { type: 'button', onClick: () => {
+                rewards.chips.splice(index, 1);
+                if (!rewards.chips.length) delete rewards.chips;
+                setCurrent(rewards, false); saveToLocalStorage(); updateRewardEditors();
+            } }, ['Remove Chip']));
+            chipSection.appendChild(row);
+        });
+        chipSection.appendChild(el('button', { type: 'button', onClick: () => {
+            if (!Array.isArray(rewards.chips)) rewards.chips = [];
+            rewards.chips.push({ card_id: '', code: '*' });
+            setCurrent(rewards, false); saveToLocalStorage(); updateRewardEditors();
+        } }, ['Add BattleChip']));
+        root.appendChild(chipSection);
+    }
+
+    function updateRewardEditors() {
+        const single = document.getElementById('ve-encounter-rewards');
+        if (single) makeRewardEditor(single, 'Encounter Rewards', () => {
+            const encounter = activeEncounter();
+            return { config: encounter && encounter.rewards, disabled: !!(encounter && (encounter.no_battle_rewards || encounter.rewards === false)) };
+        }, (config, disabled) => {
+            const encounter = activeEncounter(); if (!encounter) return;
+            if (config === undefined) delete encounter.rewards;
+            else encounter.rewards = config;
+            if (disabled) encounter.no_battle_rewards = true;
+            else delete encounter.no_battle_rewards;
+        }, true);
+        const area = document.getElementById('ve-area-rewards');
+        if (area) makeRewardEditor(area, 'Area Default Rewards', () => ({
+            config: state.data.rewards === false ? undefined : state.data.rewards,
+            disabled: state.data.rewards === false
+        }), (config, disabled) => {
+            if (disabled) state.data.rewards = false;
+            else if (config === undefined) delete state.data.rewards;
+            else state.data.rewards = config;
+        }, false);
+    }
+
     function buildLua() {
         if (state.activeView === 'new') {
             state.data[state.activeSection] = config.encounters;
@@ -460,12 +738,14 @@
                 if (names.has(entry.name)) throw new Error('Duplicate encounter name "' + entry.name + '". Names must be unique across all three categories.');
                 names.add(entry.name);
                 if (entry.weight !== undefined && !Number.isFinite(Number(entry.weight))) throw new Error('Invalid weight on ' + entry.name + '.');
+                validateRewardConfig(entry.rewards, entry.name);
             });
         });
+        validateRewardConfig(state.data.rewards, 'area defaults');
         const allowedKeys = [
             'name', 'path', 'weight', 'enemies', 'obstacles',
             'positions', 'obstacle_positions', 'player_positions', 'tiles', 'teams',
-            'freedom_mission'
+            'freedom_mission', 'rewards', 'no_battle_rewards'
         ];
         const cleanEntries = section => (state.data[section] || []).map(entry => {
             const clean = {};
@@ -479,7 +759,7 @@
                 else clean.freedom_mission = {
                     enabled: true,
                     turn_count: Number(clean.freedom_mission.turn_count ?? clean.freedom_mission.turns ?? 5),
-                    player_can_flip: !!clean.freedom_mission.player_can_flip
+                    player_can_flip: false // server enables only for terrain == surrounded
                 };
             }
             return clean;
@@ -487,6 +767,8 @@
         const output = {
             minimum_steps_before_encounter: minSteps,
             encounter_chance_per_step: chance,
+            ...(state.data.rewards !== undefined ? { rewards: state.data.rewards } : {}),
+            ...(state.data.enemy_rewards !== undefined ? { enemy_rewards: state.data.enemy_rewards } : {}),
             encounters: cleanEntries('encounters'),
             special_encounters: cleanEntries('special_encounters'),
             bosses: cleanEntries('bosses')
@@ -535,13 +817,12 @@
     }
 
     function parseImportedLua(source) {
-        if (typeof window.parseConfigContent !== 'function') {
-            throw new Error('The existing Lua parser is unavailable.');
-        }
-        const parsed = window.parseConfigContent(source);
+        const parsed = parseNebulousLiteralLua(source);
         const result = {
             minimum_steps_before_encounter: Number(parsed.minimum_steps_before_encounter ?? 80),
             encounter_chance_per_step: Number(parsed.encounter_chance_per_step ?? 0.05),
+            ...(parsed.rewards !== undefined ? { rewards: parsed.rewards } : {}),
+            ...(parsed.enemy_rewards !== undefined ? { enemy_rewards: parsed.enemy_rewards } : {}),
             encounters: [], special_encounters: [], bosses: []
         };
         SECTION_KEYS.forEach(section => {
@@ -573,6 +854,7 @@
         }, entry || {});
         value.enemies = Array.isArray(value.enemies) ? value.enemies : [];
         value.obstacles = Array.isArray(value.obstacles) ? value.obstacles : [];
+        if (Array.isArray(value.rewards) && value.rewards.length === 0) value.rewards = {};
         delete value.terrain;
         delete value.music;
         delete value.results_callback;
@@ -613,9 +895,12 @@
 
     function loadNebulousData(data) {
         state.categoryBattlefieldDefaults = { encounters: false, special_encounters: false, bosses: false };
+        if (Array.isArray(data.rewards) && data.rewards.length === 0) data.rewards = {};
         state.data = {
             minimum_steps_before_encounter: Number(data.minimum_steps_before_encounter ?? 80),
             encounter_chance_per_step: Number(data.encounter_chance_per_step ?? 0.05),
+            ...(data.rewards !== undefined ? { rewards: data.rewards } : {}),
+            ...(data.enemy_rewards !== undefined ? { enemy_rewards: data.enemy_rewards } : {}),
             encounters: Array.isArray(data.encounters) ? data.encounters.map(normalizeEncounter) : [],
             special_encounters: Array.isArray(data.special_encounters) ? data.special_encounters.map(normalizeEncounter) : [],
             bosses: Array.isArray(data.bosses) ? data.bosses.map(normalizeEncounter) : []
@@ -645,7 +930,7 @@
         });
         return el('div', { id: 've-nebulous-controls' }, [
             tabs,
-            el('div', { class: 've-schema-note', text: 'Runtime terrain determines the automatic battlefield. The player marker is editable in either mode and runtime relocates it to the nearest valid player-team tile if necessary. Liberation music comes from the Tiled Liberation Config → Encounter Music reference.' }),
+            el('div', { class: 've-schema-note', text: 'Runtime terrain determines automatic teams and player positioning. In Nebulous battles, flipping is allowed ONLY when surrounded, regardless of authored Freedom Mission settings. Manual team matrices take precedence over terrain-generated teams; verify them for surrounded formations. Encounter reward tables can be authored here for use in ordinary ezencounters or Endless Runner battles, but Nebulous battle rewards remain disabled. Liberation music comes from the Tiled Liberation Config → Encounter Music reference.' }),
             el('label', { class: 've-manual-toggle' }, [
                 el('input', { id: 've-category-manual-battlefield', type: 'checkbox', onChange: event => {
                     state.categoryBattlefieldDefaults[state.activeSection] = event.target.checked;
@@ -679,6 +964,7 @@
                 el('div', { id: 've-encounter-mode-note', class: 've-schema-note' })
             ]),
             el('div', { id: 've-manual-note', class: 've-schema-note' }),
+            el('div', { id: 've-area-rewards', class: 've-reward-editor' }),
             el('div', { class: 've-actions' }, [
             el('button', { type: 'button', class: 've-action', onClick: () => {
                 const name = prompt('Enter a name for the new encounter (letters and numbers only):');
@@ -861,6 +1147,7 @@
         window.selectVariation = function(index) {
             const result = originalSelectVariation(index);
             updateManualControls();
+            if (window.__veNebulousMode) updateRewardEditors();
             return result;
         };
 
@@ -899,6 +1186,8 @@
                 state.data = {
                     minimum_steps_before_encounter: Number(data.minimum_steps_before_encounter ?? 80),
                     encounter_chance_per_step: Number(data.encounter_chance_per_step ?? 0.05),
+                    ...(data.rewards !== undefined ? { rewards: data.rewards } : {}),
+                    ...(data.enemy_rewards !== undefined ? { enemy_rewards: data.enemy_rewards } : {}),
                     encounters: Array.isArray(data.encounters) ? data.encounters.map(normalizeEncounter) : [],
                     special_encounters: Array.isArray(data.special_encounters) ? data.special_encounters.map(normalizeEncounter) : [],
                     bosses: Array.isArray(data.bosses) ? data.bosses.map(normalizeEncounter) : []
@@ -928,6 +1217,7 @@
         // remains isolated and is restored when switching back to Legacy Format.
         refreshSectionTabs();
         updateTopTabs();
+        updateRewardEditors();
     }
 
     if (window.jQuery) window.jQuery(install);
