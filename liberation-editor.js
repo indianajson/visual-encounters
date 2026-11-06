@@ -29,6 +29,8 @@
     const state = {
         activeView: 'legacy',
         activeSection: 'encounters',
+        selectedEnemyRewardAlias: '',
+        selectedEnemyRewardRank: 'default',
         categoryBattlefieldDefaults: { encounters: false, special_encounters: false, bosses: false },
         legacyConfig: null,
         data: {
@@ -240,6 +242,9 @@
     }
 
     function setLegacyControlsForMode(isNebulous) {
+        document.querySelectorAll('.ve-nebulous-enemy-advanced, .ve-nebulous-encounter-advanced').forEach(field => {
+            field.style.display = isNebulous ? '' : 'none';
+        });
         ['#load-config', '#save-config', '#clear-all', '#new-config', '#add-variation'].forEach(selector => {
             const node = document.querySelector(selector);
             if (node) node.style.display = isNebulous ? 'none' : '';
@@ -281,6 +286,10 @@
 
     function updateManualControls() {
         const variation = activeEncounter();
+        const health = document.getElementById('ve-encounter-persistent-health');
+        const noResults = document.getElementById('ve-encounter-no-results');
+        if (health) health.checked = !!(variation && variation.persistent_health);
+        if (noResults) noResults.checked = !!(variation && variation.no_results);
         const enabled = manualEnabled(variation);
         const categoryToggle = document.getElementById('ve-category-manual-battlefield');
         if (categoryToggle) categoryToggle.checked = !!state.categoryBattlefieldDefaults[state.activeSection];
@@ -316,6 +325,8 @@
         if (modeNote) modeNote.textContent = categoryForced
             ? 'Locked: the category-wide manual override is enabled.'
             : 'Choose whether this encounter uses an authored or runtime-generated battlefield.';
+        const neutral = document.querySelector('#tile-team option[value="0"]');
+        if (neutral) neutral.disabled = state.activeView === 'new';
         ['tile-team', 'tile-type'].forEach(id => {
             const input = document.getElementById(id);
             if (input) input.disabled = state.activeView === 'new' && !enabled;
@@ -425,6 +436,12 @@
         });
         const freedom = document.getElementById('freedom-mission-options');
         if (freedom) encounter.appendChild(freedom);
+        const advanced = el('div', { class: 've-nebulous-encounter-advanced ve-inspector-subgroup', style: 'display:none;' }, [
+            el('h4', { text: 'Managed battle options (non-Liberation)' }),
+            el('label', {}, [el('input', { id: 've-encounter-persistent-health', type: 'checkbox' }), ' Persist HP-recovery battle rewards' ]),
+            el('label', {}, [el('input', { id: 've-encounter-no-results', type: 'checkbox' }), ' Exclude encounter from native battle reward processing' ])
+        ]);
+        encounter.appendChild(advanced);
         variation.appendChild(encounter);
         variation.appendChild(area);
     }
@@ -652,6 +669,7 @@
         const childIndent = '    '.repeat(depth + 1);
         const inlineEntryLimit = 112;
         function keyFor(key) {
+            if (/^[1-9][0-9]*$/.test(String(key))) return '[' + String(Number(key)) + ']';
             return /^[A-Za-z_][A-Za-z0-9_]*$/.test(key) ? key : '[' + luaString(key) + ']';
         }
 
@@ -936,7 +954,79 @@
         root.appendChild(chipSection);
     }
 
+
+    function updateEnemyFallbackRewardEditor() {
+        const host = document.getElementById('ve-enemy-fallback-rewards');
+        if (!host) return;
+        host.replaceChildren();
+        host.appendChild(el('h3', { text: 'Enemy fallback rewards' }));
+        host.appendChild(el('p', { class: 've-reward-help', text: 'Optional rewards for ordinary managed ezencounters and runner battles, indexed by enemy alias and authored rank (1–8). Nebulous missions never grant native battle rewards.' }));
+        const existing = state.data.enemy_rewards && typeof state.data.enemy_rewards === 'object' ? state.data.enemy_rewards : {};
+        const aliases = new Set(Object.keys(existing));
+        SECTION_KEYS.forEach(section => (state.data[section] || []).forEach(encounter =>
+            (encounter.enemies || []).forEach(enemy => { if (enemy && enemy.name) aliases.add(enemy.name); })));
+        if (!aliases.size) {
+            host.appendChild(el('p', { class: 've-reward-help', text: 'Place an enemy in any encounter to configure its fallback reward rules.' }));
+            return;
+        }
+        const names = Array.from(aliases).sort((a,b) => a.localeCompare(b));
+        if (!names.includes(state.selectedEnemyRewardAlias)) state.selectedEnemyRewardAlias = names[0];
+        const aliasControl = el('select', { 'aria-label': 'Enemy alias for fallback rewards' }, names.map(name => el('option', { value: name, text: name })));
+        aliasControl.value = state.selectedEnemyRewardAlias;
+        aliasControl.addEventListener('change', () => { state.selectedEnemyRewardAlias = aliasControl.value; updateEnemyFallbackRewardEditor(); });
+        host.appendChild(el('label', {}, ['Enemy alias', aliasControl]));
+        const rankControl = el('select', { 'aria-label': 'Enemy fallback rank' }, [
+            el('option', { value: 'default', text: 'Default reward (all unspecified ranks)' }),
+            ...Array.from({length:8}, (_, i) => el('option', { value: String(i+1), text: 'Rank ' + (i+1) }))
+        ]);
+        rankControl.value = state.selectedEnemyRewardRank;
+        rankControl.addEventListener('change', () => { state.selectedEnemyRewardRank = rankControl.value; updateEnemyFallbackRewardEditor(); });
+        host.appendChild(el('label', {}, ['Reward rank', rankControl]));
+        const alias = state.selectedEnemyRewardAlias;
+        const rank = state.selectedEnemyRewardRank;
+        const rootRule = existing[alias];
+        const complex = rootRule && typeof rootRule === 'object' && (rootRule.ranks !== undefined || rootRule.default !== undefined);
+        // Preserve the exact simple alias-reward table when no rank overrides exist.
+        const readConfig = () => {
+            if (rank === 'default') return complex ? rootRule.default : rootRule;
+            return complex && rootRule.ranks ? rootRule.ranks[rank] : undefined;
+        };
+        const editor = el('div', { class: 've-reward-editor' });
+        makeRewardEditor(editor, (rank === 'default' ? 'Default rewards' : 'Rank ' + rank + ' rewards'),
+            () => ({ config: readConfig(), disabled: readConfig() === false }),
+            (config, disabled) => {
+                if (!state.data.enemy_rewards || typeof state.data.enemy_rewards !== 'object') state.data.enemy_rewards = {};
+                const map = state.data.enemy_rewards;
+                const desired = disabled ? false : config;
+                if (rank === 'default') {
+                    if (complex) {
+                        const node = map[alias] || {};
+                        if (desired === undefined) delete node.default;
+                        else node.default = desired;
+                        if (!Object.keys(node).length) delete map[alias];
+                        else map[alias] = node;
+                    } else {
+                        if (desired === undefined) delete map[alias];
+                        else map[alias] = desired;
+                    }
+                } else {
+                    const original = map[alias];
+                    const node = original && typeof original === 'object' && (original.ranks !== undefined || original.default !== undefined)
+                        ? original : (original === undefined ? {} : {default: original});
+                    if (!node.ranks) node.ranks = {};
+                    if (desired === undefined) delete node.ranks[rank];
+                    else node.ranks[rank] = desired;
+                    if (!Object.keys(node.ranks).length) delete node.ranks;
+                    if (!Object.keys(node).length) delete map[alias];
+                    else map[alias] = node;
+                }
+            }, false);
+        host.appendChild(editor);
+    }
+
     function updateRewardEditors() {
+        const persist = document.getElementById('ve-area-persistent-health');
+        if (persist) persist.checked = !!state.data.persistent_health;
         const single = document.getElementById('ve-encounter-rewards');
         if (single) makeRewardEditor(single, 'Encounter Rewards', () => {
             const encounter = activeEncounter();
@@ -957,7 +1047,62 @@
             else if (config === undefined) delete state.data.rewards;
             else state.data.rewards = config;
         }, false);
+        updateEnemyFallbackRewardEditor();
     }
+
+
+function validateEnemyRecords(entry) {
+    if (!Array.isArray(entry.enemies)) throw new Error('Encounter "' + entry.name + '" needs an enemies list.');
+    entry.enemies.forEach((enemy, index) => {
+        const location = entry.name + ' enemy #' + (index + 1);
+        if (!enemy || typeof enemy.name !== 'string' || !enemy.name.trim()) {
+            throw new Error(location + ' needs a valid enemy alias.');
+        }
+        const rank = Number(enemy.rank ?? 1);
+        if (!Number.isInteger(rank) || rank < 1 || rank > 8) {
+            throw new Error(location + ': rank must be a 1-based value between 1 and 8.');
+        }
+        for (const key of ['health', 'starting_hp', 'max_hp']) {
+            if (enemy[key] === undefined || enemy[key] === null) continue;
+            const number = Number(enemy[key]);
+            if (!Number.isInteger(number) || number <= 0) {
+                throw new Error(location + ': ' + key + ' must be a positive whole number.');
+            }
+        }
+        if (enemy.scale !== undefined && (!Number.isFinite(Number(enemy.scale)) || Number(enemy.scale) <= 0)) {
+            throw new Error(location + ': scale must be a positive number.');
+        }
+        if (enemy.max_hp !== undefined && enemy.health !== undefined && Number(enemy.health) > Number(enemy.max_hp)) {
+            throw new Error(location + ': starting health cannot exceed the requested maximum HP.');
+        }
+    });
+    if (entry.manual_battlefield_override === true && !Array.isArray(entry.positions)) {
+        throw new Error('Manual encounter "' + entry.name + '" has no enemy-position matrix.');
+    }
+    if (entry.manual_battlefield_override === true) {
+        if (Array.isArray(entry.teams)) entry.teams.flat().forEach(team => {
+            if (team !== 1 && team !== 2) throw new Error(entry.name + ': authored team must be 1 (enemy) or 2 (player).');
+        });
+        if (Array.isArray(entry.tiles)) entry.tiles.flat().forEach(tile => {
+            if (!Number.isInteger(tile) || tile < 1 || tile > 18) throw new Error(entry.name + ': tile type must be 1..18.');
+        });
+        if (Array.isArray(entry.obstacle_positions)) entry.obstacle_positions.flat().forEach(index => {
+            if (!Number.isInteger(index) || index < 0 || index > (entry.obstacles || []).length) {
+                throw new Error(entry.name + ': obstacle position references an invalid obstacle index.');
+            }
+        });
+    }
+    if (Array.isArray(entry.positions)) {
+        entry.positions.forEach((row, rowIndex) => {
+            if (!Array.isArray(row) || row.length !== 6) throw new Error(entry.name + ': positions row ' + (rowIndex + 1) + ' must have six columns.');
+            row.forEach(index => {
+                if (!Number.isInteger(Number(index)) || index < 0 || index > entry.enemies.length) {
+                    throw new Error(entry.name + ': position references an invalid enemy index.');
+                }
+            });
+        });
+    }
+}
 
     function buildLua() {
         if (state.activeView === 'new') {
@@ -981,13 +1126,18 @@
                 names.add(entry.name);
                 if (entry.weight !== undefined && !Number.isFinite(Number(entry.weight))) throw new Error('Invalid weight on ' + entry.name + '.');
                 validateRewardConfig(entry.rewards, entry.name);
+                validateEnemyRecords(entry);
             });
         });
         validateRewardConfig(state.data.rewards, 'area defaults');
+        if (state.data.enemy_rewards !== undefined && (typeof state.data.enemy_rewards !== 'object' || Array.isArray(state.data.enemy_rewards) || state.data.enemy_rewards === null)) {
+            throw new Error('Enemy reward fallbacks must be a table keyed by enemy alias.');
+        }
         const allowedKeys = [
             'name', 'path', 'weight', 'enemies', 'obstacles',
             'positions', 'obstacle_positions', 'player_positions', 'tiles', 'teams',
-            'freedom_mission', 'rewards', 'no_battle_rewards'
+            'freedom_mission', 'rewards', 'no_battle_rewards',
+            'persistent_health', 'no_results'
         ];
         const cleanEntries = section => (state.data[section] || []).map(entry => {
             const clean = {};
@@ -1011,6 +1161,7 @@
             encounter_chance_per_step: chance,
             ...(state.data.rewards !== undefined ? { rewards: state.data.rewards } : {}),
             ...(state.data.enemy_rewards !== undefined ? { enemy_rewards: state.data.enemy_rewards } : {}),
+            ...(state.data.persistent_health !== undefined ? { persistent_health: !!state.data.persistent_health } : {}),
             encounters: cleanEntries('encounters'),
             special_encounters: cleanEntries('special_encounters'),
             bosses: cleanEntries('bosses')
@@ -1060,11 +1211,14 @@
 
     function parseImportedLua(source) {
         const parsed = parseNebulousLiteralLua(source);
+        if (Array.isArray(parsed.rewards) && parsed.rewards.length === 0) parsed.rewards = {};
+        if (Array.isArray(parsed.enemy_rewards) && parsed.enemy_rewards.length === 0) parsed.enemy_rewards = {};
         const result = {
             minimum_steps_before_encounter: Number(parsed.minimum_steps_before_encounter ?? 80),
             encounter_chance_per_step: Number(parsed.encounter_chance_per_step ?? 0.05),
             ...(parsed.rewards !== undefined ? { rewards: parsed.rewards } : {}),
             ...(parsed.enemy_rewards !== undefined ? { enemy_rewards: parsed.enemy_rewards } : {}),
+            ...(parsed.persistent_health !== undefined ? { persistent_health: !!parsed.persistent_health } : {}),
             encounters: [], special_encounters: [], bosses: []
         };
         SECTION_KEYS.forEach(section => {
@@ -1105,6 +1259,16 @@
         if (value.manual_battlefield_override !== true && value.manual_battlefield_override !== false) {
             value.manual_battlefield_override = Array.isArray(value.teams);
         }
+        // Automatic formations do not author positions in Lua. The editor still
+        // needs an editable preview of each enemy, so place up to nine preview
+        // markers on the enemy side. This metadata is not exported unless the
+        // user switches the encounter to manual battlefield mode.
+        if (value.manual_battlefield_override === false && !Array.isArray(value.positions) && value.enemies.length) {
+            value.positions = Array.from({ length: 3 }, () => Array(6).fill(0));
+            value.enemies.slice(0, 9).forEach((enemy, index) => {
+                value.positions[index % 3][3 + Math.floor(index / 3)] = index + 1;
+            });
+        }
         ['positions', 'obstacle_positions', 'player_positions', 'tiles', 'teams'].forEach(key => {
             if (Array.isArray(value[key])) value[key] = grid(value[key], key === 'tiles' ? 1 : 0);
             else delete value[key];
@@ -1138,11 +1302,13 @@
     function loadNebulousData(data) {
         state.categoryBattlefieldDefaults = { encounters: false, special_encounters: false, bosses: false };
         if (Array.isArray(data.rewards) && data.rewards.length === 0) data.rewards = {};
+        if (Array.isArray(data.enemy_rewards) && data.enemy_rewards.length === 0) data.enemy_rewards = {};
         state.data = {
             minimum_steps_before_encounter: Number(data.minimum_steps_before_encounter ?? 80),
             encounter_chance_per_step: Number(data.encounter_chance_per_step ?? 0.05),
             ...(data.rewards !== undefined ? { rewards: data.rewards } : {}),
             ...(data.enemy_rewards !== undefined ? { enemy_rewards: data.enemy_rewards } : {}),
+            ...(data.persistent_health !== undefined ? { persistent_health: !!data.persistent_health } : {}),
             encounters: Array.isArray(data.encounters) ? data.encounters.map(normalizeEncounter) : [],
             special_encounters: Array.isArray(data.special_encounters) ? data.special_encounters.map(normalizeEncounter) : [],
             bosses: Array.isArray(data.bosses) ? data.bosses.map(normalizeEncounter) : []
@@ -1206,7 +1372,16 @@
                 el('div', { id: 've-encounter-mode-note', class: 've-schema-note' })
             ]),
             el('div', { id: 've-manual-note', class: 've-schema-note' }),
+            el('p', { class: 've-schema-note', text: 'Save exports encounters.lua and optionally packages already hosted in mods/. It does NOT compile ezencounters.zip or regenerate character mod HP presets. Keep mods/ezencounters.zip and specialized mod ZIPs synchronized with your live server.' }),
+            el('label', { class: 've-manual-toggle' }, [
+                el('input', { type: 'checkbox', id: 've-area-persistent-health', onChange: event => {
+                    state.data.persistent_health = !!event.target.checked;
+                    saveToLocalStorage();
+                } }),
+                ' Allow persistent HP-recovery rewards in ordinary managed ezencounters battles (not Nebulous)'
+            ]),
             el('div', { id: 've-area-rewards', class: 've-reward-editor' }),
+            el('div', { id: 've-enemy-fallback-rewards', class: 've-reward-editor' }),
             el('div', { class: 've-actions' }, [
             el('button', { type: 'button', class: 've-action', onClick: () => {
                 const name = prompt('Enter a name for the new encounter (letters and numbers only):');
@@ -1222,9 +1397,9 @@
                     downloadText('encounters.lua', buildLua());
                     const modResult = await downloadNebulousMods();
                     if (modResult && modResult.failed && modResult.failed.length) {
-                        status('Generated encounters.lua and required_mods.zip. ' + modResult.failed.length + ' referenced package(s) were not present in the bundled server archive; see MOD_PACKAGE_AUDIT.txt.', false);
+                        status('Exported encounters.lua and required_mods.zip with missing mods: ' + modResult.failed.join(', ') + '. Check the downloader audit inside the ZIP.', false);
                     } else {
-                        status('Generated encounters.lua' + (modResult ? ' and required_mods.zip.' : '.'), true);
+                        status('Exported encounters.lua' + (modResult ? ' and copied the hosted mods into required_mods.zip.' : '.'), true);
                     }
                 } catch (error) {
                     status('Save failed: ' + error.message, false);
@@ -1235,13 +1410,69 @@
         ]);
     }
 
+
+// Mod alias + rank are NOT a unique enemy identifier. Two identical viruses
+// can have different current HP, maximum HP, nickname, and sprite scale.
+// This is intentionally Nebulous-only; the original legacy editor remains untouched.
+function setNebulousEnemyAtTile(variation, row, col, attributes) {
+    const blank = () => Array.from({ length: 3 }, () => Array(6).fill(0));
+    if (!Array.isArray(variation.positions)) variation.positions = blank();
+    if (!Array.isArray(variation.obstacle_positions)) variation.obstacle_positions = blank();
+    if (!Array.isArray(variation.player_positions)) variation.player_positions = blank();
+    if (!Array.isArray(variation.enemies)) variation.enemies = [];
+    const oldIndex = Number(variation.positions[row][col]) || 0;
+    const oldEnemy = oldIndex > 0 ? variation.enemies[oldIndex - 1] : null;
+    // An imported file may deliberately reuse one enemy record for multiple
+    // positions. Copy-on-write preserves every other tile's values.
+    const shared = oldIndex > 0 && variation.positions.some((values, r) =>
+        values.some((value, c) => (r !== row || c !== col) && Number(value) === oldIndex));
+    const updated = { ...(oldEnemy || {}), name: attributes.name, rank: attributes.rank };
+    delete updated.starting_hp;
+    for (const key of ['nickname', 'health', 'max_hp', 'scale']) {
+        if (attributes[key] === undefined) delete updated[key];
+        else updated[key] = attributes[key];
+    }
+    if (oldEnemy && !shared) {
+        variation.enemies[oldIndex - 1] = updated;
+    } else {
+        variation.enemies.push(updated);
+        variation.positions[row][col] = variation.enemies.length;
+    }
+    variation.obstacle_positions[row][col] = 0;
+    variation.player_positions[row][col] = 0;
+}
+
+function parseEnemyField(id, integer, label) {
+    const input = document.getElementById(id);
+    if (!input || input.value.trim() === '') return undefined;
+    const number = Number(input.value);
+    if (!Number.isFinite(number) || number <= 0 || (integer && !Number.isInteger(number))) {
+        throw new Error(label + ' must be a positive ' + (integer ? 'whole number.' : 'number.'));
+    }
+    return number;
+}
+
     function installNebulousEditorOverrides() {
+        ['ve-encounter-persistent-health', 've-encounter-no-results'].forEach(id => {
+            document.addEventListener('change', event => {
+                if (event.target && event.target.id === id && window.__veNebulousMode) {
+                    const active = activeEncounter();
+                    if (!active) return;
+                    const key = id === 've-encounter-persistent-health' ? 'persistent_health' : 'no_results';
+                    if (event.target.checked) active[key] = true;
+                    else delete active[key];
+                    saveToLocalStorage();
+                }
+            });
+        });
         const originalUpdateTileImage = window.updateTileImage;
         const originalUpdateGrid = window.updateGrid;
         const originalUpdateTileFields = window.updateTileFields;
         const originalSaveToLocalStorage = window.saveToLocalStorage;
         const originalCleanupEnemies = window.cleanupEnemies;
         const originalAddNewVariation = window.addNewVariation;
+        const originalUpdateEnemyOnTile = window.updateEnemyOnTile;
+        let hydratingEnemyFields = false;
 
         function withPreviewMatrices(variation, callback) {
             const temporary = [];
@@ -1279,7 +1510,23 @@
             if (!window.__veNebulousMode) return originalUpdateTileFields();
             const variation = config.encounters[currentVariationIndex];
             if (!variation) return;
-            return withPreviewMatrices(variation, () => originalUpdateTileFields());
+            hydratingEnemyFields = true;
+            try {
+                withPreviewMatrices(variation, () => originalUpdateTileFields());
+            } finally {
+                hydratingEnemyFields = false;
+            }
+            const row = selectedTile && selectedTile.row;
+            const col = selectedTile && selectedTile.col;
+            const index = row === null || row === undefined || !Array.isArray(variation.positions)
+                ? 0 : Number(variation.positions[row][col]) || 0;
+            const enemy = index > 0 && variation.enemies ? variation.enemies[index - 1] : null;
+            const startHp = document.getElementById('enemy-health');
+            if (startHp && enemy && enemy.health == null && enemy.starting_hp != null) startHp.value = String(enemy.starting_hp);
+            const maxHp = document.getElementById('enemy-max-hp');
+            const scale = document.getElementById('enemy-scale');
+            if (maxHp) maxHp.value = enemy && enemy.max_hp != null ? String(enemy.max_hp) : '';
+            if (scale) scale.value = enemy && enemy.scale != null ? String(enemy.scale) : '';
         };
 
         // Hover and right-click handlers in the original grid read all four
@@ -1299,6 +1546,48 @@
             if (!variation) { event.preventDefault(); return; }
             return withPreviewMatrices(variation, () => originalHandleTileRightClick(event, tile));
         };
+
+
+window.updateEnemyOnTile = function() {
+    if (!window.__veNebulousMode) return originalUpdateEnemyOnTile();
+    if (hydratingEnemyFields || !selectedTile || currentVariationIndex < 0) return;
+    const variation = config.encounters[currentVariationIndex];
+    if (!variation) return;
+    const name = String(document.getElementById('enemy-type').value || '').trim();
+    if (!name) return;
+    const def = enemyDictionary.find(item => item.name === name);
+    const rank = Number(document.getElementById('enemy-rank').value || (def && def.ranks[0].value) || 1);
+    try {
+        if (!Number.isInteger(rank) || rank < 1 || rank > 8) throw new Error('Rank must be between 1 and 8.');
+        const nickname = String(document.getElementById('enemy-nickname').value || '').trim();
+        const attrs = {
+            name, rank,
+            nickname: nickname || undefined,
+            health: parseEnemyField('enemy-health', true, 'Starting HP'),
+            max_hp: parseEnemyField('enemy-max-hp', true, 'Maximum HP'),
+            scale: parseEnemyField('enemy-scale', false, 'Battle scale')
+        };
+        if (attrs.health !== undefined && attrs.max_hp !== undefined && attrs.health > attrs.max_hp) {
+            throw new Error('Starting HP cannot exceed maximum HP.');
+        }
+        setNebulousEnemyAtTile(variation, selectedTile.row, selectedTile.col, attrs);
+        cleanupEnemies(variation);
+        updateTileImage(selectedTile.row, selectedTile.col);
+        saveToLocalStorage();
+        syncWorkspaceStatus();
+    } catch (error) {
+        status('Enemy settings: ' + error.message, false);
+    }
+};
+
+// Legacy fields are handled by the original editor; these two are
+// intentionally Nebulous-only. No special handling by enemy name.
+['enemy-max-hp', 'enemy-scale'].forEach(id => {
+    const input = document.getElementById(id);
+    if (input) input.addEventListener('change', () => {
+        if (window.__veNebulousMode) updateEnemyOnTile();
+    });
+});
 
         window.cleanupEnemies = function(variation) {
             if (window.__veNebulousMode && (!variation || !Array.isArray(variation.positions))) return;
@@ -1335,6 +1624,7 @@
 
             if (type === 'enemy') {
                 $('#enemy-properties').show(); $('#obstacle-properties').hide();
+                $('#enemy-nickname, #enemy-health, #enemy-max-hp, #enemy-scale').val('');
                 const firstEnemy = enemyDictionary[0].name;
                 $('#enemy-type').val(firstEnemy).trigger('change');
                 updateEnemyOnTile();
@@ -1472,6 +1762,7 @@
             const saved = localStorage.getItem('nebulousEncounterConfig');
             if (saved) {
                 const data = JSON.parse(saved);
+                if (Array.isArray(data.enemy_rewards) && data.enemy_rewards.length === 0) data.enemy_rewards = {};
                 state.categoryBattlefieldDefaults = Object.fromEntries(SECTION_KEYS.map(section => [
                     section, !!(data.categoryBattlefieldDefaults && data.categoryBattlefieldDefaults[section])
                 ]));
@@ -1480,6 +1771,7 @@
                     encounter_chance_per_step: Number(data.encounter_chance_per_step ?? 0.05),
                     ...(data.rewards !== undefined ? { rewards: data.rewards } : {}),
                     ...(data.enemy_rewards !== undefined ? { enemy_rewards: data.enemy_rewards } : {}),
+                    ...(data.persistent_health !== undefined ? { persistent_health: !!data.persistent_health } : {}),
                     encounters: Array.isArray(data.encounters) ? data.encounters.map(normalizeEncounter) : [],
                     special_encounters: Array.isArray(data.special_encounters) ? data.special_encounters.map(normalizeEncounter) : [],
                     bosses: Array.isArray(data.bosses) ? data.bosses.map(normalizeEncounter) : []

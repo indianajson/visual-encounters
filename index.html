@@ -447,6 +447,16 @@
                     <label>Starting Health (optional):
                         <input type="number" id="enemy-health" min="1" step="1">
                     </label>
+                    <!-- Nebulous mode only; do not alter the original legacy editor. -->
+                    <div class="ve-nebulous-enemy-advanced" style="display:none;">
+                        <label>Maximum HP (optional):
+                            <input type="number" id="enemy-max-hp" min="1" step="1" placeholder="Native mod maximum">
+                        </label>
+                        <label>Battle sprite scale (optional):
+                            <input type="number" id="enemy-scale" min="0.01" step="0.05" placeholder="1.0 (native size)">
+                        </label>
+                        <p class="ve-small-help">Scale defaults to 1 when blank. Maximum HP above the native limit requires a compatible mod/preset. Mettaur and BigBrute 240 HP require their updated mod ZIPs.</p>
+                    </div>
                 </div>
                 
                 <div id="obstacle-properties" style="display:none;">
@@ -2310,6 +2320,30 @@ async function downloadModFiles() {
         if (!downloaded.includes('ezencounters.zip')) {
             throw new Error('The bundled mods/ezencounters.zip could not be downloaded. Check that the mods folder is beside index.html.');
         }
+
+        // This page packages existing hosted mod ZIPs. It cannot generate Lua
+        // battle packages or character max-HP variants from an encounter table.
+        const audit = [
+            'VisualEncounters required_mods.zip - download audit',
+            '===============================================',
+            'Source: this website\'s static mods/ directory',
+            'The editor DOES NOT build or patch ezencounters.zip or enemy mods.',
+            'Update mods/ezencounters.zip whenever the battle package changes.',
+            'For max_hp overrides above native limits, updated character-mod presets are required.',
+            '',
+            'Included (' + downloaded.length + '):',
+            ...downloaded.map(name => '  OK ' + name),
+            '',
+            'Unavailable (' + failed.length + '):',
+            ...(failed.length ? failed.map(name => '  MISSING ' + name) : ['  None']),
+            '',
+            'Encounter-specific HP support: Mettaur max_hp = 240 requires the',
+            'updated EXE6-001-Metall.zip with the EZHP240 character definition.',
+            'BigBrute max_hp = 240 similarly requires its Buffed240 mod variant.',
+            'Other maximum HP values require compatible native character mods.',
+            ''
+        ];
+        zip.file('MOD_PACKAGE_AUDIT.txt', audit.join('\n'));
 
         progress.text('Creating required_mods.zip...');
         const content = await zip.generateAsync({ type: 'blob' }, metadata => {
