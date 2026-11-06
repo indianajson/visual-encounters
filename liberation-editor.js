@@ -1191,7 +1191,7 @@ function validateEnemyRecords(entry) {
                 if (!clean.freedom_mission.enabled) delete clean.freedom_mission;
                 else clean.freedom_mission = {
                     enabled: true,
-                    turn_count: Number(clean.freedom_mission.turn_count ?? clean.freedom_mission.turns ?? 3),
+                    turn_count: validFreedomTurns(clean.freedom_mission.turn_count ?? clean.freedom_mission.turns),
                     player_can_flip: false // server enables only for terrain == surrounded
                 };
             }
@@ -1333,11 +1333,16 @@ function validateEnemyRecords(entry) {
         } else {
             value.freedom_mission = {
                 enabled: !!value.freedom_mission.enabled,
-                turn_count: Number(value.freedom_mission.turn_count ?? value.freedom_mission.turns ?? 3),
+                turn_count: validFreedomTurns(value.freedom_mission.turn_count ?? value.freedom_mission.turns),
                 player_can_flip: !!value.freedom_mission.player_can_flip
             };
         }
         return value;
+    }
+
+    function validFreedomTurns(value) {
+        const turns = Number(value);
+        return Number.isInteger(turns) && turns > 0 ? turns : 3;
     }
 
     function loadNebulousData(data) {

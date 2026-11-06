@@ -383,7 +383,7 @@
                 
                 <div id="freedom-mission-options" class="freedom-mission-options" style="display:none;">
                     <label>Turn Count:
-                        <input type="number" id="turn-count" min="1" step="1">
+                        <input type="number" id="turn-count" min="1" step="1" value="3">
                     </label>
                     <label>
                         <input type="checkbox" id="player-can-flip"> Player can flip
@@ -2930,7 +2930,8 @@ function updateVariationFields() {
     const freedomMission = variation.freedom_mission || { enabled: false, turn_count: 3, player_can_flip: false };
     $('#freedom-mission').prop('checked', freedomMission.enabled);
     $('#freedom-mission-options').toggle(freedomMission.enabled);
-    $('#turn-count').val(freedomMission.turn_count);
+    const configuredTurns = Number(freedomMission.turn_count ?? freedomMission.turns);
+    $('#turn-count').val(Number.isInteger(configuredTurns) && configuredTurns > 0 ? configuredTurns : 3);
     $('#player-can-flip').prop('checked', freedomMission.player_can_flip);
 }
 
@@ -3111,7 +3112,12 @@ function setupEventHandlers() {
         $('#freedom-mission').change(function() {
             if (currentVariationIndex === -1) return;
             const enabled = $(this).is(':checked');
-            config.encounters[currentVariationIndex].freedom_mission.enabled = enabled;
+            const encounter = config.encounters[currentVariationIndex];
+            encounter.freedom_mission ||= { enabled: false, turn_count: 3, player_can_flip: false };
+            const turns = Number(encounter.freedom_mission.turn_count ?? encounter.freedom_mission.turns);
+            if (!Number.isInteger(turns) || turns < 1) encounter.freedom_mission.turn_count = 3;
+            $('#turn-count').val(encounter.freedom_mission.turn_count);
+            encounter.freedom_mission.enabled = enabled;
             $('#freedom-mission-options').toggle(enabled);
             saveToLocalStorage();
         });
@@ -3119,7 +3125,10 @@ function setupEventHandlers() {
         // Freedom mission options
         $('#turn-count').change(function() {
             if (currentVariationIndex === -1) return;
-            config.encounters[currentVariationIndex].freedom_mission.turn_count = parseInt($(this).val()) || 3;
+            const turns = Number($(this).val());
+            const validTurns = Number.isInteger(turns) && turns > 0 ? turns : 3;
+            config.encounters[currentVariationIndex].freedom_mission.turn_count = validTurns;
+            $(this).val(validTurns);
             saveToLocalStorage();
         });
         
@@ -3622,12 +3631,11 @@ function loadFromLocalStorage() {
                     if (!variation.results_callback) {
                         variation.results_callback = '';
                     }
-                    if (!variation.freedom_mission) {
-                        variation.freedom_mission = {
-                            enabled: false,
-                            turn_count: 3,
-                            player_can_flip: false
-                        };
+                    if (!variation.freedom_mission || typeof variation.freedom_mission !== 'object') {
+                        variation.freedom_mission = { enabled: false, turn_count: 3, player_can_flip: false };
+                    } else {
+                        const turns = Number(variation.freedom_mission.turn_count ?? variation.freedom_mission.turns);
+                        variation.freedom_mission.turn_count = Number.isInteger(turns) && turns > 0 ? turns : 3;
                     }
                 });
             }
