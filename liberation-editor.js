@@ -245,6 +245,52 @@
               #ve-legacy-view .ve-grid-footer,#ve-nebulous-view .ve-grid-footer {align-items:flex-start}
               #ve-legacy-view .toolbar > label,#ve-nebulous-view .toolbar > label {margin-left:0!important}
             }
+            /* Template workshop: grouped authoring on the left, live visual preview on the right. */
+            #ve-nebulous-view .ve-template-workspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(345px,440px);align-items:start;gap:17px}
+            #ve-nebulous-view .ve-template-primary{min-width:0;display:flex;flex-direction:column;gap:14px}
+            #ve-nebulous-view .ve-template-card{min-width:0;padding:16px;border:1px solid var(--ve-line);background:var(--ve-bg);border-radius:12px}
+            #ve-nebulous-view .ve-template-card h3{font-size:16px;margin:0 0 7px}
+            #ve-nebulous-view .ve-template-card>.ve-small-help{margin:0 0 14px}
+            #ve-nebulous-view .ve-template-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+            #ve-nebulous-view .ve-template-fields label,#ve-nebulous-view .ve-template-card label{color:var(--ve-text);font-size:12px;line-height:1.45}
+            #ve-nebulous-view .ve-template-fields label:has(input[type=checkbox]){display:flex;gap:10px;align-items:center;justify-content:flex-start}
+            #ve-nebulous-view .ve-template-fields input[type=checkbox]{width:18px;height:18px}
+            #ve-nebulous-view .ve-template-preview-column{min-width:0;position:sticky;top:16px}
+            #ve-nebulous-view .ve-template-mini-row{display:flex;align-items:end;flex-wrap:wrap;gap:10px;margin:8px 0 12px}
+            #ve-nebulous-view .ve-template-mini-row label{display:flex;flex:1 1 95px;flex-direction:column;gap:4px;min-width:70px}
+            #ve-nebulous-view .ve-template-mini-row input,#ve-nebulous-view .ve-template-mini-row select{min-height:35px;width:100%;box-sizing:border-box;padding:7px;border:1px solid var(--ve-line);background:var(--ve-soft);color:var(--ve-text);border-radius:7px}
+            #ve-nebulous-view .ve-shape-stage{display:flex;justify-content:safe center;align-items:flex-start;overflow:auto;border:1px solid var(--ve-line);border-radius:11px;background:var(--ve-soft);padding:16px 10px;margin:8px 0}
+            /* World-space display: the enemy stays at (0,0) in the middle of the viewport.
+               The authored mask is plotted at each cell's exported X/Y offset without
+               changing the mask, the user's offsets, or the Lua template. */
+            #ve-nebulous-view .ve-shape-board{--ve-shape-size:46px;display:grid;gap:5px;position:relative;flex:0 0 auto}
+            /* The marker is not a mask cell and cannot be selected or exported. */
+            #ve-nebulous-view .ve-shape-enemy-marker{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:42px;height:42px;box-sizing:border-box;border:2px solid #a78bfa;border-radius:7px;background:rgba(124,58,237,.16);box-shadow:0 0 0 2px rgba(167,139,250,.15);pointer-events:none;z-index:2;display:flex;justify-content:center;align-items:flex-start}
+            #ve-nebulous-view .ve-shape-enemy-marker span{display:block;margin-top:2px;padding:2px 3px;border-radius:3px;background:#6941c6;color:#fff;font-size:9px;font-weight:800;letter-spacing:.02em;line-height:1}
+            #ve-nebulous-view .ve-shape-cell{width:46px;height:46px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:0;border:1px solid #b7c7df;background:var(--ve-bg);color:var(--ve-muted);border-radius:7px;cursor:pointer;padding:0}
+            #ve-nebulous-view .ve-shape-cell span{font-weight:700;font-size:18px;line-height:1.2}
+            #ve-nebulous-view .ve-shape-cell small{font-size:9px;line-height:1.2}
+            #ve-nebulous-view .ve-shape-cell.on{background:#2360cb;color:#fff;border-color:#2360cb}
+            #ve-nebulous-view .ve-shape-cell.origin{outline:2px dashed #f59e0b;outline-offset:1px}
+            #ve-nebulous-view .ve-shape-cell:hover,#ve-nebulous-view .ve-shape-cell:focus-visible{box-shadow:0 0 0 3px #4c91ed66}
+            #ve-nebulous-view .ve-shape-info{margin-top:7px}
+            #ve-nebulous-view .ve-template-advanced summary{font-size:13px;font-weight:700;color:var(--ve-text);cursor:pointer;padding:7px 0}
+            #ve-nebulous-view .ve-template-advanced label{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+            #ve-nebulous-view .ve-template-advanced input{box-sizing:border-box;padding:8px;width:100%;background:var(--ve-soft);color:var(--ve-text);border:1px solid var(--ve-line);border-radius:7px}
+            #ve-nebulous-view .ve-sprite-stage{padding:0;background:#121e32;border:2px dashed #536f94;border-radius:11px;overflow:hidden;line-height:0}
+            #ve-nebulous-view .ve-sprite-stage.dragover{border-color:#fbbf24;background:#1b3353}
+            #ve-nebulous-view .ve-sprite-stage canvas{display:block;max-width:100%;width:100%;height:auto;image-rendering:pixelated}
+            #ve-nebulous-view .ve-template-playback{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:10px 0}
+            #ve-nebulous-view .ve-template-playback button,#ve-nebulous-view .ve-template-playback select,#ve-nebulous-view .ve-template-sample button,#ve-nebulous-view .ve-template-advanced button{border:1px solid var(--ve-line);background:var(--ve-soft);color:var(--ve-text);border-radius:7px;padding:8px;min-height:35px;cursor:pointer;font-size:12px}
+            #ve-nebulous-view .ve-template-playback .ve-template-inline-check{display:flex;align-items:center;gap:5px}
+            #ve-nebulous-view .ve-template-playback .ve-template-inline-check input{width:16px;height:16px;margin:0}
+            #ve-nebulous-view .ve-preview-file-label{display:flex;flex-direction:column;gap:7px;font-weight:650}
+            #ve-nebulous-view .ve-preview-file-label input{width:100%;max-width:100%;font-size:12px}
+            #ve-nebulous-view .ve-template-sample{margin:10px 0}
+            #ve-nebulous-view .ve-template-primary-button{background:#2360cb;color:#fff;border-color:#2360cb}
+            #ve-nebulous-view .ve-preview-caption{margin:6px 0 12px;min-height:30px}
+            @media(max-width:1060px){#ve-nebulous-view .ve-template-workspace{grid-template-columns:1fr}#ve-nebulous-view .ve-template-preview-column{position:static;order:-1}}
+            @media(max-width:650px){#ve-nebulous-view .ve-template-fields{grid-template-columns:1fr}#ve-nebulous-view .ve-shape-board{--ve-shape-size:37px}#ve-nebulous-view .ve-shape-cell{width:37px;height:37px}#ve-nebulous-view .ve-shape-enemy-marker{width:32px;height:33px}#ve-nebulous-view .ve-shape-enemy-marker span{font-size:7px}#ve-nebulous-view .ve-shape-cell small{font-size:8px}#ve-nebulous-view .ve-template-card{padding:12px}}
         `;
         document.head.appendChild(el('style', { id: 've-ux-styles', text: css }));
     }
@@ -1374,10 +1420,10 @@ function validateEnemyRecords(entry) {
         ['battle_name','Battle enemy alias','text','Mettaur'],
         ['is_boss','Boss template','checkbox',''],
         ['is_special_encounter','Special encounter enemy','checkbox',''],
-        ['health','Starting HP','number','120'],
-        ['max_health','Maximum HP','number','120'],
+        ['health','Starting HP','number','100'],
+        ['max_health','Maximum HP','number','100'],
         ['scale','Default OW scale','number','1'],
-        ['battle_scale','Default battle scale','number','1'],
+        ['battle_scale','Default battle scale (blank = inherit OW)','number',''],
         ['texture_path','OW texture path','text','/server/assets/.../enemy.png'],
         ['animation_path','OW animation path','text','/server/assets/.../enemy.animation'],
         ['attack_damage','Overworld base attack damage','number','20'],
@@ -1422,9 +1468,12 @@ function validateEnemyRecords(entry) {
             shape_offset_y: def.shape_offset_y ?? -1
         };
         if (def.shape) {
-            const rows = String(def.shape).split('/').map(row => row.trim().split(',').map(item => Number(item.trim())));
-            if (!rows.length || rows.some(row => !row.length || row.some(cell => ![0,1].includes(cell)))) throw new Error('Selection shape must contain 0s and 1s separated by commas and / between rows.');
-            if (rows.some(row => row.length !== rows[0].length)) throw new Error('Selection shape rows must be equally wide.');
+            const rawRows = String(def.shape).split('/').map(row => row.trim().split(',').map(item => item.trim()));
+            if (rawRows.length > 9 || rawRows.some(row => !row.length || row.length > 9 || row.length !== rawRows[0].length || row.some(value => value !== '0' && value !== '1'))) {
+                throw new Error('Selection shape needs up to 9 equally sized rows/columns of 0s and 1s.');
+            }
+            const rows = rawRows.map(row => row.map(Number));
+            if (!rows.some(row => row.some(Boolean))) throw new Error('Selection shape must select at least one tile.');
             config.shape = rows;
         }
         if (def.death_message) config.death_message = def.death_message;
@@ -1441,57 +1490,428 @@ function validateEnemyRecords(entry) {
             + '    EnemyTemplates.register(' + luaString(name) + ', '
             + serializeLua(config, 1) + ')\nend\n';
     }
+    // OpenNetBattle selection:set_shape() is a numeric row/column mask.
+    // Keep the visual painter and the existing Lua-export field synchronized.
+    function createTemplateShapePainter(fields) {
+        const raw = fields.shape;
+        const offX = fields.shape_offset_x;
+        const offY = fields.shape_offset_y;
+        let mask = [[1]];
+        const presets = {
+            'Single tile': [[1]],
+            '3 × 3 filled': [[1,1,1],[1,1,1],[1,1,1]],
+            '3 × 3 cross': [[0,1,0],[1,1,1],[0,1,0]],
+            '3 × 3 ring': [[1,1,1],[1,0,1],[1,1,1]],
+            'Three horizontal': [[1,1,1]],
+            'Three vertical': [[1],[1],[1]],
+            '3 × 3 empty': [[0,0,0],[0,0,0],[0,0,0]]
+        };
+        const sizeRow = el('select', { 'aria-label': 'Shape rows' }, Array.from({length: 9}, (_, i) => el('option', { value: i+1, text: String(i+1) })));
+        const sizeCol = el('select', { 'aria-label': 'Shape columns' }, Array.from({length: 9}, (_, i) => el('option', { value: i+1, text: String(i+1) })));
+        const preset = el('select', { 'aria-label': 'Shape preset' }, [el('option', { value: '', text: 'Choose a shape preset…' }), ...Object.keys(presets).map(k => el('option', { value: k, text: k }))]);
+        const board = el('div', { class: 've-shape-board', role: 'group', 'aria-label': 'Click to include or remove a selection tile' });
+        // The enemy is always world (0,0), centered within the viewing board.
+        // Shape offsets move the editable mask relative to the enemy in the preview;
+        // only the existing mask and numeric offset inputs determine Lua output.
+        const enemyMarker = el('div', { class: 've-shape-enemy-marker', 'aria-hidden': 'true', title: 'Enemy at world (0,0); visual anchor, never part of the shape mask.' }, [el('span', { text: 'ENEMY' })]);
+        const info = el('p', { class: 've-small-help ve-shape-info' });
+        const rawStatus = el('span', { class: 've-small-help' });
+        const makeRaw = () => mask.map(row => row.join(',')).join(' / ');
+        const parseRaw = str => {
+            if (!str || !str.trim()) return [[1]];
+            const result = str.split('/').map(row => row.trim().split(',').map(v => v.trim()));
+            if (result.length > 9 || result.some(row => !row.length || row.length > 9 || row.length !== result[0].length || row.some(v => v !== '0' && v !== '1'))) {
+                throw new Error('Use up to 9 rows and columns, with 0/1 values separated by commas and / between rows.');
+            }
+            return result.map(row => row.map(Number));
+        };
+        function render() {
+            const rows = mask.length, cols = mask[0].length;
+            sizeRow.value = String(rows); sizeCol.value = String(cols);
+            // Offsets are read, never calculated or rewritten when resizing.
+            // Each mask tile is positioned using the same x+offset/y+offset
+            // formula used by the engine. The enemy remains fixed at world (0,0).
+            const dx = Number(offX.value), dy = Number(offY.value);
+            const ox = Number.isFinite(dx) ? dx : 0;
+            const oy = Number.isFinite(dy) ? dy : -1;
+            // Keep a symmetric, odd-sized world viewport so the enemy remains
+            // visually centered, including for even mask dimensions. Bound huge
+            // manually authored offsets to avoid creating a massive DOM grid.
+            const requestedX = Math.max(1, Math.ceil(Math.abs(ox)), Math.ceil(Math.abs(ox + cols - 1)));
+            const requestedY = Math.max(1, Math.ceil(Math.abs(oy)), Math.ceil(Math.abs(oy + rows - 1)));
+            const radiusX = Math.min(12, requestedX), radiusY = Math.min(12, requestedY);
+            board.style.gridTemplateColumns = `repeat(${radiusX * 2 + 1}, var(--ve-shape-size))`;
+            board.style.gridTemplateRows = `repeat(${radiusY * 2 + 1}, var(--ve-shape-size))`;
+            const cells = [];
+            let outside = 0;
+            mask.forEach((row, y) => row.forEach((on, x) => {
+                const worldX = x + ox, worldY = y + oy;
+                // Very large offsets are handled by the numeric controls rather
+                // than expanding the preview past 25×25 tiles.
+                if (Math.abs(worldX) > radiusX || Math.abs(worldY) > radiusY) { outside++; return; }
+                const label = `Row ${y+1}, column ${x+1}; relative to enemy (${worldX}, ${worldY}); ${on ? 'selected' : 'not selected'}`;
+                const cell = el('button', { type: 'button', class: 've-shape-cell' + (on ? ' on' : '') + ((worldX === 0 && worldY === 0) ? ' origin' : ''),
+                    'aria-pressed': on ? 'true' : 'false', 'aria-label': label,
+                    onClick: () => { mask[y][x] = on ? 0 : 1; commit(); }
+                }, [el('span', { text: on ? '✓' : '·' }), el('small', { text: `${worldX},${worldY}` })]);
+                cell.style.gridColumnStart = String(Math.round(worldX) + radiusX + 1);
+                cell.style.gridRowStart = String(Math.round(worldY) + radiusY + 1);
+                cells.push(cell);
+            }));
+            board.replaceChildren(...cells, enemyMarker);
+            const selected = mask.flat().filter(Boolean).length;
+            info.textContent = `${selected} selected tile${selected === 1 ? '' : 's'} · ${cols} columns × ${rows} rows · ENEMY stays at the visual center (0,0); Offset X/Y moves the mask relative to it. Resizing does not change the numeric offsets or shape export.`
+                + (outside ? ` ${outside} tile(s) are beyond the preview range; their data is preserved.` : '');
+        }
+        function commit() {
+            raw.value = makeRaw();
+            rawStatus.textContent = '';
+            render();
+        }
+        function resize(rows, cols) {
+            rows = Math.max(1, Math.min(9, rows)); cols = Math.max(1, Math.min(9, cols));
+            mask = Array.from({ length: rows }, (_, y) => Array.from({ length: cols }, (_, x) => mask[y]?.[x] || 0));
+            preset.value = ''; commit();
+        }
+        sizeRow.addEventListener('change', () => resize(+sizeRow.value, mask[0].length));
+        sizeCol.addEventListener('change', () => resize(mask.length, +sizeCol.value));
+        preset.addEventListener('change', () => {
+            if (!presets[preset.value]) return;
+            mask = presets[preset.value].map(row => row.slice()); commit();
+        });
+        offX.addEventListener('input', render);
+        offY.addEventListener('input', render);
+        raw.addEventListener('input', () => {
+            try { mask = parseRaw(raw.value); rawStatus.textContent = ''; render(); }
+            catch (err) { rawStatus.textContent = err.message; }
+        });
+        const rawEditor = el('details', { class: 've-template-advanced' }, [
+            el('summary', { text: 'Advanced: edit numeric mask' }),
+            el('label', {}, ['Selection mask (same values exported into Lua)', raw, rawStatus])
+        ]);
+        const panel = el('div', { class: 've-template-card' }, [
+            el('h3', { text: 'Selection shape' }),
+            el('p', { class: 've-small-help', text: 'The ENEMY marker stays at the center when rows or columns change. Set Offset X/Y yourself to shift the shape relative to the enemy; resizing never changes those numbers.' }),
+            el('div', { class: 've-template-mini-row' }, [
+                el('label', {}, ['Preset', preset]),
+                el('label', {}, ['Rows', sizeRow]),
+                el('label', {}, ['Columns', sizeCol])
+            ]),
+            el('div', { class: 've-shape-stage' }, [board]), info,
+            el('div', { class: 've-template-mini-row' }, [
+                el('label', {}, ['Offset X', offX]), el('label', {}, ['Offset Y', offY])
+            ]), rawEditor
+        ]);
+        const load = () => {
+            try { mask = parseRaw(raw.value); rawStatus.textContent = ''; }
+            catch (err) { mask = [[1]]; rawStatus.textContent = err.message; }
+            if (offX.value === '') offX.value = '0';
+            if (offY.value === '') offY.value = '-1';
+            render();
+        };
+        load();
+        return { panel, load };
+    }
+
+    // Local preview of ONB .animation + matching texture. File contents remain in the
+    // browser session only; the saved template still uses explicit server asset paths.
+    function createTemplateSpritePreview(fields) {
+        const targets = {
+            ow: { name: 'OW sprite', texture: 'texture_path', animation: 'animation_path' },
+            attack: { name: 'Attack effect', texture: 'attack_texture', animation: 'attack_animation_path' },
+            mug: { name: 'Boss mug', texture: 'mug_texture', animation: 'mug_animation' }
+        };
+        const assets = Object.fromEntries(Object.keys(targets).map(key => [key, { image: null, imageName: '', animationName: '', states: {}, imagePath: '', url: '' }]));
+        let mode = 'ow', currentState = '', frameIndex = 0, seconds = 0, lastTime = 0, running = false, frameRequest = 0;
+        const previewMode = el('select', { 'aria-label': 'Preview asset type' }, Object.entries(targets).map(([key,v]) => el('option', { value: key, text: v.name })));
+        const fileInput = el('input', { type: 'file', accept: '.png,.webp,.animation,image/png,image/webp', multiple: true, 'aria-label': 'Choose PNG or WebP image and OpenNetBattle animation file' });
+        const stage = el('div', { class: 've-sprite-stage', tabindex: '0', role: 'group', 'aria-label': 'Animation preview; drop a sprite sheet and animation file here' });
+        const canvas = el('canvas', { width: 460, height: 300, 'aria-label': 'Overworld animation preview' });
+        stage.appendChild(canvas);
+        const ctx = canvas.getContext('2d');
+        const stateSelect = el('select', { 'aria-label': 'Animation state' });
+        const toggle = el('button', { type: 'button', text: 'Play', onClick: () => { running = !running; toggle.textContent = running ? 'Pause' : 'Play'; if (running) { lastTime = 0; schedule(); } } });
+        const next = el('button', { type: 'button', text: 'Next frame', onClick: () => { running = false; toggle.textContent = 'Play'; frameIndex = (frameIndex + 1) % Math.max(1, currentFrames().length); seconds = 0; draw(); } });
+        const zoom = el('select', { 'aria-label': 'Preview zoom' }, [1,2,3,4].map(n => el('option', { value: n, text: n + '× zoom' })));
+        zoom.value = '2';
+        const speed = el('select', { 'aria-label': 'Playback speed' }, [0.5,1,2].map(n => el('option', { value: n, text: n + '× speed' })));
+        speed.value = '1';
+        const origin = el('input', { type: 'checkbox' }); origin.checked = true;
+        const frameStatus = el('p', { class: 've-small-help ve-preview-caption', text: 'No assets loaded. Choose a PNG/WebP sprite sheet and a matching .animation file.' });
+        const fileStatus = el('p', { class: 've-small-help' });
+        const basePath = el('input', { type: 'text', value: '/server/assets/ezlibs-custom/nebulous-liberations/', 'aria-label': 'Server asset folder' });
+        const applyPaths = el('button', { type: 'button', text: 'Use filenames as template paths', onClick: () => {
+            const data = assets[mode], mapping = targets[mode];
+            const dir = basePath.value.trim().replace(/\/*$/, '/') || '/';
+            if (data.imageName) fields[mapping.texture].value = dir + data.imageName;
+            if (data.animationName) fields[mapping.animation].value = dir + data.animationName;
+            fileStatus.textContent = 'Template paths updated; check the server folder before exporting.';
+        } });
+        function attrs(line) {
+            const a = {};
+            for (const item of line.matchAll(/([A-Za-z_][A-Za-z0-9_]*)\s*=\s*"([^"]*)"/g)) a[item[1]] = item[2];
+            return a;
+        }
+        function parseAnimation(text) {
+            const states = {}; let name = '';
+            let imagePath = '';
+            for (const source of text.split(/\r?\n/)) {
+                const line = source.trim();
+                if (!line || line.startsWith('#') || line.startsWith('--')) continue;
+                if (line.startsWith('imagePath')) { imagePath = attrs(line).imagePath || imagePath; continue; }
+                if (line.startsWith('animation ')) { name = attrs(line).state || ''; if (name) states[name] = []; continue; }
+                if (!line.startsWith('frame ') || !name) continue;
+                const a = attrs(line);
+                const frame = {
+                    x: Number(a.x), y: Number(a.y), w: Number(a.w), h: Number(a.h),
+                    originx: Number(a.originx || 0), originy: Number(a.originy || 0),
+                    duration: Number(a.duration || 0.15)
+                };
+                if ([frame.x,frame.y,frame.w,frame.h,frame.originx,frame.originy,frame.duration].every(Number.isFinite) && frame.w > 0 && frame.h > 0) {
+                    frame.duration = Math.max(0.01, frame.duration);
+                    states[name].push(frame);
+                }
+            }
+            for (const name of Object.keys(states)) if (!states[name].length) delete states[name];
+            if (!Object.keys(states).length) throw new Error('No valid animation states found. Expected animation state="..." and frame duration="..." x/y/w/h entries.');
+            return { states, imagePath };
+        }
+        function currentFrames() { return assets[mode].states[currentState] || []; }
+        function currentScale() {
+            const v = Number(fields.scale.value);
+            return mode === 'ow' && Number.isFinite(v) && v > 0 ? v : 1;
+        }
+        function setStates() {
+            const names = Object.keys(assets[mode].states);
+            stateSelect.replaceChildren(...names.map(n => el('option', { value: n, text: `${n} (${assets[mode].states[n].length} frames)` })));
+            currentState = names.includes(currentState) ? currentState : (names.find(n => /^IDLE/i.test(n)) || names[0] || '');
+            stateSelect.value = currentState;
+            frameIndex = 0; seconds = 0; stateSelect.disabled = !names.length;
+            draw();
+        }
+        function draw() {
+            if (!ctx) return;
+            const { width: W, height: H } = canvas;
+            ctx.clearRect(0,0,W,H);
+            ctx.fillStyle = '#121e32'; ctx.fillRect(0,0,W,H);
+            ctx.strokeStyle = '#243955'; ctx.lineWidth = 1;
+            for (let x=0; x<W; x+=24) for (let y=0; y<H; y+=24) { ctx.strokeRect(x,y,24,24); }
+            const px = Math.round(W/2), py = Math.round(H*0.75);
+            ctx.fillStyle = '#263e58'; ctx.strokeStyle = '#6e8dab'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(px,py-24); ctx.lineTo(px+48,py); ctx.lineTo(px,py+24); ctx.lineTo(px-48,py); ctx.closePath(); ctx.fill(); ctx.stroke();
+            const data = assets[mode], frames = currentFrames(), f = frames[frameIndex % Math.max(frames.length, 1)];
+            const magnification = Number(zoom.value) || 2;
+            const scale = currentScale() * magnification;
+            ctx.imageSmoothingEnabled = false;
+            if (data.image && data.image.complete && data.image.naturalWidth) {
+                if (f) {
+                    if (f.x >= 0 && f.y >= 0 && f.x+f.w <= data.image.naturalWidth && f.y+f.h <= data.image.naturalHeight) {
+                        const fit = Math.min(1, (W-30)/(f.w*scale), (H-30)/(f.h*scale));
+                        const visualScale = scale*fit;
+                        ctx.drawImage(data.image, f.x,f.y,f.w,f.h, px-f.originx*visualScale, py-f.originy*visualScale, f.w*visualScale, f.h*visualScale);
+                    } else { fileStatus.textContent = 'Frame coordinates exceed sprite sheet dimensions. Check that the matching PNG is selected.'; }
+                } else {
+                    const fit = Math.min((W-35)/data.image.naturalWidth, (H-35)/data.image.naturalHeight, magnification);
+                    const dw = data.image.naturalWidth*fit, dh = data.image.naturalHeight*fit;
+                    ctx.drawImage(data.image, (W-dw)/2,(H-dh)/2,dw,dh);
+                }
+            } else {
+                ctx.fillStyle = '#b6c9e2'; ctx.textAlign = 'center'; ctx.font = '14px system-ui';
+                ctx.fillText('Choose a sprite sheet to preview animation', px, H/2-15);
+            }
+            if (origin.checked) {
+                ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(px-9,py); ctx.lineTo(px+9,py); ctx.moveTo(px,py-9); ctx.lineTo(px,py+9); ctx.stroke();
+            }
+            frameStatus.textContent = f ? `${currentState} · frame ${frameIndex+1}/${frames.length} · ${f.w}×${f.h}px · origin (${f.originx},${f.originy}) · preview scale ${currentScale()}×`
+                : (data.image ? 'Sprite sheet loaded. Add the matching .animation file for playback and frame origins.' : 'Choose a PNG/WebP sprite sheet and a matching .animation file.');
+        }
+        function schedule() {
+            if (!running || frameRequest) return;
+            frameRequest = requestAnimationFrame(time => {
+                frameRequest = 0;
+                const frames = currentFrames();
+                if (frames.length > 1 && lastTime) {
+                    seconds += Math.min(0.1, (time-lastTime)/1000) * Number(speed.value || 1);
+                    let iterations=0;
+                    while (seconds >= frames[frameIndex].duration && iterations++ < 50) {
+                        seconds -= frames[frameIndex].duration;
+                        frameIndex = (frameIndex+1) % frames.length;
+                    }
+                }
+                lastTime = time;
+                draw();
+                schedule();
+            });
+        }
+        function switchMode(nextMode) {
+            mode = nextMode; currentState = ''; frameIndex = 0; seconds = 0;
+            setStates();
+            const a = assets[mode];
+            fileStatus.textContent = [a.imageName, a.animationName].filter(Boolean).join(' + ') || 'Choose local files to preview. Server paths are edited separately below.';
+        }
+        async function loadFiles(files) {
+            let loaded = false;
+            for (const file of files) {
+                const target = assets[mode];
+                if (/\.animation$/i.test(file.name)) {
+                    try {
+                        const result = parseAnimation(await file.text());
+                        target.states = result.states; target.imagePath = result.imagePath; target.animationName = file.name;
+                        fileStatus.textContent = `Loaded ${file.name} (${Object.keys(result.states).length} states).`;
+                        loaded = true;
+                    } catch (err) { fileStatus.textContent = `${file.name}: ${err.message}`; }
+                } else if (/\.(png|webp)$/i.test(file.name) || file.type.startsWith('image/')) {
+                    const url = URL.createObjectURL(file);
+                    const image = new Image();
+                    image.onload = draw;
+                    image.onerror = () => { fileStatus.textContent = 'Could not decode ' + file.name; };
+                    image.src = url;
+                    if (target.url) URL.revokeObjectURL(target.url);
+                    target.url = url; target.image = image; target.imageName = file.name;
+                    loaded = true;
+                }
+            }
+            if (loaded) {
+                setStates();
+                const a = assets[mode];
+                if (a.imageName && a.imagePath && a.imageName.toLowerCase() !== a.imagePath.split(/[\\/]/).pop().toLowerCase()) {
+                    fileStatus.textContent = `Warning: animation expects ${a.imagePath}, but you loaded ${a.imageName}.`;
+                }
+                if (!running) { running = true; toggle.textContent = 'Pause'; lastTime = 0; schedule(); }
+            }
+        }
+        fileInput.addEventListener('change', () => { loadFiles([...fileInput.files]); fileInput.value = ''; });
+        stage.addEventListener('dragover', e => { e.preventDefault(); stage.classList.add('dragover'); });
+        stage.addEventListener('dragleave', () => stage.classList.remove('dragover'));
+        stage.addEventListener('drop', e => { e.preventDefault(); stage.classList.remove('dragover'); loadFiles([...e.dataTransfer.files]); });
+        previewMode.addEventListener('change', () => switchMode(previewMode.value));
+        stateSelect.addEventListener('change', () => { currentState = stateSelect.value; frameIndex = 0; seconds = 0; draw(); });
+        zoom.addEventListener('change', draw); origin.addEventListener('change', draw);
+        fields.scale.addEventListener('input', draw);
+        // Optional included example lets visitors try animation playback immediately.
+        const demo = el('button', { type: 'button', text: 'Try Mettaur example', onClick: async () => {
+            previewMode.value = 'ow'; switchMode('ow');
+            try {
+                const response = await fetch('ow-preview/mettaur_ow.animation');
+                if (!response.ok) throw new Error('Example animation not available');
+                const parsed = parseAnimation(await response.text());
+                const a = assets.ow;
+                a.states = parsed.states; a.imagePath = parsed.imagePath; a.animationName = 'mettaur_ow.animation';
+                const img = new Image();
+                img.onload = draw;
+                img.onerror = () => { fileStatus.textContent = 'Example image could not be loaded'; };
+                img.src = 'ow-preview/mettaur_ow.png';
+                a.image = img; a.imageName = 'mettaur_ow.png';
+                setStates();
+                fileStatus.textContent = 'Mettaur example loaded for preview only. No template paths were changed.';
+                if (!running) { running = true; toggle.textContent = 'Pause'; lastTime = 0; schedule(); }
+            } catch (err) { fileStatus.textContent = 'Example unavailable here. Upload your own PNG and .animation files.'; }
+        } });
+        const panel = el('div', { class: 've-template-card ve-template-preview-card' }, [
+            el('h3', { text: 'Live overworld preview' }),
+            el('p', { class: 've-small-help', text: 'Preview real OpenNetBattle .animation states, frame timings and origins. Your local files stay in this browser session.' }),
+            el('div', { class: 've-template-mini-row' }, [el('label', {}, ['Preview asset', previewMode]), el('label', {}, ['Animation state', stateSelect])]),
+            stage,
+            el('div', { class: 've-template-playback' }, [toggle, next, zoom, speed, el('label', { class: 've-template-inline-check' }, [origin, 'Show anchor'])]),
+            frameStatus,
+            el('label', { class: 've-preview-file-label' }, ['Load image + .animation files', fileInput]),
+            el('div', { class: 've-template-sample' }, [demo]), fileStatus,
+            el('details', { class: 've-template-advanced' }, [
+                el('summary', { text: 'Use these files in the exported template' }),
+                el('p', { class: 've-small-help', text: 'Loading files only changes the preview. Set the folder below, then apply filenames if it matches your server assets.' }),
+                el('label', {}, ['Server asset folder', basePath]), applyPaths
+            ])
+        ]);
+        switchMode('ow');
+        const reset = () => {
+            running = false; toggle.textContent = 'Play'; lastTime = 0;
+            for (const a of Object.values(assets)) {
+                if (a.url) URL.revokeObjectURL(a.url);
+                Object.assign(a, { image: null, imageName: '', animationName: '', states: {}, imagePath: '', url: '' });
+            }
+            previewMode.value = 'ow'; switchMode('ow');
+        };
+        return { panel, refresh: draw, reset };
+    }
+
     function buildTemplateEditor() {
         const panel = el('section', { id: 've-template-editor', class: 've-template-editor' });
         panel.appendChild(el('div', { class: 've-heading-line' }, [
-            el('div', {}, [el('h2', { text: 'Enemy template workshop' }),
-                el('p', { class: 've-small-help', text: 'Build reusable overworld enemy registrations. Templates are separate Lua modules, not entries in encounters.lua. Battle grid enemies still use ezencounters aliases.' })])
+            el('div', {}, [el('h2', { text: 'Enemy Template Workshop' }),
+                el('p', { class: 've-small-help', text: 'Build an OW enemy in three steps: choose a template, paint its selection shape, and preview the actual sprite animation. Templates export as Lua registration modules, separate from encounters.lua.' })])
         ]));
         const chooser = el('select', { id: 've-template-choose', 'aria-label': 'Choose a template' });
-        const name = el('input', { id: 've-template-name', type: 'text', placeholder: 'New template name, e.g. MyMettaur' });
-        const fields = {};
-        const fieldGrid = el('div', { class: 've-template-fields' });
+        const name = el('input', { id: 've-template-name', type: 'text', placeholder: 'e.g. MyMettaur' });
+        const fields = {}, wrappers = {};
         TEMPLATE_FIELDS.forEach(([key,label,type,placeholder]) => {
             const input = type === 'select' ? el('select', { 'data-template-field': key }, TEMPLATE_AI.map(ai => el('option', { value: ai, text: ai })))
-                : el('input', { type: type, placeholder, 'data-template-field': key, ...(type === 'number' ? { min: key === 'attack_damage' ? '0' : undefined, step: key.includes('scale') ? '0.05' : '1' } : {}) });
+                : el('input', { type, placeholder, 'data-template-field': key, ...(type === 'number' ? { step: key.includes('scale') ? '0.05' : '1' } : {}) });
             fields[key] = input;
-            fieldGrid.appendChild(el('label', {}, [label, input]));
+            wrappers[key] = el('label', {}, [label, input]);
         });
-        const help = el('p', { class: 've-small-help', text: 'Templates define OW visuals, HP, scales, selection shapes, AI and attacks. A Tiled Liberation Enemy Config may override those template defaults for individual spawns. Custom AI such as Mettaur shockwave still requires the registered AI implementation.' });
+        const section = (title, description, keys, className = '') => el('section', { class: 've-template-card ' + className }, [
+            el('h3', { text: title }),
+            el('p', { class: 've-small-help', text: description }),
+            el('div', { class: 've-template-fields' }, keys.map(key => wrappers[key]))
+        ]);
+        const shape = createTemplateShapePainter(fields);
+        const preview = createTemplateSpritePreview(fields);
+        const primary = el('div', { class: 've-template-primary' }, [
+            section('1 · Identity & behavior', 'Start with the battle alias, class and registered AI. Different overworld behaviors still need a Lua AI implementation.', ['battle_name','is_boss','is_special_encounter','ai_type','death_message']),
+            section('2 · Health, scale & combat', 'OW scale is used in the live preview. Battle scale is independent and defaults to OW scale when left empty.', ['health','max_health','scale','battle_scale','attack_damage']),
+            shape.panel,
+            section('3 · Overworld asset paths', 'These are server asset paths, not the local files used for preview. Upload files on the right to inspect them; optionally copy the filenames into these fields.', ['texture_path','animation_path']),
+            el('details', { class: 've-template-card ve-template-advanced' }, [
+                el('summary', { text: 'Advanced · Attack effects and boss mug' }),
+                el('p', { class: 've-small-help', text: 'Optional attack and mug assets can also be previewed using the selector in the preview panel.' }),
+                el('div', { class: 've-template-fields' }, ['attack_texture','attack_animation_path','mug_texture','mug_animation'].map(key => wrappers[key]))
+            ])
+        ]);
+        const workspace = el('div', { class: 've-template-workspace' }, [primary, el('aside', { class: 've-template-preview-column' }, [preview.panel])]);
         const refresh = () => {
-            chooser.replaceChildren(el('option', { value: '', text: 'New enemy template...' }));
+            chooser.replaceChildren(el('option', { value: '', text: 'New enemy template…' }));
             Object.keys(state.templates).sort().forEach(key => chooser.appendChild(el('option', { value: key, text: key })));
         };
         const load = key => {
             const def = state.templates[key] || {};
+            const starting = !key || !state.templates[key];
+            const defaults = starting ? { health: '100', max_health: '100', scale: '1', attack_damage: '20', shape: '1', shape_offset_x: '0', shape_offset_y: '-1' } : {};
             name.value = key;
-            Object.entries(fields).forEach(([field,input]) => { if (input.type === 'checkbox') input.checked = !!def[field]; else input.value = def[field] ?? (field === 'ai_type' ? 'simple_charge' : ''); });
+            Object.entries(fields).forEach(([field,input]) => {
+                if (input.type === 'checkbox') input.checked = !!def[field];
+                else input.value = def[field] ?? defaults[field] ?? (field === 'ai_type' ? 'simple_charge' : '');
+            });
+            shape.load(); preview.reset();
         };
         chooser.addEventListener('change', () => load(chooser.value));
         const save = () => {
             const key = name.value.trim();
             if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(key)) throw new Error('Enter a template name using letters, digits or underscores.');
             const def = {};
-            Object.entries(fields).forEach(([field,input]) => { if (input.type === 'checkbox') def[field] = input.checked; else if (input.value.trim() !== '') def[field] = input.value.trim(); });
-            templateModule(key, def); // validate before save
+            Object.entries(fields).forEach(([field,input]) => {
+                if (input.type === 'checkbox') def[field] = input.checked;
+                else if (input.value.trim() !== '') def[field] = input.value.trim();
+            });
+            templateModule(key, def); // validate the exact Lua structure before saving
             state.templates[key] = def;
             refresh(); chooser.value = key;
             saveToLocalStorage();
-            status('Saved template "' + key + '" in the editor. Export its Lua module to install it on your server.', true);
-            return [key,def];
+            status('Saved template "' + key + '" locally. Export its complete Lua module to install it on your server.', true);
+            return [key, def];
         };
-        const action = (label, fn) => el('button', { type: 'button', onClick: () => {
+        const action = (label, fn, cls = '') => el('button', { type: 'button', class: cls, onClick: () => {
             try { fn(); } catch (err) { status('Template editor: ' + err.message, false); }
-        }}, [label]);
+        } }, [label]);
         const toolbar = el('div', { class: 've-template-toolbar' }, [
             el('label', {}, ['Saved templates', chooser]),
             el('label', {}, ['Template name', name]),
             action('New', () => { chooser.value = ''; load(''); }),
-            action('Save template', save),
+            action('Save template', save, 've-template-primary-button'),
             action('Export Lua module', () => {
                 const [key,def] = save();
                 downloadText('template_' + key.toLowerCase() + '.lua', templateModule(key, def));
-                status('Exported template_' + key.toLowerCase() + '.lua. Add a require in enemy_templates.lua to register it.', true);
+                status('Exported template_' + key.toLowerCase() + '.lua. Register it via require in enemy_templates.lua.', true);
             }),
             action('Delete', () => {
                 const key = chooser.value;
@@ -1500,11 +1920,10 @@ function validateEnemyRecords(entry) {
             })
         ]);
         panel.appendChild(toolbar);
-        panel.appendChild(fieldGrid);
-        panel.appendChild(help);
-        panel.appendChild(el('p', { class: 've-small-help', text: 'Registration example: require("scripts/ezlibs-custom/nebulous-liberations/liberations/enemies/template_myenemy")(EnemyTemplates). This template name is referenced by Boss/Spawns Tiled properties.' }));
+        panel.appendChild(workspace);
+        panel.appendChild(el('p', { class: 've-small-help', text: 'Exported modules retain the same runtime format: EnemyTemplates.register(name, config). Place the Lua file under liberations/enemies/ and add a matching require in enemy_templates.lua. Use the template key in Tiled Boss / Spawns properties.' }));
         panel.hidden = true;
-        refresh();
+        refresh(); load('');
         return panel;
     }
 
@@ -2001,7 +2420,7 @@ window.updateEnemyOnTile = function() {
 
         const tabs = el('nav', { id: 've-main-tabs', 'aria-label': 'Encounter editor modes' }, [
             el('button', { type: 'button', class: 'active', 'data-view': 'legacy', onClick: () => activateView('legacy') }, ['Legacy Format']),
-            el('button', { type: 'button', 'data-view': 'new', onClick: () => activateView('new') }, ['Nebulous Liberations'])
+            el('button', { type: 'button', 'data-view': 'new', onClick: () => activateView('new') }, ['V2.1 format'])
         ]);
         tabs.prepend(el('div', { class: 've-brand' }, [el('strong', { text: 'VisualEncounters' }), el('span', { text: 'Battle builder · Grid + Inspector' })]));
         const legacy = el('section', { id: 've-legacy-view' });
