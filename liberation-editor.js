@@ -389,7 +389,7 @@
         const modeNote = document.getElementById('ve-encounter-mode-note');
         if (modeNote) modeNote.textContent = categoryForced
             ? 'Locked: the category-wide manual override is enabled.'
-            : 'Choose whether this encounter uses an authored or runtime-generated battlefield.';
+            : 'Choose authored or generated terrain; enemy positions are always taken from the grid.';
         const neutral = document.querySelector('#tile-team option[value="0"]');
         if (neutral) neutral.disabled = state.activeView === 'new';
         ['tile-team', 'tile-type'].forEach(id => {
@@ -398,8 +398,8 @@
         });
         const note = document.getElementById('ve-manual-note');
         if (note) note.textContent = enabled
-            ? 'Manual battlefield: Teams, tiles, enemy positions and obstacles are exported. Player spawn is always editable.'
-            : 'Automatic battlefield: Runtime chooses teams, tiles and enemy/obstacle positions. Player spawn is always exported.';
+            ? 'Manual battlefield: Enemy positions, teams, tiles and obstacles are exported. Player spawn remains editable.'
+            : 'Automatic battlefield: Enemy positions are always exported from the grid. The runtime still generates terrain teams, tiles and obstacle positions.';
     }
 
     function ensureMatrix(variation, key) {
@@ -1133,6 +1133,52 @@
     }
 
 
+// V2.1 always exports authored enemy positions, even for automatic terrain.
+// Older automatic encounter files had enemies without positions; migrate those
+// once to deterministic grid slots on the enemy side, preserving their order.
+function ensureEnemyPositions(entry) {
+    if (Array.isArray(entry.positions)) return entry.positions;
+    if (!Array.isArray(entry.enemies)) entry.enemies = [];
+    const positions = Array.from({ length: 3 }, () => Array(6).fill(0));
+    if (entry.enemies.length > 9) {
+        throw new Error((entry.name || 'Encounter') + ': cannot automatically position more than nine enemies on the 3×3 enemy side. Place them explicitly before export.');
+    }
+    entry.enemies.forEach((enemy, index) => {
+        positions[index % 3][3 + Math.floor(index / 3)] = index + 1;
+    });
+    entry.positions = positions;
+    return positions;
+}
+
+// Remove enemy entries no longer referenced on the grid and renumber every
+// remaining reference. Keeping this per encounter prevents ghost viruses and
+// leaves duplicate enemy instances with distinct HP/scale independent.
+function compactEnemyReferences(entry) {
+    const positions = ensureEnemyPositions(entry);
+    if (positions.length !== 3 || positions.some(row => !Array.isArray(row) || row.length !== 6)) {
+        throw new Error((entry.name || 'Encounter') + ': enemy positions must be a 3×6 matrix.');
+    }
+    const used = new Set();
+    for (const row of positions) for (const raw of row) {
+        const index = Number(raw);
+        if (!Number.isInteger(index) || index < 0 || index > entry.enemies.length) {
+            throw new Error((entry.name || 'Encounter') + ': enemy-position index ' + raw + ' does not match an enemy entry.');
+        }
+        if (index > 0) used.add(index);
+    }
+    const remap = new Map();
+    const retained = [];
+    entry.enemies.forEach((enemy, index) => {
+        if (used.has(index + 1)) {
+            remap.set(index + 1, retained.length + 1);
+            retained.push(enemy);
+        }
+    });
+    entry.positions = positions.map(row => row.map(value => Number(value) ? remap.get(Number(value)) : 0));
+    entry.enemies = retained;
+    return entry;
+}
+
 function validateEnemyRecords(entry) {
     if (!Array.isArray(entry.enemies)) throw new Error('Encounter "' + entry.name + '" needs an enemies list.');
     entry.enemies.forEach((enemy, index) => {
@@ -1163,8 +1209,8 @@ function validateEnemyRecords(entry) {
             throw new Error(location + ': starting health cannot exceed the requested maximum HP.');
         }
     });
-    if (entry.manual_battlefield_override === true && !Array.isArray(entry.positions)) {
-        throw new Error('Manual encounter "' + entry.name + '" has no enemy-position matrix.');
+    if (!Array.isArray(entry.positions) || entry.positions.length !== 3) {
+        throw new Error('Encounter "' + entry.name + '" must have three enemy-position rows.');
     }
     if (entry.manual_battlefield_override === true) {
         if (Array.isArray(entry.teams)) entry.teams.flat().forEach(team => {
@@ -1212,6 +1258,7 @@ function validateEnemyRecords(entry) {
                 if (names.has(entry.name)) throw new Error('Duplicate encounter name "' + entry.name + '". Names must be unique across all three categories.');
                 names.add(entry.name);
                 if (entry.weight !== undefined && !Number.isFinite(Number(entry.weight))) throw new Error('Invalid weight on ' + entry.name + '.');
+                compactEnemyReferences(entry);
                 validateRewardConfig(entry.rewards, entry.name);
                 validateEnemyRecords(entry);
             });
@@ -1229,7 +1276,7 @@ function validateEnemyRecords(entry) {
         const cleanEntries = section => (state.data[section] || []).map(entry => {
             const clean = {};
             allowedKeys.forEach(key => {
-                if (entry[key] !== undefined && (key === 'player_positions' || !MATRIX_KEYS.includes(key) || manualEnabledForSection(entry, section))) {
+                if (entry[key] !== undefined && (key === 'positions' || key === 'player_positions' || !MATRIX_KEYS.includes(key) || manualEnabledForSection(entry, section))) {
                     clean[key] = entry[key];
                 }
             });
@@ -1253,7 +1300,7 @@ function validateEnemyRecords(entry) {
             special_encounters: cleanEntries('special_encounters'),
             bosses: cleanEntries('bosses')
         };
-        return '-- Nebulous Liberations encounter table\n-- Generated by VisualEncounters Editor\n-- Terrain is runtime context; omitted matrices use automatic formations.\n\nreturn ' + serializeLua(output, 0) + '\n';
+        return '-- Nebulous Liberations encounter table\n-- Generated by VisualEncounters Editor\n-- Enemy positions are always authored; omitted terrain matrices use automatic formations.\n\nreturn ' + serializeLua(output, 0) + '\n';
     }
 
     function downloadText(filename, content) {
@@ -1346,16 +1393,10 @@ function validateEnemyRecords(entry) {
         if (value.manual_battlefield_override !== true && value.manual_battlefield_override !== false) {
             value.manual_battlefield_override = Array.isArray(value.teams);
         }
-        // Automatic formations do not author positions in Lua. The editor still
-        // needs an editable preview of each enemy, so place up to nine preview
-        // markers on the enemy side. This metadata is not exported unless the
-        // user switches the encounter to manual battlefield mode.
-        if (value.manual_battlefield_override === false && !Array.isArray(value.positions) && value.enemies.length) {
-            value.positions = Array.from({ length: 3 }, () => Array(6).fill(0));
-            value.enemies.slice(0, 9).forEach((enemy, index) => {
-                value.positions[index % 3][3 + Math.floor(index / 3)] = index + 1;
-            });
-        }
+        // Positions always belong to the V2.1 encounter payload. Migrate
+        // older automatic entries that omitted the grid without changing
+        // their terrain/team generation mode.
+        ensureEnemyPositions(value);
         ['positions', 'obstacle_positions', 'player_positions', 'tiles', 'teams'].forEach(key => {
             if (Array.isArray(value[key])) value[key] = grid(value[key], key === 'tiles' ? 1 : 0);
             else delete value[key];
@@ -2158,9 +2199,9 @@ function parseEnemyField(id, integer, label) {
             }
         };
 
-        // Hover and right-click handlers in the original grid read all four
-        // matrices unconditionally. Automatic Nebulous encounters deliberately
-        // omit these matrices, so supply read-safe previews for those handlers.
+        // Hover and right-click handlers in the original grid read every matrix.
+        // Automatic terrain may still omit teams, tiles, or obstacle matrices;
+        // supply read-safe defaults without modifying those authored settings.
         const originalUpdateTilePopup = window.updateTilePopup;
         window.updateTilePopup = function(event, tile) {
             if (!window.__veNebulousMode) return originalUpdateTilePopup(event, tile);
@@ -2221,8 +2262,10 @@ window.updateEnemyOnTile = function() {
 });
 
         window.cleanupEnemies = function(variation) {
-            if (window.__veNebulousMode && (!variation || !Array.isArray(variation.positions))) return;
-            return originalCleanupEnemies(variation);
+            if (!window.__veNebulousMode) return originalCleanupEnemies(variation);
+            if (!variation) return;
+            compactEnemyReferences(variation);
+            updateGrid();
         };
 
         window.handleNebulousContentType = function(type) {
@@ -2267,6 +2310,9 @@ window.updateEnemyOnTile = function() {
             } else {
                 $('#enemy-properties').hide(); $('#obstacle-properties').hide();
             }
+            // Removing or replacing content must immediately discard the old
+            // virus record and remap indices, not wait for another tile click.
+            cleanupEnemies(variation);
             updateGrid();
             saveToLocalStorage();
         };
@@ -2278,6 +2324,7 @@ window.updateEnemyOnTile = function() {
             while (names.has(uniqueName)) uniqueName = name + '_' + suffix++;
             const entry = {
                 name: uniqueName, path: DEFAULT_PATH, weight: 10, enemies: [], obstacles: [],
+                positions: Array.from({ length: 3 }, () => Array(6).fill(0)),
                 // Legacy-compatible single-player spawn at the center of the
                 // player-side 3x3 field (row 2, column 2; Lua indices).
                 player_positions: [
@@ -2295,7 +2342,7 @@ window.updateEnemyOnTile = function() {
             selectVariation(currentVariationIndex);
             updateManualControls();
             saveToLocalStorage();
-            status('Added ' + uniqueName + '. Place the player and enemies on the default 3×3 sides, or leave positions empty for runtime generation.', true);
+            status('Added ' + uniqueName + '. Enemy positions always export from the grid; Automatic mode still generates terrain and teams.', true);
         };
 
         // The legacy editor registers multiple change handlers for these controls.
