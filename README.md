@@ -5,6 +5,15 @@
   A browser-based visual editor for designing encounters in ONB<br>
 </p>
 
+
+## ⚔️ Nebulous Liberations V2.1 Export
+
+Choose **V2.1 format** and enter the **exact Tiled area name** (for example `DEBUGLIB` or `LiberationEasyMode`). The editor exports a complete mission drop-in ZIP containing `encounters/<MapName>.lua`, a unique mission-scoped EZEncounters battle ZIP, and optional overworld templates and hosted character mods. New Freedom Missions default to 3 turns, enemy positions always export, and battle-result rewards are disabled.
+
+**Important:** Keep `mods/ezencounters-v21-base.zip` with the site; it is the repaired working battle package with `get_package_id(alias)` restored. A generic `ezencounters.zip` is **not** an interchangeable scoped mission package. The V2.1 tab does **not** generate Tiled maps or new character mods.
+
+Read **[V2.1 mission export guide](V21_EXPORT_GUIDE.md)** and **[V2.1 update notes](NEBULOUS_EDITOR_UPDATE.md)** for installation and troubleshooting. The **Legacy Format** tab retains its original workflow.
+
 ## Getting Started
 
 <img src="https://github.com/user-attachments/assets/f20e9890-4e32-4caa-bbb0-37fc4d39634e" align="right" alt="interface" width="450">

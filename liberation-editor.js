@@ -23,7 +23,7 @@
         special_encounters: 'Special Encounters',
         bosses: 'Boss Encounters'
     };
-    const DEFAULT_PATH = '/server/assets/ezlibs-assets/ezencounters/ezencounters.zip';
+    const DEFAULT_PATH = '/server/assets/ezlibs-assets/ezencounters/ezencounters.zip'; // import fallback only; export uses a mission-scoped path
     const MATRIX_KEYS = ['teams', 'tiles', 'positions', 'obstacle_positions'];
 
     const state = {
@@ -35,6 +35,7 @@
         categoryBattlefieldDefaults: { encounters: false, special_encounters: false, bosses: false },
         legacyConfig: null,
         data: {
+            area_id: '',
             minimum_steps_before_encounter: 80,
             encounter_chance_per_step: 0.05,
             encounters: [],
@@ -67,6 +68,9 @@
             #ve-main-tabs button{background:#555;color:#fff}#ve-main-tabs button.active{background:#1769d2}
             #ve-nebulous-view[hidden],#ve-legacy-view[hidden]{display:none!important}
             #ve-nebulous-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;margin:0 0 10px;background:#e8e8e8;border-radius:5px;color:#222}
+            #ve-nebulous-view #ve-area-rewards, #ve-nebulous-view #ve-enemy-fallback-rewards, #ve-nebulous-view #ve-encounter-rewards, #ve-nebulous-view .ve-reward-editor, #ve-nebulous-view #ve-encounter-persistent-health, #ve-nebulous-view #ve-encounter-no-results{display:none!important}
+            #ve-nebulous-view .ve-mission-name{display:flex;flex-direction:column;gap:5px;font-weight:650;min-width:270px}
+            #ve-nebulous-view .ve-mission-name input{padding:9px 11px;border:1px solid #b7c8e3;border-radius:7px;min-width:245px;font:inherit}
             #ve-nebulous-view .ve-reward-editor{border:1px solid var(--ve-border,#d9dee7);border-radius:8px;padding:14px;margin-top:14px;background:var(--ve-surface,#fff)}
             #ve-nebulous-view .ve-reward-editor h3{margin:0 0 8px;font-size:16px}
             #ve-nebulous-view .ve-reward-editor .ve-reward-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:10px 0}
@@ -323,9 +327,11 @@
             const input = document.querySelector(selector);
             if (input && input.closest('label')) input.closest('label').style.display = isNebulous ? 'none' : '';
         });
-        // Keep the original Download Mods checkbox available in both modes.
+        // The V2.1 exporter produces its own deployment bundle and optionally
+        // copies hosted character mods. The legacy download checkbox is not a
+        // second unrelated download action in this mode.
         const downloadMods = document.querySelector('label:has(#download-mods)');
-        if (downloadMods) downloadMods.style.display = '';
+        if (downloadMods) downloadMods.style.display = isNebulous ? 'none' : '';
     }
 
     function activeEncounter() {
@@ -511,12 +517,6 @@
         });
         const freedom = document.getElementById('freedom-mission-options');
         if (freedom) encounter.appendChild(freedom);
-        const advanced = el('div', { class: 've-nebulous-encounter-advanced ve-inspector-subgroup', style: 'display:none;' }, [
-            el('h4', { text: 'Managed battle options (non-Liberation)' }),
-            el('label', {}, [el('input', { id: 've-encounter-persistent-health', type: 'checkbox' }), ' Persist HP-recovery battle rewards' ]),
-            el('label', {}, [el('input', { id: 've-encounter-no-results', type: 'checkbox' }), ' Exclude encounter from native battle reward processing' ])
-        ]);
-        encounter.appendChild(advanced);
         variation.appendChild(encounter);
         variation.appendChild(area);
     }
@@ -1180,7 +1180,9 @@ function compactEnemyReferences(entry) {
 }
 
 function validateEnemyRecords(entry) {
-    if (!Array.isArray(entry.enemies)) throw new Error('Encounter "' + entry.name + '" needs an enemies list.');
+    if (!Array.isArray(entry.enemies) || entry.enemies.length === 0) {
+        throw new Error('Encounter "' + entry.name + '" needs at least one enemy placed on the grid before V2.1 export.');
+    }
     entry.enemies.forEach((enemy, index) => {
         const location = entry.name + ' enemy #' + (index + 1);
         if (!enemy || typeof enemy.name !== 'string' || !enemy.name.trim()) {
@@ -1237,7 +1239,14 @@ function validateEnemyRecords(entry) {
     }
 }
 
+    function missionIdentity() {
+        const api = window.VisualEncountersV21;
+        if (!api) throw new Error('Missing v21-export.js. Keep it beside index.html.');
+        return api.mapIdentity(state.data.area_id);
+    }
+
     function buildLua() {
+        const identity = missionIdentity();
         if (state.activeView === 'new') {
             state.data[state.activeSection] = config.encounters;
             state.data.minimum_steps_before_encounter = config.minimum_steps_before_encounter;
@@ -1254,24 +1263,23 @@ function validateEnemyRecords(entry) {
             entries.forEach((entry, index) => {
                 if (!entry || typeof entry !== 'object' || Array.isArray(entry)) throw new Error(SECTION_LABELS[section] + ' entry ' + (index + 1) + ' is invalid.');
                 if (!entry.name || typeof entry.name !== 'string') throw new Error(SECTION_LABELS[section] + ' entry ' + (index + 1) + ' needs a name.');
-                if (!entry.path || typeof entry.path !== 'string') entry.path = DEFAULT_PATH;
+                // Scope every encounter to the current mission; never retain
+                // an imported global or another mission's package path.
+                entry.path = identity.clientPath;
                 if (names.has(entry.name)) throw new Error('Duplicate encounter name "' + entry.name + '". Names must be unique across all three categories.');
                 names.add(entry.name);
                 if (entry.weight !== undefined && !Number.isFinite(Number(entry.weight))) throw new Error('Invalid weight on ' + entry.name + '.');
                 compactEnemyReferences(entry);
-                validateRewardConfig(entry.rewards, entry.name);
+                if (!Array.isArray(entry.player_positions)) {
+                    entry.player_positions = [[0,0,0,0,0,0],[0,1,0,0,0,0],[0,0,0,0,0,0]];
+                }
                 validateEnemyRecords(entry);
             });
         });
-        validateRewardConfig(state.data.rewards, 'area defaults');
-        if (state.data.enemy_rewards !== undefined && (typeof state.data.enemy_rewards !== 'object' || Array.isArray(state.data.enemy_rewards) || state.data.enemy_rewards === null)) {
-            throw new Error('Enemy reward fallbacks must be a table keyed by enemy alias.');
-        }
         const allowedKeys = [
             'name', 'path', 'weight', 'enemies', 'obstacles',
             'positions', 'obstacle_positions', 'player_positions', 'tiles', 'teams',
-            'freedom_mission', 'rewards', 'no_battle_rewards',
-            'persistent_health', 'no_results'
+            'freedom_mission', 'no_battle_rewards'
         ];
         const cleanEntries = section => (state.data[section] || []).map(entry => {
             const clean = {};
@@ -1280,27 +1288,108 @@ function validateEnemyRecords(entry) {
                     clean[key] = entry[key];
                 }
             });
-            if (clean.freedom_mission && typeof clean.freedom_mission === 'object') {
-                if (!clean.freedom_mission.enabled) delete clean.freedom_mission;
-                else clean.freedom_mission = {
+            if (clean.freedom_mission && clean.freedom_mission.enabled === false) {
+                // Explicit non-Freedom encounters are supported, but all new
+                // V2.1 entries default to three-turn Freedom Missions.
+                delete clean.freedom_mission;
+            } else {
+                clean.freedom_mission = {
                     enabled: true,
-                    turn_count: validFreedomTurns(clean.freedom_mission.turn_count ?? clean.freedom_mission.turns),
+                    turn_count: validFreedomTurns(clean.freedom_mission && (clean.freedom_mission.turn_count ?? clean.freedom_mission.turns)),
                     player_can_flip: false // server enables only for terrain == surrounded
                 };
             }
+            // Liberation rewards come from mission loot/panels, never battles.
+            clean.path = identity.clientPath;
+            clean.no_battle_rewards = true;
             return clean;
         });
         const output = {
             minimum_steps_before_encounter: minSteps,
             encounter_chance_per_step: chance,
-            ...(state.data.rewards !== undefined ? { rewards: state.data.rewards } : {}),
-            ...(state.data.enemy_rewards !== undefined ? { enemy_rewards: state.data.enemy_rewards } : {}),
-            ...(state.data.persistent_health !== undefined ? { persistent_health: !!state.data.persistent_health } : {}),
             encounters: cleanEntries('encounters'),
             special_encounters: cleanEntries('special_encounters'),
             bosses: cleanEntries('bosses')
         };
-        return '-- Nebulous Liberations encounter table\n-- Generated by VisualEncounters Editor\n-- Enemy positions are always authored; omitted terrain matrices use automatic formations.\n\nreturn ' + serializeLua(output, 0) + '\n';
+        return '-- Nebulous Liberations V2.1 encounter table for ' + identity.name + '\n'
+            + '-- Generated by VisualEncounters · battle rewards disabled · default Freedom Mission: 3 turns\n'
+            + '-- Encounter package: ' + identity.clientPath + '\n\n'
+            + 'return ' + serializeLua(output, 0) + '\n';
+    }
+
+    function downloadBlob(filename, content) {
+        const url = URL.createObjectURL(content);
+        const link = el('a', { href: url, download: filename });
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+    }
+
+    async function exportV21Bundle() {
+        const api = window.VisualEncountersV21;
+        const identity = missionIdentity();
+        const lua = buildLua();
+        const aliases = api.aliasesForMission(state.data);
+        const JSZip = await window.loadJSZip();
+        const baseResponse = await fetch(api.TEMPLATE_SOURCE);
+        if (!baseResponse.ok) throw new Error('Cannot load repaired base ZIP (' + baseResponse.status + '). Host the complete mods/ directory.');
+        const base = await JSZip.loadAsync(await baseResponse.arrayBuffer());
+        const entry = base.file('entry.lua');
+        if (!entry) throw new Error('V2.1 template ZIP is missing root entry.lua.');
+        const patched = api.patchBattleEntry(await entry.async('string'), identity, aliases);
+        base.file('entry.lua', patched);
+        const scoped = await base.generateAsync({ type: 'blob' });
+        const bundle = new JSZip();
+        bundle.file(identity.encounterFile, lua);
+        bundle.file(identity.assetFile, scoped);
+
+        // OW templates are separate Lua modules, not encounter enemies. The
+        // existing server registry must be edited manually to require them.
+        const templates = Object.keys(state.templates).sort();
+        const registrations = [];
+        for (const name of templates) {
+            const filename = 'template_' + name.toLowerCase() + '.lua';
+            bundle.file(api.TEMPLATE_DIRECTORY + filename, templateModule(name, state.templates[name]));
+            registrations.push('require("scripts/ezlibs-custom/nebulous-liberations/liberations/enemies/'
+                + 'template_' + name.toLowerCase() + '")(EnemyTemplates)');
+        }
+        bundle.file('ENEMY_TEMPLATE_REGISTRATION.md', [
+            '# Register exported overworld templates', '',
+            'These files are overworld bots, not battle character mods.',
+            'After copying the exported template Lua modules, insert these require lines',
+            'in your existing `scripts/ezlibs-custom/nebulous-liberations/liberations/enemy_templates.lua`',
+            'after the shared AI helpers are defined. Do not replace that module.', '',
+            '```lua', ...registrations, '```', ''
+        ].join('\n'));
+
+        // The catalog is the editor's actual bundled enemyDictionary. Keep
+        // unresolved aliases visible rather than guessing client package IDs.
+        const modPlan = api.collectModDownloads(aliases, enemyDictionary);
+        const mods = { included: [], missing: [], unresolved: modPlan.unresolved };
+        const includeMods = document.getElementById('ve-bundle-mods');
+        if (includeMods && includeMods.checked) {
+            for (const filename of modPlan.files) {
+                try {
+                    const response = await fetch('mods/' + encodeURIComponent(filename));
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    const bytes = await response.arrayBuffer();
+                    if (!bytes.byteLength) throw new Error('empty file');
+                    bundle.file(api.PACKAGE_DIRECTORY + filename, bytes);
+                    mods.included.push(filename);
+                } catch (error) {
+                    console.warn('[V2.1 Export] Missing mod:', filename, error);
+                    mods.missing.push(filename);
+                }
+            }
+        }
+        bundle.file('INSTALL_V21_MISSION.md', api.installationNotes(identity, aliases, templates, mods));
+        const blob = await bundle.generateAsync({ type: 'blob' });
+        downloadBlob(identity.slug + '-v21-liberation-dropin.zip', blob);
+        const warning = mods.missing.length || mods.unresolved.length;
+        status('Exported ' + identity.encounterFile + ', ' + identity.assetFile
+            + ' and ' + templates.length + ' OW templates.'
+            + (warning ? ' Check INSTALL_V21_MISSION.md for missing/unmapped character mods.' : ''), !warning);
     }
 
     function downloadText(filename, content) {
@@ -1393,10 +1482,17 @@ function validateEnemyRecords(entry) {
         if (value.manual_battlefield_override !== true && value.manual_battlefield_override !== false) {
             value.manual_battlefield_override = Array.isArray(value.teams);
         }
-        // Positions always belong to the V2.1 encounter payload. Migrate
-        // older automatic entries that omitted the grid without changing
-        // their terrain/team generation mode.
+        // Positions are explicit even for terrain-generated encounters.
         ensureEnemyPositions(value);
+        // A normal Liberation battle has a player spawn at row 2, column 2
+        // unless the author already placed one. This matches DEBUGLIB.
+        if (!Array.isArray(value.player_positions)) {
+            value.player_positions = [
+                [0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0]
+            ];
+        }
         ['positions', 'obstacle_positions', 'player_positions', 'tiles', 'teams'].forEach(key => {
             if (Array.isArray(value[key])) value[key] = grid(value[key], key === 'tiles' ? 1 : 0);
             else delete value[key];
@@ -1416,7 +1512,7 @@ function validateEnemyRecords(entry) {
             }
         }
         if (!value.freedom_mission || typeof value.freedom_mission !== 'object') {
-            value.freedom_mission = { enabled: false, turn_count: 3, player_can_flip: false };
+            value.freedom_mission = { enabled: true, turn_count: 3, player_can_flip: false };
         } else {
             value.freedom_mission = {
                 enabled: !!value.freedom_mission.enabled,
@@ -1437,6 +1533,9 @@ function validateEnemyRecords(entry) {
         if (Array.isArray(data.rewards) && data.rewards.length === 0) data.rewards = {};
         if (Array.isArray(data.enemy_rewards) && data.enemy_rewards.length === 0) data.enemy_rewards = {};
         state.data = {
+            // Keep the selected Tiled filename through imports: the Lua
+            // encounter table correctly has no runtime area_id field.
+            area_id: state.data.area_id || '',
             minimum_steps_before_encounter: Number(data.minimum_steps_before_encounter ?? 80),
             encounter_chance_per_step: Number(data.encounter_chance_per_step ?? 0.05),
             ...(data.rewards !== undefined ? { rewards: data.rewards } : {}),
@@ -1990,13 +2089,30 @@ function validateEnemyRecords(entry) {
         importInput.addEventListener('change', async event => {
             const file = event.target.files && event.target.files[0];
             if (!file) return;
-            try { loadNebulousData(parseImportedLua(await file.text())); }
+            try {
+                if (/^[A-Za-z0-9][A-Za-z0-9 _-]*\.lua$/.test(file.name) && file.name.toLowerCase() !== 'encounters.lua') {
+                    state.data.area_id = file.name.slice(0, -4);
+                    const nameInput = document.getElementById('ve-area-id');
+                    if (nameInput) nameInput.value = state.data.area_id;
+                }
+                loadNebulousData(parseImportedLua(await file.text()));
+            }
             catch (error) { status('Could not load Lua file: ' + error.message, false); }
             importInput.value = '';
         });
         return el('div', { id: 've-nebulous-controls' }, [
             tabs,
-            el('div', { class: 've-schema-note', text: 'Runtime terrain determines automatic teams and player positioning. In Nebulous battles, flipping is allowed ONLY when surrounded, regardless of authored Freedom Mission settings. Manual team matrices take precedence over terrain-generated teams; verify them for surrounded formations. Encounter reward tables can be authored here for use in ordinary ezencounters or Endless Runner battles, but Nebulous battle rewards remain disabled. Liberation music comes from the Tiled Liberation Config → Encounter Music reference.' }),
+            el('label', { class: 've-mission-name' }, [
+                'Tiled Area / Encounter Filename (without .tmx)',
+                el('input', { id: 've-area-id', type: 'text', placeholder: 'e.g. LiberationEasyMode',
+                    value: state.data.area_id || '', onInput: undefined }),
+                el('span', { class: 've-small-help', text: 'Must exactly match areas/<MapName>.tmx. Sets encounters/<MapName>.lua and unique scoped battle ZIP names.' })
+            ]),
+            el('label', { class: 've-manual-toggle' }, [
+                el('input', { id: 've-bundle-mods', type: 'checkbox', checked: 'checked' }),
+                ' Include hosted character mod ZIPs with deployment'
+            ]),
+            el('div', { class: 've-schema-note', text: 'V2.1 Liberation: all three categories, authored enemy positions, three-turn default Freedom Missions, unique mission-scoped battle ZIP, no battle rewards. Automatic terrain is calculated by the mission and flip is allowed only when surrounded. Encounter music is configured in Tiled Liberation Config.' }),
             el('label', { class: 've-manual-toggle' }, [
                 el('input', { id: 've-category-manual-battlefield', type: 'checkbox', onChange: event => {
                     state.categoryBattlefieldDefaults[state.activeSection] = event.target.checked;
@@ -2030,16 +2146,7 @@ function validateEnemyRecords(entry) {
                 el('div', { id: 've-encounter-mode-note', class: 've-schema-note' })
             ]),
             el('div', { id: 've-manual-note', class: 've-schema-note' }),
-            el('p', { class: 've-schema-note', text: 'Save exports encounters.lua and optionally packages already hosted in mods/. It includes the bundled ezencounters.zip, already synchronized with the Liberation scale and HP changes. Some character mods require individual effect-scaling support; mod HP presets are not regenerated.' }),
-            el('label', { class: 've-manual-toggle' }, [
-                el('input', { type: 'checkbox', id: 've-area-persistent-health', onChange: event => {
-                    state.data.persistent_health = !!event.target.checked;
-                    saveToLocalStorage();
-                } }),
-                ' Allow persistent HP-recovery rewards in ordinary managed ezencounters battles (not Nebulous)'
-            ]),
-            el('div', { id: 've-area-rewards', class: 've-reward-editor' }),
-            el('div', { id: 've-enemy-fallback-rewards', class: 've-reward-editor' }),
+            el('p', { class: 've-schema-note', text: 'Download V2.1 drop-in ZIP creates encounters/<MapName>.lua, a mission-scoped EZEncounters ZIP from the repaired working base, and optional OW template/character mod files. It does not create maps or new character variants.' }),
             el('div', { class: 've-actions' }, [
             el('button', { type: 'button', class: 've-action', onClick: () => {
                 const name = prompt('Enter a name for the new encounter (letters and numbers only):');
@@ -2051,18 +2158,16 @@ function validateEnemyRecords(entry) {
             } }, ['Add Encounter']),
             el('button', { type: 'button', onClick: () => importInput.click() }, ['Load Lua']),
             el('button', { type: 'button', class: 've-action', onClick: async () => {
+                try { await exportV21Bundle(); }
+                catch (error) { console.error(error); status('V2.1 bundle export failed: ' + error.message, false); }
+            } }, ['Download V2.1 drop-in ZIP']),
+            el('button', { type: 'button', onClick: () => {
                 try {
-                    downloadText('encounters.lua', buildLua());
-                    const modResult = await downloadNebulousMods();
-                    if (modResult && modResult.failed && modResult.failed.length) {
-                        status('Exported encounters.lua and required_mods.zip with missing mods: ' + modResult.failed.join(', ') + '. Check the downloader audit inside the ZIP.', false);
-                    } else {
-                        status('Exported encounters.lua' + (modResult ? ' and copied the hosted mods into required_mods.zip.' : '.'), true);
-                    }
-                } catch (error) {
-                    status('Save failed: ' + error.message, false);
-                }
-            } }, ['Save Lua + Mods'])
+                    const identity = missionIdentity();
+                    downloadText(identity.name + '.lua', buildLua());
+                    status('Exported ' + identity.encounterFile + ' (Lua only).', true);
+                } catch (error) { status('Lua export failed: ' + error.message, false); }
+            } }, ['Lua only'])
             ]),
             importInput
         ]);
@@ -2332,7 +2437,7 @@ window.updateEnemyOnTile = function() {
                     [0, 1, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0]
                 ],
-                freedom_mission: { enabled: false, turn_count: 3, player_can_flip: false },
+                freedom_mission: { enabled: true, turn_count: 3, player_can_flip: false },
                 manual_battlefield_override: false
             };
             if (manualEnabled(entry)) initializeManualMatrices(entry);
@@ -2453,6 +2558,7 @@ window.updateEnemyOnTile = function() {
                     section, !!(data.categoryBattlefieldDefaults && data.categoryBattlefieldDefaults[section])
                 ]));
                 state.data = {
+                    area_id: typeof data.area_id === 'string' ? data.area_id : '',
                     minimum_steps_before_encounter: Number(data.minimum_steps_before_encounter ?? 80),
                     encounter_chance_per_step: Number(data.encounter_chance_per_step ?? 0.05),
                     ...(data.rewards !== undefined ? { rewards: data.rewards } : {}),
@@ -2473,6 +2579,10 @@ window.updateEnemyOnTile = function() {
         const legacy = el('section', { id: 've-legacy-view' });
         const nebulous = el('section', { id: 've-nebulous-view', hidden: true });
         const controls = buildNebulousControls();
+        controls.querySelector('#ve-area-id').addEventListener('input', event => {
+            state.data.area_id = event.target.value;
+            if (window.__veNebulousMode) saveToLocalStorage();
+        });
         const statusNode = el('div', { id: 've-nebulous-status' });
 
         document.body.insertBefore(tabs, toolbar);
@@ -2483,7 +2593,7 @@ window.updateEnemyOnTile = function() {
         nebulous.appendChild(controls);
         nebulous.appendChild(buildTemplateEditor());
         const globalPanel = el('details', { id: 've-global-controls', class: 've-global-controls' }, [
-            el('summary', { text: 'Global & category overrides · Encounter frequency, rewards and battlefield mode' }),
+            el('summary', { text: 'Global & category overrides · Encounter frequency and battlefield mode' }),
             el('p', { class: 've-small-help', text: 'Global values apply across encounter categories. Category battlefield overrides apply only to the currently selected category and take precedence over encounter-level battlefield mode.' })
         ]);
         const frequency = document.getElementById('ve-area-basics');
