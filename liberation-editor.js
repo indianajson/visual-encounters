@@ -67,7 +67,7 @@
             #ve-main-tabs{display:flex;gap:8px;margin:0 0 14px;padding:10px;background:#292929;border-radius:6px;flex-wrap:wrap}
             #ve-main-tabs button,#ve-nebulous-controls button{border:0;border-radius:4px;padding:9px 14px;cursor:pointer;font-weight:600}
             #ve-main-tabs button{background:#555;color:#fff}#ve-main-tabs button.active{background:#1769d2}
-            #ve-nebulous-view[hidden],#ve-legacy-view[hidden],#ve-template-view[hidden]{display:none!important}
+            #ve-nebulous-view[hidden],#ve-legacy-view[hidden],#ve-template-view[hidden],#ve-settings-view[hidden]{display:none!important}
             #ve-nebulous-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;margin:0 0 10px;background:#e8e8e8;border-radius:5px;color:#222}
             #ve-nebulous-view:not(.ve-rewards-enabled) #ve-area-rewards, #ve-nebulous-view:not(.ve-rewards-enabled) #ve-enemy-fallback-rewards, #ve-nebulous-view:not(.ve-rewards-enabled) #ve-encounter-rewards, #ve-nebulous-view:not(.ve-rewards-enabled) .ve-reward-editor, #ve-nebulous-view:not(.ve-rewards-enabled) #ve-encounter-persistent-health, #ve-nebulous-view:not(.ve-rewards-enabled) #ve-encounter-no-results{display:none!important}
             #ve-nebulous-view .ve-mission-name{display:flex;flex-direction:column;gap:5px;font-weight:650;min-width:270px}
@@ -312,6 +312,48 @@
             @media(max-width:650px){#ve-template-view .ve-template-fields{grid-template-columns:1fr}#ve-template-view .ve-shape-board{--ve-shape-size:37px}#ve-template-view .ve-shape-cell{width:37px;height:37px}#ve-template-view .ve-shape-enemy-marker{width:32px;height:33px}#ve-template-view .ve-shape-enemy-marker span{font-size:7px}#ve-template-view .ve-shape-cell small{font-size:8px}#ve-template-view .ve-template-card{padding:12px}}
         `;
         document.head.appendChild(el('style', { id: 've-ux-styles', text: css }));
+        // Theme overrides must follow both generated editor stylesheets.
+        const sharedTheme = document.getElementById('ve-shared-theme-styles');
+        if (sharedTheme) document.head.appendChild(sharedTheme);
+    }
+
+    function buildSettingsView() {
+        const view = el('section', { id: 've-settings-view', hidden: true, 'aria-label': 'Editor settings' });
+        const light = el('button', { type: 'button', 'data-theme': 'light' }, ['☀ Light']);
+        const dark = el('button', { type: 'button', 'data-theme': 'dark' }, ['☾ Dark']);
+        const choices = el('div', { class: 've-theme-choices', role: 'group', 'aria-label': 'Color theme' }, [light, dark]);
+        const sync = () => {
+            const selected = document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+            [light, dark].forEach(button => {
+                const active = button.dataset.theme === selected;
+                button.classList.toggle('selected', active);
+                button.setAttribute('aria-pressed', String(active));
+            });
+        };
+        [light, dark].forEach(button => button.addEventListener('click', () => {
+            if (typeof window.toggleDarkMode === 'function') {
+                window.toggleDarkMode(button.dataset.theme === 'dark', true);
+            }
+            sync();
+        }));
+        document.addEventListener('ve-theme-change', sync);
+        view.appendChild(el('h2', { text: 'Settings' }));
+        view.appendChild(el('p', { class: 've-settings-help', text: 'Customize how VisualEncounters looks. These settings apply to Legacy Format, V2.1, and the Enemy Template Workshop.' }));
+        view.appendChild(el('div', { class: 've-settings-card' }, [
+            el('h3', { text: 'Appearance' }),
+            el('p', { class: 've-settings-help', text: 'Choose a light or dark interface. Your choice is saved in this browser.' }),
+            choices,
+            el('div', { class: 've-settings-preview' }, [
+                el('label', {}, ['Example text input', el('input', { type: 'text', value: 'Sample configuration', readonly: 'readonly' })]),
+                el('label', {}, ['Example dropdown', el('select', {}, [
+                    el('option', { value: 'first', text: 'First option' }),
+                    el('option', { value: 'second', text: 'Second option' }),
+                    el('option', { value: 'third', text: 'Third option' })
+                ])])
+            ])
+        ]));
+        sync();
+        return view;
     }
 
     function status(message, ok) {
@@ -442,6 +484,7 @@
         document.getElementById('ve-legacy-view').hidden = state.activeView !== 'legacy';
         document.getElementById('ve-nebulous-view').hidden = state.activeView !== 'new';
         document.getElementById('ve-template-view').hidden = state.activeView !== 'templates';
+        document.getElementById('ve-settings-view').hidden = state.activeView !== 'settings';
     }
 
     function activateSection(section) {
@@ -698,7 +741,7 @@
     }
 
     function activateView(view) {
-        if (!['legacy', 'new', 'templates'].includes(view) || view === state.activeView) return;
+        if (!['legacy', 'new', 'templates', 'settings'].includes(view) || view === state.activeView) return;
         const previous = state.activeView;
         if (previous === 'new') {
             state.data[state.activeSection] = config.encounters;
@@ -2608,12 +2651,14 @@ window.updateEnemyOnTile = function() {
         const tabs = el('nav', { id: 've-main-tabs', 'aria-label': 'Encounter editor modes' }, [
             el('button', { type: 'button', class: 'active', 'data-view': 'legacy', onClick: () => activateView('legacy') }, ['Legacy Format']),
             el('button', { type: 'button', 'data-view': 'new', onClick: () => activateView('new') }, ['V2.1 format']),
-            el('button', { type: 'button', 'data-view': 'templates', onClick: () => activateView('templates') }, ['Enemy Template Workshop'])
+            el('button', { type: 'button', 'data-view': 'templates', onClick: () => activateView('templates') }, ['Enemy Template Workshop']),
+            el('button', { type: 'button', 'data-view': 'settings', onClick: () => activateView('settings') }, ['⚙ Settings'])
         ]);
         tabs.prepend(el('div', { class: 've-brand' }, [el('strong', { text: 'VisualEncounters' }), el('span', { text: 'Battle builder · Grid + Inspector' })]));
         const legacy = el('section', { id: 've-legacy-view' });
         const nebulous = el('section', { id: 've-nebulous-view', hidden: true });
         const workshop = el('section', { id: 've-template-view', hidden: true });
+        const settings = buildSettingsView();
         const controls = buildNebulousControls();
         controls.querySelector('#ve-area-id').addEventListener('input', event => {
             state.data.area_id = event.target.value;
@@ -2630,6 +2675,7 @@ window.updateEnemyOnTile = function() {
         document.body.insertBefore(legacy, toolbar);
         document.body.insertBefore(nebulous, container.nextSibling);
         nebulous.after(workshop);
+        workshop.after(settings);
         legacy.appendChild(toolbar);
         legacy.appendChild(container);
         nebulous.appendChild(controls);

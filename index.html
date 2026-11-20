@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VisualEncounters Editor — vf7a14bc30dceb19f</title> <!-- VE_SITE_TITLE -->
+    <title>VisualEncounters Editor — vcf91f97fec692086</title> <!-- VE_SITE_TITLE -->
     <!-- VE_RELEASE_BOOTSTRAP_START: updated by tools/update_site_version.py -->
     <script>
     (function () {
       'use strict';
       // This value is generated from the site's published assets at release time.
-      const CURRENT_BUILD = "f7a14bc30dceb19f"; // VE_SITE_BUILD
+      const CURRENT_BUILD = "cf91f97fec692086"; // VE_SITE_BUILD
       window.VE_SITE_BUILD = CURRENT_BUILD;
 
       // Version assets fetched on demand (e.g. mod ZIPs); unchanged cached
@@ -421,6 +421,7 @@
         #ve-encounter-mode-settings select:disabled { opacity: .65; cursor: not-allowed; }
     </style>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link id="ve-shared-theme-styles" rel="stylesheet" href="visual-theme.css?v=dacec54375893fbd" />
 </head>
 <body>
     <div class="toolbar">
@@ -431,7 +432,6 @@
         <select id="variation-select"></select>
         <button id="add-variation">Add Variation</button>
         <button id="delete-variation" disabled>Delete Variation</button>
-        <button id="dark-mode-toggle" title="Toggle Dark Mode">☀️</button>
         <label style="margin-left: 10px; color: white;">
             <input type="checkbox" id="download-mods" checked> Download Mods?
         </label>
@@ -2266,29 +2266,25 @@
 // =============================================
 
 function initializeDarkMode() {
-    const darkMode = localStorage.getItem('darkMode') === 'true';
-    toggleDarkMode(darkMode, false);
-    
-    $('#dark-mode-toggle').click(function() {
-        const newMode = !$('body').hasClass('dark-mode');
-        toggleDarkMode(newMode, true);
-    });
+    // Keep compatibility with existing users' saved theme preference.
+    let isDark = false;
+    try { isDark = localStorage.getItem('darkMode') === 'true'; }
+    catch (_) { /* Storage can be disabled in private/local previews. */ }
+    toggleDarkMode(isDark, false);
 }
 
 function toggleDarkMode(enabled, saveToStorage) {
-    if (enabled) {
-        $('body').addClass('dark-mode');
-        $('#dark-mode-toggle').text('Light Mode');
-        $('#tile-popup').addClass('dark-mode');
-    } else {
-        $('body').removeClass('dark-mode');
-        $('#dark-mode-toggle').text('Dark Mode');
-        $('#tile-popup').removeClass('dark-mode');
-    }
-    
+    const isDark = !!enabled;
+    document.body.classList.toggle('dark-mode', isDark);
+    const popup = document.getElementById('tile-popup');
+    if (popup) popup.classList.toggle('dark-mode', isDark);
     if (saveToStorage) {
-        localStorage.setItem('darkMode', enabled);
+        try { localStorage.setItem('darkMode', String(isDark)); }
+        catch (_) { /* Theme still applies without persistent storage. */ }
     }
+    document.dispatchEvent(new CustomEvent('ve-theme-change', {
+        detail: { theme: isDark ? 'dark' : 'light' }
+    }));
 }
 
 
@@ -4635,6 +4631,6 @@ $(document).ready(function() {
 </div>
 <script src="vendor/jszip.min.js"></script>
 <script src="v21-export.js?v=45570e911a1e5e32"></script>
-<script src="liberation-editor.js?v=cd71011ed0683335"></script>
+<script src="liberation-editor.js?v=280a73b525d2b224"></script>
 </body>
 </html>

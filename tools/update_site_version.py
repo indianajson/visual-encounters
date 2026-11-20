@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parent.parent
 INDEX = ROOT / 'index.html'
 VERSION_FILE = ROOT / 'site-version.json'
 JS_FILES = ('v21-export.js', 'liberation-editor.js')
+CSS_FILES = ('visual-theme.css',)
 ASSET_EXTENSIONS = {'.html', '.js', '.css', '.json', '.zip', '.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg', '.animation'}
 SKIP_TOP = {'tools', 'tests', 'templates', '.git', '.github'}
 
@@ -38,6 +39,9 @@ def canonical_index(content: str) -> str:
     for name in JS_FILES:
         escaped = re.escape(name)
         content = re.sub(r'(?<=src=")' + escaped + r'\?v=[0-9a-f]+(?=")', name, content)
+    for name in CSS_FILES:
+        escaped = re.escape(name)
+        content = re.sub(r'(?<=href=")' + escaped + r'\?v=[0-9a-f]+(?=")', name, content)
     return content
 
 
@@ -84,6 +88,15 @@ def main() -> None:
         html, replaced = re.subn(rx, name + '?v=' + fingerprint, html)
         if replaced != 1:
             raise SystemExit(f'Expected exactly one script tag for {name}, found {replaced}')
+
+    # The shared theme stylesheet must bust cache when its content changes.
+    for name in CSS_FILES:
+        source = (ROOT / name).read_bytes()
+        fingerprint = hashlib.sha256(source).hexdigest()[:16]
+        rx = r'(?<=href=")' + re.escape(name) + r'(?:\?v=[0-9a-f]+)?(?=")'
+        html, replaced = re.subn(rx, name + '?v=' + fingerprint, html)
+        if replaced != 1:
+            raise SystemExit(f'Expected exactly one stylesheet for {name}, found {replaced}')
 
     INDEX.write_text(html, encoding='utf-8')
     VERSION_FILE.write_text(json.dumps({'version': build}, indent=2) + '\n', encoding='utf-8')

@@ -1,0 +1,174 @@
+/* VisualEncounters shared interface theme: single control and dropdown palette.
+ * Keep theme values here rather than adding per-tab exceptions.
+ * Native <select> popups remain OS/browser-owned in some configurations.
+ */
+:root, body:not(.dark-mode) {
+  color-scheme: light;
+  --ve-theme-page: #edf2f8;
+  --ve-theme-panel: #ffffff;
+  --ve-theme-soft: #f5f8fc;
+  --ve-theme-text: #172439;
+  --ve-theme-muted: #5c6d85;
+  --ve-theme-line: #c3cee0;
+  --ve-theme-accent: #e8f1ff;
+  --ve-theme-blue: #2464c7;
+  --ve-control-bg: #f5f8fc;
+  --ve-control-text: #172439;
+  --ve-control-border: #abbad0;
+  --ve-control-placeholder: #64748b;
+  --ve-control-popup-bg: #ffffff;
+  --ve-control-popup-text: #172439;
+  --ve-control-hover-bg: #e6effc;
+  --ve-control-selected-bg: #cee1ff;
+  --ve-control-selected-text: #102a53;
+  --ve-focus-ring: #2464c7;
+}
+body.dark-mode {
+  color-scheme: dark;
+  --ve-theme-page: #111827;
+  --ve-theme-panel: #252f40;
+  --ve-theme-soft: #1c2738;
+  --ve-theme-text: #ecf2fb;
+  --ve-theme-muted: #b0c0d3;
+  --ve-theme-line: #43516a;
+  --ve-theme-accent: #293b5b;
+  --ve-theme-blue: #78a9ff;
+  --ve-control-bg: #1c2738;
+  --ve-control-text: #f2f6ff;
+  --ve-control-border: #53647f;
+  --ve-control-placeholder: #b4c3d8;
+  --ve-control-popup-bg: #1c2738;
+  --ve-control-popup-text: #f2f6ff;
+  --ve-control-hover-bg: #30435f;
+  --ve-control-selected-bg: #345078;
+  --ve-control-selected-text: #ffffff;
+  --ve-focus-ring: #95bcff;
+}
+body {background:var(--ve-theme-page); color:var(--ve-theme-text);}
+#ve-legacy-view, #ve-nebulous-view, #ve-template-view, #ve-settings-view {
+  --ve-bg:var(--ve-theme-panel);
+  --ve-soft:var(--ve-theme-soft);
+  --ve-text:var(--ve-theme-text);
+  --ve-muted:var(--ve-theme-muted);
+  --ve-line:var(--ve-theme-line);
+  --ve-blue:var(--ve-theme-blue);
+  --ve-accent:var(--ve-theme-accent);
+  color:var(--ve-theme-text);
+}
+/* All authoring controls, including the Workshop's native selector lists. */
+:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-settings-view) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea) {
+  box-sizing:border-box;
+  background-color:var(--ve-control-bg);
+  color:var(--ve-control-text);
+  border:1px solid var(--ve-control-border);
+  border-radius:7px;
+  font:inherit;
+  accent-color:var(--ve-theme-blue);
+  color-scheme:light;
+}
+body.dark-mode :is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-settings-view) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea) {
+  color-scheme:dark;
+}
+:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-settings-view) :is(input,textarea)::placeholder {
+  color:var(--ve-control-placeholder);
+  opacity:1;
+}
+:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-settings-view) :is(select,optgroup,option) {
+  background-color:var(--ve-control-popup-bg);
+  color:var(--ve-control-popup-text);
+  color-scheme:light;
+}
+body.dark-mode :is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-settings-view) :is(select,optgroup,option) {
+  color-scheme:dark;
+}
+:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-settings-view) option:checked {
+  background-color:var(--ve-control-selected-bg);
+  color:var(--ve-control-selected-text);
+}
+:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-settings-view) :is(input,select,textarea,button):focus-visible {
+  outline:2px solid var(--ve-focus-ring);
+  outline-offset:2px;
+}
+:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-settings-view) :is(input,select,textarea):disabled {
+  opacity:.55;cursor:not-allowed;
+}
+:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-settings-view) :is(input[type=checkbox],input[type=radio]) {
+  accent-color:var(--ve-theme-blue);
+  color-scheme:inherit;
+}
+/* Select2 is rendered into <body>, so its dropdown is outside the view container. */
+.select2-container--default .select2-selection--single,
+.select2-container--default .select2-selection--multiple {
+  background-color:var(--ve-control-bg);
+  border-color:var(--ve-control-border);
+  color:var(--ve-control-text);
+  border-radius:7px;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered,
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+  color:var(--ve-control-text) !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow b {
+  border-color:var(--ve-control-text) transparent transparent transparent;
+}
+.select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
+  border-color:transparent transparent var(--ve-control-text) transparent;
+}
+.select2-container--default .select2-dropdown,
+.select2-container--default .select2-results,
+.select2-container--default .select2-search--dropdown,
+.select2-container--default .select2-search__field,
+.select2-container--default .select2-results__option {
+  background-color:var(--ve-control-popup-bg);
+  color:var(--ve-control-popup-text) !important;
+  border-color:var(--ve-control-border);
+}
+.select2-container--default .select2-results__option--selected {
+  background-color:var(--ve-control-selected-bg);
+  color:var(--ve-control-selected-text) !important;
+}
+.select2-container--default .select2-results__option--highlighted[aria-selected],
+.select2-container--default .select2-results__option[aria-selected=true].select2-results__option--highlighted {
+  background-color:var(--ve-control-hover-bg);
+  color:var(--ve-control-popup-text) !important;
+}
+.select2-container--default .select2-selection--single:focus-within,
+.select2-container--default .select2-search__field:focus-visible {
+  outline:2px solid var(--ve-focus-ring);outline-offset:1px;
+}
+/* Settings lives in the same tab bar but never alters workspace data. */
+#ve-main-tabs button[data-view=settings] {margin-left:auto;}
+#ve-settings-view {max-width:1100px;margin:0 auto;padding:24px clamp(12px,2vw,34px) 50px;}
+#ve-settings-view h2 {font-size:23px;margin:0 0 8px;}
+#ve-settings-view .ve-settings-help {font-size:13px;line-height:1.55;color:var(--ve-theme-muted);margin:4px 0 17px;}
+#ve-settings-view .ve-settings-card {background:var(--ve-theme-panel);border:1px solid var(--ve-theme-line);border-radius:13px;padding:23px;max-width:660px;}
+#ve-settings-view .ve-settings-card h3 {margin:0 0 9px;}
+#ve-settings-view .ve-theme-choices {display:flex;gap:10px;flex-wrap:wrap;margin-bottom:23px;}
+#ve-settings-view .ve-theme-choices button {border:1px solid var(--ve-theme-line);border-radius:8px;background:var(--ve-theme-soft);color:var(--ve-theme-text);padding:11px 19px;cursor:pointer;font:inherit;font-size:14px;font-weight:600;line-height:1.3;min-width:110px;}
+#ve-settings-view .ve-theme-choices button.selected {border-color:var(--ve-theme-blue);background:var(--ve-theme-accent);color:var(--ve-theme-text);box-shadow:inset 0 0 0 1px var(--ve-theme-blue);}
+#ve-settings-view .ve-settings-preview {border-top:1px solid var(--ve-theme-line);padding-top:18px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;}
+#ve-settings-view .ve-settings-preview label {display:grid;gap:8px;font-size:13px;font-weight:600;min-width:0;}
+#ve-settings-view .ve-settings-preview :is(input,select) {min-height:39px;width:100%;padding:8px 11px;}
+@media(max-width:700px) {#ve-main-tabs button[data-view=settings] {margin-left:0;} #ve-settings-view .ve-settings-preview {grid-template-columns:1fr;} }
+/* Win over older dark Select2 overrides which used fixed #444/#555 colors. */
+body.dark-mode .select2-container--default .select2-selection--single,
+body.dark-mode .select2-container--default .select2-selection--multiple {
+  background-color:var(--ve-control-bg) !important;
+  color:var(--ve-control-text) !important;
+  border-color:var(--ve-control-border) !important;
+}
+body.dark-mode .select2-container--default .select2-results__option,
+body.dark-mode .select2-container--default .select2-search__field,
+body.dark-mode .select2-container--default .select2-dropdown {
+  background-color:var(--ve-control-popup-bg) !important;
+  color:var(--ve-control-popup-text) !important;
+  border-color:var(--ve-control-border) !important;
+}
+body.dark-mode .select2-container--default .select2-results__option--selected {
+  background-color:var(--ve-control-selected-bg) !important;
+  color:var(--ve-control-selected-text) !important;
+}
+body.dark-mode .select2-container--default .select2-results__option--highlighted[aria-selected] {
+  background-color:var(--ve-control-hover-bg) !important;
+  color:var(--ve-control-popup-text) !important;
+}

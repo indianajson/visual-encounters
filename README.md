@@ -53,3 +53,7 @@ Feel free to ping @indianajson on the Discord if you have any problems. </p>
 - **[Head DM](https://github.com/headdm/)** for finding the first serious bug after release.
 - **[ShaDisNX255](https://github.com/ShaDisNX255/)** for updating and adding viruses!
 
+
+## Appearance and Settings
+
+Use the top-level **Settings** tab to choose Light or Dark mode for every editor workspace. Native selectors and Select2 use the shared palette in `visual-theme.css`. See [THEME_SETTINGS_README.md](THEME_SETTINGS_README.md) for design tokens and publishing details.

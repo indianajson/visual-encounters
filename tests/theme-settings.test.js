@@ -1,0 +1,34 @@
+/* Standalone smoke check: node tests/theme-settings.test.js */
+'use strict';
+const fs = require('node:fs');
+const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
+const path = require('node:path');
+const root = path.join(__dirname, '..');
+const read = p => fs.readFileSync(path.join(root, p), 'utf8');
+const html = read('index.html');
+const script = read('liberation-editor.js');
+const css = read('visual-theme.css');
+const tools = read('tools/update_site_version.py');
+const ver = JSON.parse(read('site-version.json')).version;
+
+assert.ok(!html.includes('id="dark-mode-toggle"'), 'Legacy-only theme button remains');
+assert.match(html, /function toggleDarkMode\(enabled, saveToStorage\)/);
+assert.match(html, /localStorage\.getItem\('darkMode'\)/);
+assert.match(html, /localStorage\.setItem\('darkMode', String\(isDark\)\)/);
+assert.match(script, /\['legacy', 'new', 'templates', 'settings'\]/);
+assert.match(script, /data-view': 'settings'/);
+assert.match(script, /id: 've-settings-view'/);
+assert.match(script, /aria-pressed/);
+assert.match(script, /ve-theme-change/);
+assert.match(script, /document\.getElementById\('ve-shared-theme-styles'\)/);
+assert.match(script, /persistNebulousWorkspace\(\)/);
+assert.match(css, /--ve-control-popup-bg:/);
+assert.match(css, /body\.dark-mode/);
+assert.match(css, /option:checked/);
+assert.match(css, /select2-results__option--highlighted/);
+assert.match(tools, /CSS_FILES = \('visual-theme\.css',\)/);
+assert.match(html, new RegExp(`VisualEncounters Editor — v${ver}`));
+const digest=crypto.createHash('sha256').update(css).digest('hex').slice(0,16);
+assert.ok(html.includes(`visual-theme.css?v=${digest}`), 'Theme CSS fingerprint missing or out of date');
+console.log('PASS: shared light/dark palette, settings navigation, preference, and versioned stylesheet');
