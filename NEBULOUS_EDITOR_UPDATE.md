@@ -1,3 +1,5 @@
+> **Historical notes (2026-11-12).** The Enemy Template Workshop is now a separate top-level tab. Use V21_EXPORT_GUIDE.md and ENEMY_TEMPLATE_WORKSHOP.md for the current layout.
+
 # VisualEncounters — V2.1 Nebulous Liberations update
 
 The **V2.1 format** tab now exports a **map-specific, self-contained deployment ZIP** rather than a generic `encounters.lua` plus the entire global `ezencounters.zip`.

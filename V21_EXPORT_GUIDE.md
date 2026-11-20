@@ -1,125 +1,106 @@
-# ⚔️ VisualEncounters — V2.1 Nebulous Liberations export guide
+# VisualEncounters — V2.1 exports
 
-This page describes the **V2.1 format** tab of this repository, based on the current Liberation encounter tables, repaired EZEncounters client package, and map requirements documented in the server's V2.1 authoring guide. The **Legacy Format** tab continues to use the original EZEncounters exporter.
+> Based on the uploaded `scripts(4).zip` and `encounters_areas_assets.zip` server snapshots. These are not a substitute for a newer live-server snapshot.
 
 ## Contents
 
-1. [What the old V2.1 exporter got wrong](#1-what-the-old-v21-exporter-got-wrong)
-2. [Create a mission file](#2-create-a-mission-file)
-3. [Regular, special, and boss categories](#3-regular-special-and-boss-categories)
-4. [Battle grid and Freedom Mission defaults](#4-battle-grid-and-freedom-mission-defaults)
-5. [Enemy Templates (overworld, not battle mods)](#5-enemy-templates-overworld-not-battle-mods)
-6. [Export and install the complete bundle](#6-export-and-install-the-complete-bundle)
-7. [How scoped EZEncounters ZIPs are built](#7-how-scoped-ezencounters-zips-are-built)
-8. [Tiled map setup and limits](#8-tiled-map-setup-and-limits)
-9. [Troubleshooting and tests](#9-troubleshooting-and-tests)
+1. [Modes](#modes)
+2. [Core encounter table](#core-encounter-table)
+3. [Battlefield and ranks](#battlefield-and-ranks)
+4. [Export and deployment](#export-and-deployment)
+5. [HP/scale and current DEBUGLIB mod synchronization](#hpscale-and-current-debuglib-mod-synchronization)
+6. [Enemy Template Workshop](#enemy-template-workshop)
+7. [Limitations and verification](#limitations-and-verification)
 
-## 1. What the old V2.1 exporter got wrong
+## Modes
 
-Previously **Save Lua + Mods** created a generic `encounters.lua` and copied `mods/ezencounters.zip` through the Legacy downloader. That is **not** a mission-scoped V2.1 deployment. The full EZEncounters package requires its entire character catalog, and imported V2.1 entries could retain another mission's `path`. Some reward fields were also editable even though Liberation does not grant battle rewards.
+The application has three **top-level** tabs:
 
-The replacement **Download V2.1 drop-in ZIP** generates the actual two linked files for a specific map:
+- **Legacy Format:** original visual encounter authoring, unchanged.
+- **V2.1 format:** visual battle grid, `encounters`, `special_encounters`, `bosses` and a **target selector**. Choose Nebulous Liberations, EZEncounters, or Endless Runner before export.
+- **Enemy Template Workshop:** independent overworld sprite/shape/AI template authoring, with its own project JSON and Lua ZIP exports. See [ENEMY_TEMPLATE_WORKSHOP.md](ENEMY_TEMPLATE_WORKSHOP.md).
 
-- `encounters/<MapName>.lua` (regular, special, boss encounters)
-- `assets/ezlibs-assets/ezencounters/ezencounters-liberation-<lowercase-map-name>.zip` (battle package)
+The V2.1 export selector uses the same *base-area* filename across all targets:
 
-It also includes the current OW template modules you have saved in the editor and optionally collects character-mod ZIPs that are hosted in `mods/`.
+| Target | Encounter Lua | Client ZIP | Battle rewards | Freedom Mission |
+|---|---|---|---|---|
+| Nebulous Liberations | `encounters/<BaseArea>.lua` | Unique `ezencounters-liberation-<slug>.zip` | Disabled | Defaults 3 turns; flip controlled by terrain |
+| EZEncounters | `encounters/<Area>.lua` | `ezencounters.zip` | Preserved | Only if enabled |
+| Endless Runner | `encounters/<RunnerBaseArea>.lua` | `ezencounters.zip` | Preserved, floor rules apply separately | Only if enabled |
 
-**Why this matters:** An earlier custom package broke the client because it removed the EZEncounters `get_package_id(alias)` helper while reducing dependencies. The V2.1 exporter now starts from the *repaired working package*, and changes only the package name and the mission's `liberation_aliases` set. It refuses an unrecognized base ZIP. It does not edit the battle builder.
+Runner cloned floor area IDs **must not** be used for the encounter filename. Nebulous instances similarly reference the base map.
 
-## 2. Create a mission file
+## Core encounter table
 
-Open `index.html` via a web server and choose **V2.1 format**. Enter the exact area name from Tiled in **Tiled Area / Encounter Filename**. Example: `LiberationEasyMode` corresponds to `areas/LiberationEasyMode.tmx` and `encounters/LiberationEasyMode.lua`. Letter case matters for the encounter filename and area loader.
+The server reads the following data-only Lua structure. The editor serializes real Lua tables and **does not** execute or fabricate callbacks.
 
-This area name also determines the client package filename and a **distinct package ID**:
+```lua
+return {
+    minimum_steps_before_encounter = 80,
+    encounter_chance_per_step = 0.05,
+    -- Regular/Runner only: optional area-wide rewards and enemy_rewards.
+    encounters = {
+        {
+            name = "Encounter1",
+            path = "/server/assets/ezlibs-assets/ezencounters/ezencounters.zip",
+            weight = 10,
+            enemies = { { name = "Mettaur", rank = 1 } },
+            obstacles = {},
+            positions = {
+                {0, 0, 0, 1, 0, 0},
+                {0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0},
+            },
+            player_positions = {
+                {0, 0, 0, 0, 0, 0},
+                {0, 1, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0},
+            },
+        },
+    },
+    special_encounters = {},
+    bosses = {},
+}
+```
 
-| Item | Example |
-|---|---|
-| Source map | `areas/LiberationEasyMode.tmx` (you create this in Tiled) |
-| Encounter output | `encounters/LiberationEasyMode.lua` |
-| Battle ZIP | `assets/ezlibs-assets/ezencounters/ezencounters-liberation-liberationeasymode.zip` |
-| Encounter `path` | `/server/assets/ezlibs-assets/ezencounters/ezencounters-liberation-liberationeasymode.zip` |
-| Client package ID | `com.keristero.mob.ezencounters_liberation_liberationeasymode` |
+For Liberation exports, the editor changes `path` to its **mission-scoped** ZIP and adds `no_battle_rewards = true`. The default `freedom_mission` is `{enabled = true, turn_count = 3, player_can_flip = false}`. Imported encounters with **explicitly disabled** Freedom Mission remain non-Freedom. The server calculates player-flipping permission based on surrounded terrain; the editor must not independently force it.
 
-The map name is kept in the browser workspace. Loading an encounter file named `<MapName>.lua` sets the matching map name automatically. Loading generic `encounters.lua` does **not** invent a map name; enter it manually.
+For regular EZEncounters and Endless Runner exports, `rewards`, `enemy_rewards` and optional per-encounter rewards remain supported by the current `scripts/ezlibs-scripts/ezencounters/rewards.lua` collector. `results_callback` is a Lua function rather than literal data and is **not** generated by this visual editor.
 
-## 3. Regular, special, and boss categories
+## Battlefield and ranks
 
-The three V2.1 tabs export a *single Lua return table* with `encounters`, `special_encounters`, and `bosses`. Encounter **names must be unique across all three categories**, as maps reference them by name.
+The battle field is a **3×6** matrix. `positions` and `player_positions` are always exported; each enemy entry must have one unique nonzero position. The one player marker must not overlap an enemy. Zero represents no occupant.
 
-- **Encounters**: normal Liberation panel battles, referenced by `Encounter1`, `Encounter2`, and so forth.
-- **Special Encounters**: Dark Hole encounter lists and named OW-bot battles, selected using the map's typed encounter objects.
-- **Boss Encounters**: encounter data selected by the Boss Dark Panel. Usually the name matches its OW bot alias, but the OW template and battle character are separate.
+Manual battlefield mode adds the authored `teams` (enemy = 1 / player = 2), `tiles` (1–18) and `obstacle_positions` (0 = none; positive values index the obstacle array). Automatic mode omits those fields and lets the runtime generate them.
 
-The editor exports `minimum_steps_before_encounter` and `encounter_chance_per_step` for compatibility, plus the three categories. It does **not** export Legacy rewards, results callbacks, music (configured on `Liberation Config`), or OW template registry definitions inside the battle table. Every entry gets `no_battle_rewards = true`.
+**Important rank detail:** The uploaded EZEncounters battle-package `get_enum_value_by_index()` expects **1-based rank indices** (`1` = V1, `2` = V2, `3` = V3, `4` = SP, `5` = EX, `6` = Rare 1, `7` = Rare 2, `8` = Nightmare), which it maps to engine ranks 0–7. The uploaded Liberation `panel_encounters.lua` validator mistakenly allows 0–7. For explicitly engine-indexed variants, `rank_override` may be set to 0–7 independently of the 1–8 `rank` field. See the separately supplied optional compatibility patch or update this single validation range on your live server before using rank 8 in Liberation.
 
-## 4. Battle grid and Freedom Mission defaults
+## Export and deployment
 
-The original 6×3 grid and enemy/obstacle inspector are shared between tabs. The V2.1 exporter always writes the authored `positions` matrix, even for automatic battlefields. The `enemies` list uses **1-based indexes** in the positions grid. For example, `positions[1][4] = 1` places the first enemy at the first row's fourth column.
+1. Pick **V2.1 format**, set the exact base-area name, choose the export target and author encounters on the grid.
+2. Use **Lua only** to inspect the generated `encounters/<Area>.lua`; use **Download V2.1 drop-in ZIP** to also include the correct battle ZIP and any available selected character mods.
+3. Extract the generated `encounters/` and `assets/` into your server root. Keep the referenced map under `areas/`.
+4. Verify that Tiled encounter names, pools, Dark Holes/Boss links or Runner sections point to these definitions. V2.1 does not edit Tiled objects.
+5. Restart and test the client package and enemy-mod versions with your actual server.
 
-A new V2.1 encounter starts with **Freedom Mission enabled, 3 turns, and flipping disabled**. Import preserves an explicitly disabled Freedom Mission. The actual Liberation instance sets `player_can_flip` only for surrounded terrain.
+For V2.1 Liberation exports, the battle package is **patched from the actual DEBUGLIB ZIP** provided in the uploaded server snapshot. Only the unique package name and required enemy aliases are changed. The existing battle builder, HP/scale logic, embedded characters and assets remain intact.
 
-`player_positions` contains one marker (the default is row 2, column 2 on the player side). If imported data omitted it, the editor supplies that default. `teams`, `tiles`, and `obstacle_positions` are emitted when **manual battlefield** is enabled; automatic mode lets Liberation terrain determine them.
+For ordinary EZEncounters or Runner exports, the standard `ezencounters.zip` is included instead. Do **not** install the mission-scoped ZIP as your general global battle package.
 
-Enemy definitions support the actual EZEncounters fields `name`, `rank`, `nickname`, `health`, `max_hp`, `scale`, `attack_multiplier`, and `defense_multiplier`. Ranks in this editor are 1-based (`1..8`). A requested max HP only works above a mod's native maximum if the compatible character variant is actually installed; the editor does not fabricate variants.
+## HP/scale and current DEBUGLIB mod synchronization
 
-## 5. Enemy Templates (overworld, not battle mods)
+The local `mods/` directory has been compared with the uploaded server's `assets/ezlibs-assets/ezencounters/` folder. See [MOD_SYNC_REPORT.md](MOD_SYNC_REPORT.md) for synchronization counts and source caveats.
 
-Choose **Enemy Templates** to create OW enemies. Save them into the editor workspace. Exports include a separate file for each saved template:
+The editor cannot create arbitrary `max_hp` variants by changing a number: ONB 2.1 retains the max HP chosen by the character's first `set_health` call. Updated character ZIPs (including preset variants used by DEBUGLIB) are included when present in the snapshot. The server's character packages must match the `enemy_packages` aliases in the battle ZIP.
 
-` scripts/ezlibs-custom/nebulous-liberations/liberations/enemies/template_<lowercase-name>.lua `
+`scale` in battle encounter records is distinct from *overworld template scale*; Tiled `OW Scale` and `Battle Scale` overrides are applied by Nebulous Liberations. In the Workshop, leaving *Battle scale* empty deliberately does **not** emit `battle_scale`, so the runtime inherits the OW scale.
 
-A template defines OW appearance/animation, AI name, optional attack visuals, selection shape, offsets, and HP/scale. It does **not** create a client-side battle enemy mod. For unusual AI, extend a real enemy module in your server; this editor only names existing AI handlers (`simple_charge`, `ranged`, `shockwave_line`).
+## Enemy Template Workshop
 
-The ZIP includes `ENEMY_TEMPLATE_REGISTRATION.md` with precise `require(...)(EnemyTemplates)` lines. Copy those lines into the *existing* `scripts/ezlibs-custom/nebulous-liberations/liberations/enemy_templates.lua` **after its shared AI helpers**. The editor intentionally does not overwrite your existing registry or duplicate its custom logic.
+Overworld templates are registered Lua modules under `scripts/ezlibs-custom/nebulous-liberations/liberations/enemies/`. They are **not** replacements for character mods and are not bundled into the encounter file. The separate Workshop exports full modules plus registration instructions.
 
-## 6. Export and install the complete bundle
+## Limitations and verification
 
-1. Author all regular, special, and boss encounters. Give every encounter at least one enemy placed on the grid.
-2. Set the Tiled map name at the top. Choose manual/automatic battlefield options and check Freedom Mission settings.
-3. Optionally check **Include hosted character mod ZIPs with deployment**. Some character mod archives may not be bundled with VisualEncounters; those are listed as missing/unmapped in the installer manifest.
-4. Click **Download V2.1 drop-in ZIP**. The browser creates `<map-slug>-v21-liberation-dropin.zip`.
-5. Back up the server, unzip into its root, and preserve the `encounters/`, `assets/`, and (if present) `scripts/` folder paths.
-6. If OW templates were exported, follow `ENEMY_TEMPLATE_REGISTRATION.md`.
-7. Check Tiled object encounter names, config, and spawn references. Restart the server and client, then test a battle.
+The provided editor and mod ZIPs were checked against the **uploaded** server snapshot, not an inaccessible newer live test-server tree. If you have changed `DEBUGLIB.lua`, `ezencounters`, enemy templates, character mods, or animation/HP bridges since that ZIP, upload the latest `scripts/` and `encounters_areas_assets` so they can be reconciled before calling the mod set completely current.
 
-**Lua only** downloads `<MapName>.lua` for manual placement in `encounters/`; it does not build the battle ZIP. Use that only if you already have a matching package and verified it contains all required character aliases.
-
-## 7. How scoped EZEncounters ZIPs are built
-
-`mods/ezencounters-v21-base.zip` is a copy of the *repaired* mission-scoped DEBUGLIB battle package from the November 11 fix. The new `v21-export.js` checks the actual enemy alias table and requires the original `get_package_id(alias)` and `package_build()` functions.
-
-For each mission, the editor:
-
-1. Collects **all** `enemies[].name` values across all three categories, including boss aliases and Dark Hole specials.
-2. Rejects unknown aliases not present in `encounter_info.enemy_packages`.
-3. Replaces `package_name` with `ezencounters_liberation_<map-slug>` (using underscores in its package ID).
-4. Replaces only `local liberation_aliases = { ... }` with the real set used by the mission.
-5. Retains `package_requires_scripts()` so it requires only those aliases and their already registered HP variants.
-6. **Preserves** `get_package_id(alias)`, `select_enemy_character_package()`, `package_build()`, and all other package members.
-7. Packages `entry.lua` at the ZIP root, with the same supporting files as the repaired baseline.
-8. Gives all encounters in the exported file the matching mission-specific `path`.
-
-**Do not rename or modify** `mods/ezencounters-v21-base.zip` without verifying its `entry.lua`. Removing `get_package_id` was the confirmed cause of the previous empty-mob client crash.
-
-## 8. Tiled map setup and limits
-
-This is an **encounter and OW-template editor**, not a Tiled map editor. It does not generate `.tmx` maps, typed NPCs, Dark Hole configuration, tile GIDs, or links for `Liberation Encounter Pool` and `Dark Hole Encounter List`.
-
-Use `areas/DEBUGLIB.tmx` and the server's comprehensive V2.1 guide as your working reference. At minimum, a mission needs a `Liberation Config` object, valid `Spawn Point` objects, its battle panels, and accurate object references. `OW Encounter Pool` is a reference to `Liberation Encounter Pool`, **not** a `Dark Hole Encounter List`.
-
-The server loads encounter definitions from `encounters/<base-area-name>.lua`, creates a cloned mission area, and provides the selected battle ZIP there. The exported map-specific path must exist on the server. The editor does **not** decide the player's battle terrain; the Liberation instance does.
-
-## 9. Troubleshooting and tests
-
-| Symptom | Check |
-|---|---|
-| `get_package_id` nil or “Current mob was empty” | Wrong/old scoped ZIP. Re-export with this release. Confirm `entry.lua` is at ZIP root and has `get_package_id()`. |
-| “Unknown EZEncounters enemy alias” | The base package does not register the battle alias. Supply a compatible real character mod and update the verified base. |
-| Character mod not installed | Check `INSTALL_V21_MISSION.md` for included, missing, and unmapped mod ZIPs. Existing client mods may still need to be installed separately. |
-| Map or selected encounter not found | Exact `encounters/<MapName>.lua` filename and Tiled object encounter name; spellings/case matter. |
-| Dark Hole picks wrong battle | Distinguish `Liberation Encounter Pool` from `Dark Hole Encounter List`; use the expected category. |
-| Client loads too many unused mods | Verify the battle path references the mission-specific ZIP, not `ezencounters.zip`. |
-| Sprite or HP variant wrong | Verify real character package variants; the editor does not create new mods/HP presets. |
-
-Run the included **offline exporter regression** with `node tests/v21-export.test.js`. The tested browser workflow also imported the real `DEBUGLIB.lua` (1 regular, 6 special, 1 boss) and generated a scoped battle ZIP. **The actual ONB client and server still require in-game validation.**
+JavaScript tests are in `tests/v21-regression.test.js`; run with `node tests/v21-regression.test.js`. Live ONB/Liberation/Runner gameplay must still be verified.

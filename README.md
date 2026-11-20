@@ -1,3 +1,5 @@
+> **2026-11-19 V2.1 update:** Three top-level tabs: Legacy Format, V2.1 format, and Enemy Template Workshop. V2.1 now has dedicated EZEncounters, Endless Runner, and Nebulous Liberations export policies. See [V21_EXPORT_GUIDE.md](V21_EXPORT_GUIDE.md), [ENEMY_TEMPLATE_WORKSHOP.md](ENEMY_TEMPLATE_WORKSHOP.md), and [MOD_SYNC_REPORT.md](MOD_SYNC_REPORT.md). The mod sync uses the uploaded server snapshot, not an unprovided newer live server.
+
 
 <p align="center">
 <img src="https://github.com/user-attachments/assets/131842f5-1016-43d7-8745-5cab5029c276" alt="logo" width="450">

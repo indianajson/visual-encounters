@@ -28,6 +28,7 @@
 
     const state = {
         activeView: 'legacy',
+        exportTarget: 'liberations',
         activeSection: 'encounters',
         selectedEnemyRewardAlias: '',
         selectedEnemyRewardRank: 'default',
@@ -66,9 +67,9 @@
             #ve-main-tabs{display:flex;gap:8px;margin:0 0 14px;padding:10px;background:#292929;border-radius:6px;flex-wrap:wrap}
             #ve-main-tabs button,#ve-nebulous-controls button{border:0;border-radius:4px;padding:9px 14px;cursor:pointer;font-weight:600}
             #ve-main-tabs button{background:#555;color:#fff}#ve-main-tabs button.active{background:#1769d2}
-            #ve-nebulous-view[hidden],#ve-legacy-view[hidden]{display:none!important}
+            #ve-nebulous-view[hidden],#ve-legacy-view[hidden],#ve-template-view[hidden]{display:none!important}
             #ve-nebulous-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;margin:0 0 10px;background:#e8e8e8;border-radius:5px;color:#222}
-            #ve-nebulous-view #ve-area-rewards, #ve-nebulous-view #ve-enemy-fallback-rewards, #ve-nebulous-view #ve-encounter-rewards, #ve-nebulous-view .ve-reward-editor, #ve-nebulous-view #ve-encounter-persistent-health, #ve-nebulous-view #ve-encounter-no-results{display:none!important}
+            #ve-nebulous-view:not(.ve-rewards-enabled) #ve-area-rewards, #ve-nebulous-view:not(.ve-rewards-enabled) #ve-enemy-fallback-rewards, #ve-nebulous-view:not(.ve-rewards-enabled) #ve-encounter-rewards, #ve-nebulous-view:not(.ve-rewards-enabled) .ve-reward-editor, #ve-nebulous-view:not(.ve-rewards-enabled) #ve-encounter-persistent-health, #ve-nebulous-view:not(.ve-rewards-enabled) #ve-encounter-no-results{display:none!important}
             #ve-nebulous-view .ve-mission-name{display:flex;flex-direction:column;gap:5px;font-weight:650;min-width:270px}
             #ve-nebulous-view .ve-mission-name input{padding:9px 11px;border:1px solid #b7c8e3;border-radius:7px;min-width:245px;font:inherit}
             #ve-nebulous-view .ve-reward-editor{border:1px solid var(--ve-border,#d9dee7);border-radius:8px;padding:14px;margin-top:14px;background:var(--ve-surface,#fff)}
@@ -127,23 +128,24 @@
             body.dark-mode #ve-nebulous-view #ve-nebulous-controls{background:var(--ve-surface);color:#eee}
             body.dark-mode #ve-nebulous-view .ve-battlefield,body.dark-mode #ve-nebulous-view .ve-sidebar-section,body.dark-mode #ve-nebulous-view .ve-details{background:var(--ve-surface)}
 
-            #ve-nebulous-view #ve-global-controls,#ve-nebulous-view .ve-template-editor{margin:0 0 16px;padding:16px 20px;border:1px solid var(--ve-border);border-radius:13px;background:var(--ve-surface);color:var(--ve-text)}
+            #ve-nebulous-view #ve-global-controls,#ve-template-view .ve-template-editor{margin:0 0 16px;padding:16px 20px;border:1px solid var(--ve-border);border-radius:13px;background:var(--ve-surface);color:var(--ve-text)}
             #ve-nebulous-view #ve-global-controls summary{cursor:pointer;font-weight:700;font-size:15px;padding:5px 0}
-            #ve-nebulous-view .ve-template-editor h2{font-size:20px;margin:0 0 6px}
-            #ve-nebulous-view .ve-template-toolbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:14px 0}
-            #ve-nebulous-view .ve-template-toolbar label{display:grid;gap:5px;min-width:170px;flex:1}
-            #ve-nebulous-view .ve-template-toolbar input,#ve-nebulous-view .ve-template-toolbar select,#ve-nebulous-view .ve-template-fields input,#ve-nebulous-view .ve-template-fields select{box-sizing:border-box;width:100%;padding:9px;border:1px solid var(--ve-border);border-radius:7px;background:var(--ve-surface);color:inherit}
-            #ve-nebulous-view .ve-template-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:12px 16px}
-            #ve-nebulous-view .ve-template-fields label{display:grid;gap:5px;font-size:13px}
-            #ve-nebulous-view .ve-template-toolbar button{border:1px solid var(--ve-border);border-radius:6px;padding:9px;background:var(--ve-soft);color:inherit;cursor:pointer}
+            #ve-template-view .ve-template-editor h2{font-size:20px;margin:0 0 6px}
+            #ve-template-view .ve-template-toolbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:14px 0}
+            #ve-template-view .ve-template-toolbar label{display:grid;gap:5px;min-width:170px;flex:1}
+            #ve-template-view .ve-template-toolbar input,#ve-template-view .ve-template-toolbar select,#ve-template-view .ve-template-fields input,#ve-template-view .ve-template-fields select{box-sizing:border-box;width:100%;padding:9px;border:1px solid var(--ve-border);border-radius:7px;background:var(--ve-surface);color:inherit}
+            #ve-template-view .ve-template-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:12px 16px}
+            #ve-template-view .ve-template-fields label{display:grid;gap:5px;font-size:13px}
+            #ve-template-view .ve-template-toolbar button{border:1px solid var(--ve-border);border-radius:6px;padding:9px;background:var(--ve-soft);color:inherit;cursor:pointer}
             #ve-nebulous-view #ve-nebulous-controls .ve-schema-note{max-width:1040px}
+            #ve-nebulous-view #ve-export-target{display:block;margin:5px 0;padding:9px;min-width:255px;border:1px solid #9cb4d4;border-radius:6px;background:var(--ve-bg);color:var(--ve-text)}
             #ve-nebulous-view #ve-nebulous-controls{padding:14px 18px}
             #ve-nebulous-view #ve-nebulous-controls .ve-actions{grid-column:1/-1;grid-row:2;border:0;padding:0}
             #ve-nebulous-view #ve-nebulous-controls .ve-section-tabs{grid-row:1}
             #ve-nebulous-view #ve-nebulous-controls>.ve-schema-note{grid-row:auto;font-size:12px}
             #ve-nebulous-view #ve-global-controls #ve-area-basics{display:block;margin-top:12px}
             #ve-nebulous-view #ve-global-controls #ve-area-basics>summary{font-size:13px}
-            #ve-nebulous-view .ve-template-editor[hidden],#ve-nebulous-view .container[hidden],#ve-nebulous-view .toolbar[hidden]{display:none!important}
+            #ve-template-view .ve-template-editor[hidden],#ve-nebulous-view .container[hidden],#ve-nebulous-view .toolbar[hidden]{display:none!important}
             @media(max-width:1150px){#ve-nebulous-view .ve-workspace{grid-template-columns:minmax(0,1fr)}#ve-nebulous-view .ve-sidebar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
             @media(max-width:700px){#ve-nebulous-view #ve-nebulous-controls{grid-template-columns:1fr}#ve-nebulous-view .ve-sidebar{display:flex}#ve-nebulous-view .ve-details .ve-config-grid{grid-template-columns:1fr}#ve-nebulous-view .ve-workspace{gap:10px}}
         `;
@@ -158,6 +160,19 @@
             body.dark-mode {background:#111827;color:#e6ecf5;color-scheme:dark}
             #ve-main-tabs {display:flex;align-items:center;gap:9px;margin:0;border-radius:0;padding:14px clamp(16px,3vw,38px);background:#121e30;color:#eff6ff;border-bottom:1px solid #253652}
             #ve-main-tabs .ve-brand {display:flex;flex-direction:column;gap:3px;min-width:180px;margin-right:auto;line-height:1.2}
+            #ve-template-view{--ve-bg:#fff;--ve-soft:#f6f8fc;--ve-text:#172439;--ve-muted:#62728b;--ve-line:#dce3ed;--ve-blue:#2164d9;--ve-accent:#eaf2ff;max-width:1850px;margin:0 auto;padding:22px clamp(12px,2vw,34px) 40px;color:var(--ve-text)}
+            body.dark-mode #ve-template-view{--ve-bg:#252f40;--ve-soft:#1c2738;--ve-text:#ecf2fb;--ve-muted:#b0c0d3;--ve-line:#43516a;--ve-blue:#78a9ff;--ve-accent:#293b5b}
+            #ve-template-view .ve-template-editor{margin:0;padding:22px;border:1px solid var(--ve-line);background:var(--ve-bg);border-radius:13px}
+            #ve-template-view .ve-small-help{font-size:12px;color:var(--ve-muted);line-height:1.5;margin:5px 0 10px}
+            #ve-template-status{font-size:13px;white-space:pre-wrap;padding:10px 13px;border-radius:6px;margin:0 0 13px;display:none}
+            #ve-template-status.ok{display:block;background:#dff0d8;color:#285b26}#ve-template-status.bad{display:block;background:#f2dede;color:#8a2525}
+            body.dark-mode #ve-template-status.ok{background:#29432a;color:#d8f2d2}body.dark-mode #ve-template-status.bad{background:#4a2929;color:#ffdede}
+            #ve-template-view .ve-template-toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:18px}
+            #ve-template-view .ve-template-toolbar button{padding:9px 12px;border-radius:7px;border:1px solid var(--ve-line);background:var(--ve-soft);color:var(--ve-text);cursor:pointer}
+            #ve-template-view .ve-template-toolbar input,#ve-template-view .ve-template-toolbar select{display:block;padding:8px;border:1px solid var(--ve-line);background:var(--ve-soft);color:var(--ve-text);border-radius:5px;max-width:220px}
+            #ve-template-view .ve-template-editor>p{line-height:1.5}
+            @media(max-width:680px){#ve-template-view{padding:14px 10px 25px}}
+
             #ve-main-tabs .ve-brand strong {font-size:20px;font-weight:750;letter-spacing:-.025em}
             #ve-main-tabs .ve-brand span {font-size:12px;color:#9aaecb}
             #ve-main-tabs button {background:#22314a;color:#dce8f7;border-radius:8px;min-height:38px;padding:8px 17px;font:inherit;font-weight:650;border:1px solid transparent}
@@ -250,57 +265,57 @@
               #ve-legacy-view .toolbar > label,#ve-nebulous-view .toolbar > label {margin-left:0!important}
             }
             /* Template workshop: grouped authoring on the left, live visual preview on the right. */
-            #ve-nebulous-view .ve-template-workspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(345px,440px);align-items:start;gap:17px}
-            #ve-nebulous-view .ve-template-primary{min-width:0;display:flex;flex-direction:column;gap:14px}
-            #ve-nebulous-view .ve-template-card{min-width:0;padding:16px;border:1px solid var(--ve-line);background:var(--ve-bg);border-radius:12px}
-            #ve-nebulous-view .ve-template-card h3{font-size:16px;margin:0 0 7px}
-            #ve-nebulous-view .ve-template-card>.ve-small-help{margin:0 0 14px}
-            #ve-nebulous-view .ve-template-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
-            #ve-nebulous-view .ve-template-fields label,#ve-nebulous-view .ve-template-card label{color:var(--ve-text);font-size:12px;line-height:1.45}
-            #ve-nebulous-view .ve-template-fields label:has(input[type=checkbox]){display:flex;gap:10px;align-items:center;justify-content:flex-start}
-            #ve-nebulous-view .ve-template-fields input[type=checkbox]{width:18px;height:18px}
-            #ve-nebulous-view .ve-template-preview-column{min-width:0;position:sticky;top:16px}
-            #ve-nebulous-view .ve-template-mini-row{display:flex;align-items:end;flex-wrap:wrap;gap:10px;margin:8px 0 12px}
-            #ve-nebulous-view .ve-template-mini-row label{display:flex;flex:1 1 95px;flex-direction:column;gap:4px;min-width:70px}
-            #ve-nebulous-view .ve-template-mini-row input,#ve-nebulous-view .ve-template-mini-row select{min-height:35px;width:100%;box-sizing:border-box;padding:7px;border:1px solid var(--ve-line);background:var(--ve-soft);color:var(--ve-text);border-radius:7px}
-            #ve-nebulous-view .ve-shape-stage{display:flex;justify-content:safe center;align-items:flex-start;overflow:auto;border:1px solid var(--ve-line);border-radius:11px;background:var(--ve-soft);padding:16px 10px;margin:8px 0}
+            #ve-template-view .ve-template-workspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(345px,440px);align-items:start;gap:17px}
+            #ve-template-view .ve-template-primary{min-width:0;display:flex;flex-direction:column;gap:14px}
+            #ve-template-view .ve-template-card{min-width:0;padding:16px;border:1px solid var(--ve-line);background:var(--ve-bg);border-radius:12px}
+            #ve-template-view .ve-template-card h3{font-size:16px;margin:0 0 7px}
+            #ve-template-view .ve-template-card>.ve-small-help{margin:0 0 14px}
+            #ve-template-view .ve-template-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+            #ve-template-view .ve-template-fields label,#ve-template-view .ve-template-card label{color:var(--ve-text);font-size:12px;line-height:1.45}
+            #ve-template-view .ve-template-fields label:has(input[type=checkbox]){display:flex;gap:10px;align-items:center;justify-content:flex-start}
+            #ve-template-view .ve-template-fields input[type=checkbox]{width:18px;height:18px}
+            #ve-template-view .ve-template-preview-column{min-width:0;position:sticky;top:16px}
+            #ve-template-view .ve-template-mini-row{display:flex;align-items:end;flex-wrap:wrap;gap:10px;margin:8px 0 12px}
+            #ve-template-view .ve-template-mini-row label{display:flex;flex:1 1 95px;flex-direction:column;gap:4px;min-width:70px}
+            #ve-template-view .ve-template-mini-row input,#ve-template-view .ve-template-mini-row select{min-height:35px;width:100%;box-sizing:border-box;padding:7px;border:1px solid var(--ve-line);background:var(--ve-soft);color:var(--ve-text);border-radius:7px}
+            #ve-template-view .ve-shape-stage{display:flex;justify-content:safe center;align-items:flex-start;overflow:auto;border:1px solid var(--ve-line);border-radius:11px;background:var(--ve-soft);padding:16px 10px;margin:8px 0}
             /* World-space display: the enemy stays at (0,0) in the middle of the viewport.
                The authored mask is plotted at each cell's exported X/Y offset without
                changing the mask, the user's offsets, or the Lua template. */
-            #ve-nebulous-view .ve-shape-board{--ve-shape-size:46px;display:grid;gap:5px;position:relative;flex:0 0 auto}
+            #ve-template-view .ve-shape-board{--ve-shape-size:46px;display:grid;gap:5px;position:relative;flex:0 0 auto}
             /* The marker is not a mask cell and cannot be selected or exported. */
-            #ve-nebulous-view .ve-shape-enemy-marker{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:42px;height:42px;box-sizing:border-box;border:2px solid #a78bfa;border-radius:7px;background:rgba(124,58,237,.16);box-shadow:0 0 0 2px rgba(167,139,250,.15);pointer-events:none;z-index:2;display:flex;justify-content:center;align-items:flex-start}
-            #ve-nebulous-view .ve-shape-enemy-marker span{display:block;margin-top:2px;padding:2px 3px;border-radius:3px;background:#6941c6;color:#fff;font-size:9px;font-weight:800;letter-spacing:.02em;line-height:1}
-            #ve-nebulous-view .ve-shape-cell{width:46px;height:46px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:0;border:1px solid #b7c7df;background:var(--ve-bg);color:var(--ve-muted);border-radius:7px;cursor:pointer;padding:0}
-            #ve-nebulous-view .ve-shape-cell span{font-weight:700;font-size:18px;line-height:1.2}
-            #ve-nebulous-view .ve-shape-cell small{font-size:9px;line-height:1.2}
-            #ve-nebulous-view .ve-shape-cell.on{background:#2360cb;color:#fff;border-color:#2360cb}
-            #ve-nebulous-view .ve-shape-cell.origin{outline:2px dashed #f59e0b;outline-offset:1px}
-            #ve-nebulous-view .ve-shape-cell:hover,#ve-nebulous-view .ve-shape-cell:focus-visible{box-shadow:0 0 0 3px #4c91ed66}
-            #ve-nebulous-view .ve-shape-info{margin-top:7px}
-            #ve-nebulous-view .ve-template-advanced summary{font-size:13px;font-weight:700;color:var(--ve-text);cursor:pointer;padding:7px 0}
-            #ve-nebulous-view .ve-template-advanced label{display:flex;flex-direction:column;gap:5px;margin-top:8px}
-            #ve-nebulous-view .ve-template-advanced input{box-sizing:border-box;padding:8px;width:100%;background:var(--ve-soft);color:var(--ve-text);border:1px solid var(--ve-line);border-radius:7px}
+            #ve-template-view .ve-shape-enemy-marker{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:42px;height:42px;box-sizing:border-box;border:2px solid #a78bfa;border-radius:7px;background:rgba(124,58,237,.16);box-shadow:0 0 0 2px rgba(167,139,250,.15);pointer-events:none;z-index:2;display:flex;justify-content:center;align-items:flex-start}
+            #ve-template-view .ve-shape-enemy-marker span{display:block;margin-top:2px;padding:2px 3px;border-radius:3px;background:#6941c6;color:#fff;font-size:9px;font-weight:800;letter-spacing:.02em;line-height:1}
+            #ve-template-view .ve-shape-cell{width:46px;height:46px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:0;border:1px solid #b7c7df;background:var(--ve-bg);color:var(--ve-muted);border-radius:7px;cursor:pointer;padding:0}
+            #ve-template-view .ve-shape-cell span{font-weight:700;font-size:18px;line-height:1.2}
+            #ve-template-view .ve-shape-cell small{font-size:9px;line-height:1.2}
+            #ve-template-view .ve-shape-cell.on{background:#2360cb;color:#fff;border-color:#2360cb}
+            #ve-template-view .ve-shape-cell.origin{outline:2px dashed #f59e0b;outline-offset:1px}
+            #ve-template-view .ve-shape-cell:hover,#ve-template-view .ve-shape-cell:focus-visible{box-shadow:0 0 0 3px #4c91ed66}
+            #ve-template-view .ve-shape-info{margin-top:7px}
+            #ve-template-view .ve-template-advanced summary{font-size:13px;font-weight:700;color:var(--ve-text);cursor:pointer;padding:7px 0}
+            #ve-template-view .ve-template-advanced label{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+            #ve-template-view .ve-template-advanced input{box-sizing:border-box;padding:8px;width:100%;background:var(--ve-soft);color:var(--ve-text);border:1px solid var(--ve-line);border-radius:7px}
             #ve-nebulous-view .ve-sprite-stage{padding:0;background:#121e32;border:2px dashed #536f94;border-radius:11px;overflow:hidden;line-height:0}
             #ve-nebulous-view .ve-sprite-stage.dragover{border-color:#fbbf24;background:#1b3353}
             #ve-nebulous-view .ve-sprite-stage canvas{display:block;max-width:100%;width:100%;height:auto;image-rendering:pixelated}
-            #ve-nebulous-view .ve-template-playback{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:10px 0}
-            #ve-nebulous-view .ve-template-playback button,#ve-nebulous-view .ve-template-playback select,#ve-nebulous-view .ve-template-sample button,#ve-nebulous-view .ve-template-advanced button{border:1px solid var(--ve-line);background:var(--ve-soft);color:var(--ve-text);border-radius:7px;padding:8px;min-height:35px;cursor:pointer;font-size:12px}
-            #ve-nebulous-view .ve-template-playback .ve-template-inline-check{display:flex;align-items:center;gap:5px}
-            #ve-nebulous-view .ve-template-playback .ve-template-inline-check input{width:16px;height:16px;margin:0}
-            #ve-nebulous-view .ve-preview-file-label{display:flex;flex-direction:column;gap:7px;font-weight:650}
-            #ve-nebulous-view .ve-preview-file-label input{width:100%;max-width:100%;font-size:12px}
-            #ve-nebulous-view .ve-template-sample{margin:10px 0}
-            #ve-nebulous-view .ve-template-primary-button{background:#2360cb;color:#fff;border-color:#2360cb}
-            #ve-nebulous-view .ve-preview-caption{margin:6px 0 12px;min-height:30px}
-            @media(max-width:1060px){#ve-nebulous-view .ve-template-workspace{grid-template-columns:1fr}#ve-nebulous-view .ve-template-preview-column{position:static;order:-1}}
-            @media(max-width:650px){#ve-nebulous-view .ve-template-fields{grid-template-columns:1fr}#ve-nebulous-view .ve-shape-board{--ve-shape-size:37px}#ve-nebulous-view .ve-shape-cell{width:37px;height:37px}#ve-nebulous-view .ve-shape-enemy-marker{width:32px;height:33px}#ve-nebulous-view .ve-shape-enemy-marker span{font-size:7px}#ve-nebulous-view .ve-shape-cell small{font-size:8px}#ve-nebulous-view .ve-template-card{padding:12px}}
+            #ve-template-view .ve-template-playback{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:10px 0}
+            #ve-template-view .ve-template-playback button,#ve-template-view .ve-template-playback select,#ve-template-view .ve-template-sample button,#ve-template-view .ve-template-advanced button{border:1px solid var(--ve-line);background:var(--ve-soft);color:var(--ve-text);border-radius:7px;padding:8px;min-height:35px;cursor:pointer;font-size:12px}
+            #ve-template-view .ve-template-playback .ve-template-inline-check{display:flex;align-items:center;gap:5px}
+            #ve-template-view .ve-template-playback .ve-template-inline-check input{width:16px;height:16px;margin:0}
+            #ve-template-view .ve-preview-file-label{display:flex;flex-direction:column;gap:7px;font-weight:650}
+            #ve-template-view .ve-preview-file-label input{width:100%;max-width:100%;font-size:12px}
+            #ve-template-view .ve-template-sample{margin:10px 0}
+            #ve-template-view .ve-template-primary-button{background:#2360cb;color:#fff;border-color:#2360cb}
+            #ve-template-view .ve-preview-caption{margin:6px 0 12px;min-height:30px}
+            @media(max-width:1060px){#ve-template-view .ve-template-workspace{grid-template-columns:1fr}#ve-template-view .ve-template-preview-column{position:static;order:-1}}
+            @media(max-width:650px){#ve-template-view .ve-template-fields{grid-template-columns:1fr}#ve-template-view .ve-shape-board{--ve-shape-size:37px}#ve-template-view .ve-shape-cell{width:37px;height:37px}#ve-template-view .ve-shape-enemy-marker{width:32px;height:33px}#ve-template-view .ve-shape-enemy-marker span{font-size:7px}#ve-template-view .ve-shape-cell small{font-size:8px}#ve-template-view .ve-template-card{padding:12px}}
         `;
         document.head.appendChild(el('style', { id: 've-ux-styles', text: css }));
     }
 
     function status(message, ok) {
-        const node = document.getElementById('ve-nebulous-status');
+        const node = document.getElementById(state.activeView === 'templates' ? 've-template-status' : 've-nebulous-status');
         if (!node) return;
         node.textContent = message;
         node.className = ok ? 'ok' : 'bad';
@@ -325,7 +340,10 @@
         // The callback field is not part of the current encounter table schema.
         ['#music-path', '#results-callback'].forEach(selector => {
             const input = document.querySelector(selector);
-            if (input && input.closest('label')) input.closest('label').style.display = isNebulous ? 'none' : '';
+            // Music is editable for regular/Runner encounters; Liberation
+            // selects its music through the Tiled mission configuration.
+            const hidden = isNebulous && (selector === '#results-callback' || state.exportTarget === 'liberations');
+            if (input && input.closest('label')) input.closest('label').style.display = hidden ? 'none' : '';
         });
         // The V2.1 exporter produces its own deployment bundle and optionally
         // copies hosted character mods. The legacy download checkbox is not a
@@ -423,22 +441,13 @@
         });
         document.getElementById('ve-legacy-view').hidden = state.activeView !== 'legacy';
         document.getElementById('ve-nebulous-view').hidden = state.activeView !== 'new';
+        document.getElementById('ve-template-view').hidden = state.activeView !== 'templates';
     }
 
     function activateSection(section) {
         if (!SECTION_KEYS.includes(section)) return;
         if (state.activeView === 'new' && typeof config !== 'undefined') {
             state.data[state.activeSection] = config.encounters;
-        }
-        const templatePanel = document.getElementById('ve-template-editor');
-        if (templatePanel) {
-            templatePanel.hidden = true;
-            const panel = document.querySelector('#ve-nebulous-view > .container');
-            const tools = document.querySelector('#ve-nebulous-view > .toolbar');
-            if (panel) panel.hidden = false;
-            if (tools) tools.hidden = false;
-            const tab = document.getElementById('ve-template-tab');
-            if (tab) tab.classList.remove('active');
         }
         state.activeSection = section;
         config = {
@@ -689,17 +698,15 @@
     }
 
     function activateView(view) {
-        if (view === state.activeView) return;
-        if (state.activeView === 'new') {
+        if (!['legacy', 'new', 'templates'].includes(view) || view === state.activeView) return;
+        const previous = state.activeView;
+        if (previous === 'new') {
             state.data[state.activeSection] = config.encounters;
             state.data.minimum_steps_before_encounter = config.minimum_steps_before_encounter;
             state.data.encounter_chance_per_step = config.encounter_chance_per_step;
-        } else {
+        } else if (previous === 'legacy') {
             state.legacyConfig = config;
         }
-
-        const templatePanel = document.getElementById('ve-template-editor');
-        if (templatePanel) templatePanel.hidden = true;
         state.activeView = view;
         window.__veNebulousMode = view === 'new';
         if (view === 'new') {
@@ -711,8 +718,6 @@
             };
             if (!Array.isArray(config.encounters)) config.encounters = state.data[state.activeSection] = [];
             teardownWorkspace();
-            state.legacyContainer.parentNode.removeChild(state.legacyContainer);
-            state.legacyToolbar.parentNode.removeChild(state.legacyToolbar);
             const root = document.getElementById('ve-nebulous-view');
             root.appendChild(state.legacyToolbar);
             root.appendChild(state.legacyContainer);
@@ -721,22 +726,25 @@
             state.legacyToolbar.hidden = false;
             setLegacyControlsForMode(true);
             refreshEditorForActiveData();
-            status('Nebulous Liberations mode. Build encounters with the same visual battle grid and property panels.', true);
-        } else {
+            status('V2.1 battlefield ready. Select EZEncounters, Endless Runner, or Liberation export target.', true);
+        } else if (view === 'legacy') {
             restoreLegacyWorkspace();
             state.legacyContainer.hidden = false;
             state.legacyToolbar.hidden = false;
             config = state.legacyConfig || config;
-            const root = document.getElementById('ve-legacy-view');
-            root.appendChild(state.legacyToolbar);
-            root.appendChild(state.legacyContainer);
+            document.getElementById('ve-legacy-view').appendChild(state.legacyToolbar);
+            document.getElementById('ve-legacy-view').appendChild(state.legacyContainer);
             setLegacyControlsForMode(false);
             currentVariationIndex = -1;
             selectedTile = null;
             refreshVariationDropdown();
-            if (config.encounters && config.encounters.length) selectVariation(Math.min(0, config.encounters.length - 1));
+            if (config.encounters && config.encounters.length) selectVariation(0);
             updateMainConfigFields();
             createWorkspace(false);
+        } else {
+            // The workshop is independent: do not overwrite Legacy or V2.1
+            // configuration while editing/previewing overworld templates.
+            persistNebulousWorkspace();
         }
         updateTopTabs();
         syncWorkspaceStatus();
@@ -1247,73 +1255,30 @@ function validateEnemyRecords(entry) {
 
     function buildLua() {
         const identity = missionIdentity();
+        const api = window.VisualEncountersV21;
         if (state.activeView === 'new') {
             state.data[state.activeSection] = config.encounters;
             state.data.minimum_steps_before_encounter = config.minimum_steps_before_encounter;
             state.data.encounter_chance_per_step = config.encounter_chance_per_step;
         }
-        const minSteps = Number(state.data.minimum_steps_before_encounter);
-        const chance = Number(state.data.encounter_chance_per_step);
-        if (!Number.isInteger(minSteps) || minSteps < 0) throw new Error('Minimum steps must be a whole number greater than or equal to 0.');
-        if (!Number.isFinite(chance) || chance < 0 || chance > 1) throw new Error('Encounter chance must be between 0 and 1.');
-
-        const names = new Set();
-        SECTION_KEYS.forEach(section => {
-            const entries = state.data[section] || [];
-            entries.forEach((entry, index) => {
-                if (!entry || typeof entry !== 'object' || Array.isArray(entry)) throw new Error(SECTION_LABELS[section] + ' entry ' + (index + 1) + ' is invalid.');
-                if (!entry.name || typeof entry.name !== 'string') throw new Error(SECTION_LABELS[section] + ' entry ' + (index + 1) + ' needs a name.');
-                // Scope every encounter to the current mission; never retain
-                // an imported global or another mission's package path.
-                entry.path = identity.clientPath;
-                if (names.has(entry.name)) throw new Error('Duplicate encounter name "' + entry.name + '". Names must be unique across all three categories.');
-                names.add(entry.name);
-                if (entry.weight !== undefined && !Number.isFinite(Number(entry.weight))) throw new Error('Invalid weight on ' + entry.name + '.');
-                compactEnemyReferences(entry);
-                if (!Array.isArray(entry.player_positions)) {
-                    entry.player_positions = [[0,0,0,0,0,0],[0,1,0,0,0,0],[0,0,0,0,0,0]];
-                }
-                validateEnemyRecords(entry);
-            });
-        });
-        const allowedKeys = [
-            'name', 'path', 'weight', 'enemies', 'obstacles',
-            'positions', 'obstacle_positions', 'player_positions', 'tiles', 'teams',
-            'freedom_mission', 'no_battle_rewards'
-        ];
-        const cleanEntries = section => (state.data[section] || []).map(entry => {
-            const clean = {};
-            allowedKeys.forEach(key => {
-                if (entry[key] !== undefined && (key === 'positions' || key === 'player_positions' || !MATRIX_KEYS.includes(key) || manualEnabledForSection(entry, section))) {
-                    clean[key] = entry[key];
-                }
-            });
-            if (clean.freedom_mission && clean.freedom_mission.enabled === false) {
-                // Explicit non-Freedom encounters are supported, but all new
-                // V2.1 entries default to three-turn Freedom Missions.
-                delete clean.freedom_mission;
-            } else {
-                clean.freedom_mission = {
-                    enabled: true,
-                    turn_count: validFreedomTurns(clean.freedom_mission && (clean.freedom_mission.turn_count ?? clean.freedom_mission.turns)),
-                    player_can_flip: false // server enables only for terrain == surrounded
-                };
+        // Normalize a COPY; never silently wipe imported rewards or persistent
+        // fields when producing a Liberation-only export.
+        const candidate = JSON.parse(JSON.stringify(state.data));
+        SECTION_KEYS.forEach(section => (candidate[section] || []).forEach(entry => {
+            compactEnemyReferences(entry);
+            if (!Array.isArray(entry.player_positions)) {
+                entry.player_positions = [[0,0,0,0,0,0],[0,1,0,0,0,0],[0,0,0,0,0,0]];
             }
-            // Liberation rewards come from mission loot/panels, never battles.
-            clean.path = identity.clientPath;
-            clean.no_battle_rewards = true;
-            return clean;
+            validateEnemyRecords(entry);
+        }));
+        const output = api.prepareTable(candidate, {
+            target: state.exportTarget,
+            manualDefaults: state.categoryBattlefieldDefaults,
+            identity
         });
-        const output = {
-            minimum_steps_before_encounter: minSteps,
-            encounter_chance_per_step: chance,
-            encounters: cleanEntries('encounters'),
-            special_encounters: cleanEntries('special_encounters'),
-            bosses: cleanEntries('bosses')
-        };
-        return '-- Nebulous Liberations V2.1 encounter table for ' + identity.name + '\n'
-            + '-- Generated by VisualEncounters · battle rewards disabled · default Freedom Mission: 3 turns\n'
-            + '-- Encounter package: ' + identity.clientPath + '\n\n'
+        return '-- VisualEncounters V2.1: ' + api.TARGET_LABELS[state.exportTarget] + '\n'
+            + '-- Base area: ' + identity.name + '\n'
+            + '-- Generated encounter table; review any optional HP variants in the deployed character mods.\n\n'
             + 'return ' + serializeLua(output, 0) + '\n';
     }
 
@@ -1332,64 +1297,51 @@ function validateEnemyRecords(entry) {
         const lua = buildLua();
         const aliases = api.aliasesForMission(state.data);
         const JSZip = await window.loadJSZip();
-        const baseResponse = await fetch(api.TEMPLATE_SOURCE);
-        if (!baseResponse.ok) throw new Error('Cannot load repaired base ZIP (' + baseResponse.status + '). Host the complete mods/ directory.');
-        const base = await JSZip.loadAsync(await baseResponse.arrayBuffer());
-        const entry = base.file('entry.lua');
-        if (!entry) throw new Error('V2.1 template ZIP is missing root entry.lua.');
-        const patched = api.patchBattleEntry(await entry.async('string'), identity, aliases);
-        base.file('entry.lua', patched);
-        const scoped = await base.generateAsync({ type: 'blob' });
         const bundle = new JSZip();
         bundle.file(identity.encounterFile, lua);
-        bundle.file(identity.assetFile, scoped);
-
-        // OW templates are separate Lua modules, not encounter enemies. The
-        // existing server registry must be edited manually to require them.
-        const templates = Object.keys(state.templates).sort();
-        const registrations = [];
-        for (const name of templates) {
-            const filename = 'template_' + name.toLowerCase() + '.lua';
-            bundle.file(api.TEMPLATE_DIRECTORY + filename, templateModule(name, state.templates[name]));
-            registrations.push('require("scripts/ezlibs-custom/nebulous-liberations/liberations/enemies/'
-                + 'template_' + name.toLowerCase() + '")(EnemyTemplates)');
+        const scoped = state.exportTarget === 'liberations';
+        const baseFile = scoped ? api.TEMPLATE_SOURCE : 'mods/ezencounters.zip';
+        const response = await fetch(baseFile);
+        if (!response.ok) throw new Error('Missing current battle package: ' + baseFile + ' (HTTP ' + response.status + ')');
+        const base = await JSZip.loadAsync(await response.arrayBuffer());
+        const entry = base.file('entry.lua');
+        if (!entry) throw new Error(baseFile + ' lacks root entry.lua.');
+        const entryLua = await entry.async('string');
+        const configuredAliases = api.packageAliases(entryLua);
+        const unknown = aliases.filter(alias => !configuredAliases.has(alias));
+        if (unknown.length) throw new Error('Unknown battle package alias(es): ' + unknown.join(', '));
+        let battleAssetName;
+        if (scoped) {
+            base.file('entry.lua', api.patchBattleEntry(entryLua, identity, aliases));
+            battleAssetName = identity.assetFile;
+        } else {
+            battleAssetName = api.PACKAGE_DIRECTORY + 'ezencounters.zip';
         }
-        bundle.file('ENEMY_TEMPLATE_REGISTRATION.md', [
-            '# Register exported overworld templates', '',
-            'These files are overworld bots, not battle character mods.',
-            'After copying the exported template Lua modules, insert these require lines',
-            'in your existing `scripts/ezlibs-custom/nebulous-liberations/liberations/enemy_templates.lua`',
-            'after the shared AI helpers are defined. Do not replace that module.', '',
-            '```lua', ...registrations, '```', ''
-        ].join('\n'));
-
-        // The catalog is the editor's actual bundled enemyDictionary. Keep
-        // unresolved aliases visible rather than guessing client package IDs.
+        bundle.file(battleAssetName, await base.generateAsync({ type: 'blob' }));
         const modPlan = api.collectModDownloads(aliases, enemyDictionary);
         const mods = { included: [], missing: [], unresolved: modPlan.unresolved };
         const includeMods = document.getElementById('ve-bundle-mods');
         if (includeMods && includeMods.checked) {
             for (const filename of modPlan.files) {
                 try {
-                    const response = await fetch('mods/' + encodeURIComponent(filename));
-                    if (!response.ok) throw new Error('HTTP ' + response.status);
-                    const bytes = await response.arrayBuffer();
+                    const modResponse = await fetch('mods/' + encodeURIComponent(filename));
+                    if (!modResponse.ok) throw new Error('HTTP ' + modResponse.status);
+                    const bytes = await modResponse.arrayBuffer();
                     if (!bytes.byteLength) throw new Error('empty file');
                     bundle.file(api.PACKAGE_DIRECTORY + filename, bytes);
                     mods.included.push(filename);
                 } catch (error) {
-                    console.warn('[V2.1 Export] Missing mod:', filename, error);
+                    console.warn('[V2.1 Export] Missing character ZIP', filename, error);
                     mods.missing.push(filename);
                 }
             }
         }
-        bundle.file('INSTALL_V21_MISSION.md', api.installationNotes(identity, aliases, templates, mods));
+        bundle.file('INSTALL_V21_MISSION.md', api.installationNotes(identity, aliases, [], mods, state.exportTarget));
         const blob = await bundle.generateAsync({ type: 'blob' });
-        downloadBlob(identity.slug + '-v21-liberation-dropin.zip', blob);
+        downloadBlob(identity.slug + '-v21-' + state.exportTarget + '-dropin.zip', blob);
         const warning = mods.missing.length || mods.unresolved.length;
-        status('Exported ' + identity.encounterFile + ', ' + identity.assetFile
-            + ' and ' + templates.length + ' OW templates.'
-            + (warning ? ' Check INSTALL_V21_MISSION.md for missing/unmapped character mods.' : ''), !warning);
+        status('Exported ' + identity.encounterFile + ' + ' + battleAssetName + '.'
+            + (warning ? ' Review INSTALL_V21_MISSION.md for unresolved mods.' : ''), !warning);
     }
 
     function downloadText(filename, content) {
@@ -1468,14 +1420,14 @@ function validateEnemyRecords(entry) {
         };
         const value = Object.assign({
             name: 'NewEncounter', path: DEFAULT_PATH, weight: 10,
-            enemies: [], obstacles: [],
-            freedom_mission: { enabled: false, turn_count: 3, player_can_flip: false }
+            enemies: [], obstacles: []
         }, entry || {});
         value.enemies = Array.isArray(value.enemies) ? value.enemies : [];
         value.obstacles = Array.isArray(value.obstacles) ? value.obstacles : [];
         if (Array.isArray(value.rewards) && value.rewards.length === 0) value.rewards = {};
         delete value.terrain;
-        delete value.music;
+        // Keep authored music and reward metadata for EZEncounters/Runner.
+        // Lua function callbacks cannot be round-tripped by the data-only editor.
         delete value.results_callback;
         // Preserve explicit true/false; imported Lua has no editor metadata,
         // so authored teams indicate a manual encounter on import.
@@ -1512,7 +1464,10 @@ function validateEnemyRecords(entry) {
             }
         }
         if (!value.freedom_mission || typeof value.freedom_mission !== 'object') {
-            value.freedom_mission = { enabled: true, turn_count: 3, player_can_flip: false };
+            // Missing Freedom Mission must remain absent in ordinary
+            // EZEncounters/Runner imports. Liberation export itself supplies
+            // a three-turn default when no authoring config was provided.
+            delete value.freedom_mission;
         } else {
             value.freedom_mission = {
                 enabled: !!value.freedom_mission.enabled,
@@ -1567,6 +1522,12 @@ function validateEnemyRecords(entry) {
         ['texture_path','OW texture path','text','/server/assets/.../enemy.png'],
         ['animation_path','OW animation path','text','/server/assets/.../enemy.animation'],
         ['attack_damage','Overworld base attack damage','number','20'],
+        ['attack_animation_seconds','Attack animation duration (optional)','number',''],
+        ['attack_effect_animation','Attack effect state (optional)','text','IMPACT'],
+        ['has_attack_animation','OW has attack animation','checkbox',''],
+        ['has_attack_hold','OW has attack hold','checkbox',''],
+        ['default_ow_bot_encounter_name','Default OW encounter name (optional)','text',''],
+        ['battle_scale_scope','Battle scale scope','select','Matching'],
         ['ai_type','Registered AI type','select','simple_charge'],
         ['attack_texture','Attack texture path (optional)','text','/server/assets/.../attack.png'],
         ['attack_animation_path','Attack animation path (optional)','text','/server/assets/.../attack.animation'],
@@ -1577,11 +1538,11 @@ function validateEnemyRecords(entry) {
         ['mug_texture','Boss mug texture (optional)','text','/server/assets/.../mug.png'],
         ['mug_animation','Boss mug animation (optional)','text','/server/assets/.../mug.animation']
     ];
-    const TEMPLATE_AI = ['simple_charge','ranged','shockwave_line'];
+    const TEMPLATE_AI = ['simple_charge','ranged','shockwave_line','shademan_ambush','bladia_strike','roll_heart_whip','patterned_attack'];
     function templateModule(name, info) {
         if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(name)) throw new Error('Template name must be a Lua-safe identifier (letters, digits, underscore).');
         const def = { ...info };
-        for (const key of ['health','max_health','scale','battle_scale','attack_damage','shape_offset_x','shape_offset_y']) {
+        for (const key of ['health','max_health','scale','battle_scale','attack_damage','attack_animation_seconds','shape_offset_x','shape_offset_y']) {
             if (def[key] === undefined || def[key] === '') { delete def[key]; continue; }
             def[key] = Number(def[key]);
             if (!Number.isFinite(def[key]) || (key !== 'attack_damage' && !key.startsWith('shape_offset') && def[key] <= 0) || (key === 'attack_damage' && def[key] < 0)) throw new Error(key + ' must be valid and positive (damage may be zero).');
@@ -1591,6 +1552,7 @@ function validateEnemyRecords(entry) {
         }
         if (def.max_health && def.health && def.health > def.max_health) throw new Error('Starting HP must not exceed maximum HP.');
         if (def.ai_type && !TEMPLATE_AI.includes(def.ai_type)) throw new Error('Choose a registered AI type.');
+        if (def.battle_scale_scope && !['Matching','All'].includes(def.battle_scale_scope)) throw new Error('Unsupported battle scale scope.');
         if (!def.texture_path || !def.animation_path) throw new Error('Overworld texture and animation paths are required.');
         const config = {
             battle_name: def.battle_name || name,
@@ -1601,7 +1563,7 @@ function validateEnemyRecords(entry) {
             attack_damage: def.attack_damage ?? 20,
             ai_type: def.ai_type || 'simple_charge',
             scale: def.scale || 1,
-            battle_scale: def.battle_scale || def.scale || 1,
+            battle_scale_scope: def.battle_scale_scope || 'Matching',
             is_boss: !!def.is_boss,
             is_special_encounter: !!def.is_special_encounter,
             shape_offset_x: def.shape_offset_x ?? 0,
@@ -1616,7 +1578,14 @@ function validateEnemyRecords(entry) {
             if (!rows.some(row => row.some(Boolean))) throw new Error('Selection shape must select at least one tile.');
             config.shape = rows;
         }
+        // Blank battle_scale must inherit the runtime OW scale, including Tiled overrides.
+        if (def.battle_scale !== undefined) config.battle_scale = def.battle_scale;
         if (def.death_message) config.death_message = def.death_message;
+        if (def.default_ow_bot_encounter_name) config.default_ow_bot_encounter_name = def.default_ow_bot_encounter_name;
+        if (def.attack_animation_seconds !== undefined) config.attack_animation_seconds = def.attack_animation_seconds;
+        if (def.attack_effect_animation) config.attack_effect_animation = def.attack_effect_animation;
+        if (def.has_attack_animation) config.has_attack_animation = true;
+        if (def.has_attack_hold) config.has_attack_hold = true;
         if (def.mug_texture || def.mug_animation) {
             if (!def.mug_texture || !def.mug_animation) throw new Error('Both mug texture and animation paths are required.');
             config.mug = { texture_path: def.mug_texture, animation_path: def.mug_animation };
@@ -1985,7 +1954,7 @@ function validateEnemyRecords(entry) {
         const name = el('input', { id: 've-template-name', type: 'text', placeholder: 'e.g. MyMettaur' });
         const fields = {}, wrappers = {};
         TEMPLATE_FIELDS.forEach(([key,label,type,placeholder]) => {
-            const input = type === 'select' ? el('select', { 'data-template-field': key }, TEMPLATE_AI.map(ai => el('option', { value: ai, text: ai })))
+            const input = type === 'select' ? el('select', { 'data-template-field': key }, (key === 'ai_type' ? TEMPLATE_AI : ['Matching','All']).map(value => el('option', { value, text: value })))
                 : el('input', { type, placeholder, 'data-template-field': key, ...(type === 'number' ? { step: key.includes('scale') ? '0.05' : '1' } : {}) });
             fields[key] = input;
             wrappers[key] = el('label', {}, [label, input]);
@@ -1998,14 +1967,14 @@ function validateEnemyRecords(entry) {
         const shape = createTemplateShapePainter(fields);
         const preview = createTemplateSpritePreview(fields);
         const primary = el('div', { class: 've-template-primary' }, [
-            section('1 · Identity & behavior', 'Start with the battle alias, class and registered AI. Different overworld behaviors still need a Lua AI implementation.', ['battle_name','is_boss','is_special_encounter','ai_type','death_message']),
-            section('2 · Health, scale & combat', 'OW scale is used in the live preview. Battle scale is independent and defaults to OW scale when left empty.', ['health','max_health','scale','battle_scale','attack_damage']),
+            section('1 · Identity & behavior', 'Start with the battle alias, class and registered AI. Different overworld behaviors still need a Lua AI implementation.', ['battle_name','is_boss','is_special_encounter','ai_type','death_message','default_ow_bot_encounter_name']),
+            section('2 · Health, scale & combat', 'OW scale is used in the live preview. Battle scale is independent and defaults to OW scale when left empty.', ['health','max_health','scale','battle_scale','battle_scale_scope','attack_damage','attack_animation_seconds','has_attack_animation','has_attack_hold']),
             shape.panel,
             section('3 · Overworld asset paths', 'These are server asset paths, not the local files used for preview. Upload files on the right to inspect them; optionally copy the filenames into these fields.', ['texture_path','animation_path']),
             el('details', { class: 've-template-card ve-template-advanced' }, [
                 el('summary', { text: 'Advanced · Attack effects and boss mug' }),
                 el('p', { class: 've-small-help', text: 'Optional attack and mug assets can also be previewed using the selector in the preview panel.' }),
-                el('div', { class: 've-template-fields' }, ['attack_texture','attack_animation_path','mug_texture','mug_animation'].map(key => wrappers[key]))
+                el('div', { class: 've-template-fields' }, ['attack_texture','attack_animation_path','attack_effect_animation','mug_texture','mug_animation'].map(key => wrappers[key]))
             ])
         ]);
         const workspace = el('div', { class: 've-template-workspace' }, [primary, el('aside', { class: 've-template-preview-column' }, [preview.panel])]);
@@ -2041,7 +2010,10 @@ function validateEnemyRecords(entry) {
             return [key, def];
         };
         const action = (label, fn, cls = '') => el('button', { type: 'button', class: cls, onClick: () => {
-            try { fn(); } catch (err) { status('Template editor: ' + err.message, false); }
+            try {
+                const result = fn();
+                if (result && typeof result.then === 'function') result.catch(err => status('Template editor: ' + err.message, false));
+            } catch (err) { status('Template editor: ' + err.message, false); }
         } }, [label]);
         const toolbar = el('div', { class: 've-template-toolbar' }, [
             el('label', {}, ['Saved templates', chooser]),
@@ -2053,16 +2025,53 @@ function validateEnemyRecords(entry) {
                 downloadText('template_' + key.toLowerCase() + '.lua', templateModule(key, def));
                 status('Exported template_' + key.toLowerCase() + '.lua. Register it via require in enemy_templates.lua.', true);
             }),
+            action('Export all templates ZIP', async () => {
+                const JSZip = await window.loadJSZip();
+                const zip = new JSZip();
+                const names = Object.keys(state.templates).sort();
+                if (!names.length) throw new Error('Save at least one template first.');
+                const registrations = [];
+                for (const key of names) {
+                    const filename = 'template_' + key.toLowerCase() + '.lua';
+                    zip.file('scripts/ezlibs-custom/nebulous-liberations/liberations/enemies/' + filename, templateModule(key, state.templates[key]));
+                    registrations.push('require("scripts/ezlibs-custom/nebulous-liberations/liberations/enemies/' + filename.slice(0,-4) + '")(EnemyTemplates)');
+                }
+                zip.file('ENEMY_TEMPLATE_REGISTRATION.md', '# Register these OW templates in your existing enemy_templates.lua, after shared AI initialization.\n\n```lua\n' + registrations.join('\n') + '\n```\n');
+                downloadBlob('enemy-template-workshop.zip', await zip.generateAsync({ type: 'blob' }));
+                status('Exported ' + names.length + ' complete OW modules and registration guide.', true);
+            }),
+            action('Export project JSON', () => {
+                downloadText('enemy-template-workshop.json', JSON.stringify({ version: 1, templates: state.templates }, null, 2));
+            }),
+            action('Import project JSON', () => document.getElementById('ve-template-project-import').click()),
             action('Delete', () => {
                 const key = chooser.value;
                 if (!key || !window.confirm('Delete template ' + key + ' from this editor?')) return;
                 delete state.templates[key]; refresh(); load(''); saveToLocalStorage();
             })
         ]);
+        const projectImport = el('input', { id: 've-template-project-import', type: 'file', accept: '.json,application/json', style: 'display:none' });
+        projectImport.addEventListener('change', async () => {
+            try {
+                const file = projectImport.files && projectImport.files[0];
+                if (!file) return;
+                const data = JSON.parse(await file.text());
+                if (!data || data.version !== 1 || !data.templates || typeof data.templates !== 'object' || Array.isArray(data.templates)) throw new Error('Invalid workshop JSON project.');
+                const imported = {};
+                for (const [key, def] of Object.entries(data.templates)) {
+                    templateModule(key, def);
+                    imported[key] = def;
+                }
+                state.templates = { ...state.templates, ...imported };
+                refresh(); load(''); persistNebulousWorkspace();
+                status('Imported ' + Object.keys(imported).length + ' templates.', true);
+            } catch (error) { status('Import failed: ' + error.message, false); }
+            projectImport.value = '';
+        });
         panel.appendChild(toolbar);
+        panel.appendChild(projectImport);
         panel.appendChild(workspace);
         panel.appendChild(el('p', { class: 've-small-help', text: 'Exported modules retain the same runtime format: EnemyTemplates.register(name, config). Place the Lua file under liberations/enemies/ and add a matching require in enemy_templates.lua. Use the template key in Tiled Boss / Spawns properties.' }));
-        panel.hidden = true;
         refresh(); load('');
         return panel;
     }
@@ -2073,18 +2082,6 @@ function validateEnemyRecords(entry) {
                 SECTION_LABELS[section], ' ', el('span', { class: 've-count', text: '(' + state.data[section].length + ')' })
             ])
         ));
-        tabs.appendChild(el('button', { id: 've-template-tab', type: 'button', onClick: () => {
-            const editor = document.getElementById('ve-template-editor');
-            const controls = document.getElementById('ve-nebulous-controls');
-            const container = document.querySelector('#ve-nebulous-view > .container');
-            const tools = document.querySelector('#ve-nebulous-view > .toolbar');
-            const showing = editor.hidden;
-            editor.hidden = !showing;
-            if (container) container.hidden = showing;
-            if (tools) tools.hidden = showing;
-            document.getElementById('ve-template-tab').classList.toggle('active', showing);
-            document.querySelectorAll('#ve-nebulous-controls .ve-section-tabs button:not(#ve-template-tab)').forEach(b => b.classList.toggle('active', !showing && b.id === 've-section-' + state.activeSection));
-        } }, ['Enemy Templates']));
         const importInput = el('input', { id: 've-nebulous-import', type: 'file', accept: '.lua,.txt', style: 'display:none' });
         importInput.addEventListener('change', async event => {
             const file = event.target.files && event.target.files[0];
@@ -2108,11 +2105,29 @@ function validateEnemyRecords(entry) {
                     value: state.data.area_id || '', onInput: undefined }),
                 el('span', { class: 've-small-help', text: 'Must exactly match areas/<MapName>.tmx. Sets encounters/<MapName>.lua and unique scoped battle ZIP names.' })
             ]),
+            el('label', { class: 've-target-selector' }, [
+                'Export target',
+                el('select', { id: 've-export-target', onChange: event => {
+                    state.exportTarget = event.target.value;
+                    const targetView = document.getElementById('ve-nebulous-view');
+                    if (targetView) targetView.classList.toggle('ve-rewards-enabled', state.exportTarget !== 'liberations');
+                    setLegacyControlsForMode(true);
+                    updateRewardEditors();
+                    const note = document.getElementById('ve-target-note');
+                    if (note) note.textContent = window.VisualEncountersV21.TARGET_DESCRIPTIONS[state.exportTarget];
+                    persistNebulousWorkspace();
+                } }, [
+                    el('option', { value: 'liberations', text: 'Nebulous Liberations' }),
+                    el('option', { value: 'ezencounters', text: 'EZEncounters (regular area)' }),
+                    el('option', { value: 'endless_runner', text: 'Endless Runner (base area)' })
+                ]),
+                el('p', { id: 've-target-note', class: 've-small-help' })
+            ]),
             el('label', { class: 've-manual-toggle' }, [
                 el('input', { id: 've-bundle-mods', type: 'checkbox', checked: 'checked' }),
                 ' Include hosted character mod ZIPs with deployment'
             ]),
-            el('div', { class: 've-schema-note', text: 'V2.1 Liberation: all three categories, authored enemy positions, three-turn default Freedom Missions, unique mission-scoped battle ZIP, no battle rewards. Automatic terrain is calculated by the mission and flip is allowed only when surrounded. Encounter music is configured in Tiled Liberation Config.' }),
+            el('div', { class: 've-schema-note', text: 'V2.1: the same three encounter categories and always-authored enemy positions. Liberation disables battle rewards and uses scoped battle ZIPs; regular EZEncounters and Endless Runner preserve rewards and use the normal battle ZIP. Endless Runner reads the encounter file for its base area.' }),
             el('label', { class: 've-manual-toggle' }, [
                 el('input', { id: 've-category-manual-battlefield', type: 'checkbox', onChange: event => {
                     state.categoryBattlefieldDefaults[state.activeSection] = event.target.checked;
@@ -2146,7 +2161,7 @@ function validateEnemyRecords(entry) {
                 el('div', { id: 've-encounter-mode-note', class: 've-schema-note' })
             ]),
             el('div', { id: 've-manual-note', class: 've-schema-note' }),
-            el('p', { class: 've-schema-note', text: 'Download V2.1 drop-in ZIP creates encounters/<MapName>.lua, a mission-scoped EZEncounters ZIP from the repaired working base, and optional OW template/character mod files. It does not create maps or new character variants.' }),
+            el('p', { class: 've-schema-note', text: 'Download V2.1 produces encounters/<BaseArea>.lua and the appropriate battle package. Character mods are optional copies; overworld templates are downloaded separately from their own top-level workshop. Tiled maps and new HP variants are not generated.' }),
             el('div', { class: 've-actions' }, [
             el('button', { type: 'button', class: 've-action', onClick: () => {
                 const name = prompt('Enter a name for the new encounter (letters and numbers only):');
@@ -2437,7 +2452,9 @@ window.updateEnemyOnTile = function() {
                     [0, 1, 0, 0, 0, 0],
                     [0, 0, 0, 0, 0, 0]
                 ],
-                freedom_mission: { enabled: true, turn_count: 3, player_can_flip: false },
+                ...(state.exportTarget === 'liberations' ? {
+                    freedom_mission: { enabled: true, turn_count: 3, player_can_flip: false }
+                } : {}),
                 manual_battlefield_override: false
             };
             if (manualEnabled(entry)) initializeManualMatrices(entry);
@@ -2516,14 +2533,28 @@ window.updateEnemyOnTile = function() {
         });
 
         window.saveToLocalStorage = function() {
-            if (!window.__veNebulousMode) return originalSaveToLocalStorage();
+            if (state.activeView === 'legacy') return originalSaveToLocalStorage();
+            persistNebulousWorkspace();
+        };
+    }
+
+    function persistNebulousWorkspace() {
+        if (state.activeView === 'new' && typeof config !== 'undefined') {
             state.data[state.activeSection] = config.encounters;
             state.data.minimum_steps_before_encounter = config.minimum_steps_before_encounter;
             state.data.encounter_chance_per_step = config.encounter_chance_per_step;
+        }
+        try {
             localStorage.setItem('nebulousEncounterConfig', JSON.stringify({
-                ...state.data, categoryBattlefieldDefaults: state.categoryBattlefieldDefaults, templates: state.templates
+                ...state.data, exportTarget: state.exportTarget,
+                categoryBattlefieldDefaults: state.categoryBattlefieldDefaults,
+                templates: state.templates
             }));
-        };
+        } catch (error) {
+            // Offline/embedded previews may deny localStorage. Do not prevent
+            // switching views or editing encounters when persistence is unavailable.
+            console.warn('[VisualEncounters] Workspace storage is unavailable:', error.message);
+        }
     }
 
     function install() {
@@ -2554,6 +2585,7 @@ window.updateEnemyOnTile = function() {
                 const data = JSON.parse(saved);
                 if (Array.isArray(data.enemy_rewards) && data.enemy_rewards.length === 0) data.enemy_rewards = {};
                 state.templates = data.templates && typeof data.templates === 'object' && !Array.isArray(data.templates) ? data.templates : {};
+                state.exportTarget = ['liberations','ezencounters','endless_runner'].includes(data.exportTarget) ? data.exportTarget : 'liberations';
                 state.categoryBattlefieldDefaults = Object.fromEntries(SECTION_KEYS.map(section => [
                     section, !!(data.categoryBattlefieldDefaults && data.categoryBattlefieldDefaults[section])
                 ]));
@@ -2573,25 +2605,37 @@ window.updateEnemyOnTile = function() {
 
         const tabs = el('nav', { id: 've-main-tabs', 'aria-label': 'Encounter editor modes' }, [
             el('button', { type: 'button', class: 'active', 'data-view': 'legacy', onClick: () => activateView('legacy') }, ['Legacy Format']),
-            el('button', { type: 'button', 'data-view': 'new', onClick: () => activateView('new') }, ['V2.1 format'])
+            el('button', { type: 'button', 'data-view': 'new', onClick: () => activateView('new') }, ['V2.1 format']),
+            el('button', { type: 'button', 'data-view': 'templates', onClick: () => activateView('templates') }, ['Enemy Template Workshop'])
         ]);
         tabs.prepend(el('div', { class: 've-brand' }, [el('strong', { text: 'VisualEncounters' }), el('span', { text: 'Battle builder · Grid + Inspector' })]));
         const legacy = el('section', { id: 've-legacy-view' });
         const nebulous = el('section', { id: 've-nebulous-view', hidden: true });
+        const workshop = el('section', { id: 've-template-view', hidden: true });
         const controls = buildNebulousControls();
         controls.querySelector('#ve-area-id').addEventListener('input', event => {
             state.data.area_id = event.target.value;
             if (window.__veNebulousMode) saveToLocalStorage();
         });
+        const targetSelect = controls.querySelector('#ve-export-target');
+        if (targetSelect) targetSelect.value = state.exportTarget;
+        nebulous.classList.toggle('ve-rewards-enabled', state.exportTarget !== 'liberations');
+        const targetNote = controls.querySelector('#ve-target-note');
+        if (targetNote) targetNote.textContent = window.VisualEncountersV21.TARGET_DESCRIPTIONS[state.exportTarget];
         const statusNode = el('div', { id: 've-nebulous-status' });
 
         document.body.insertBefore(tabs, toolbar);
         document.body.insertBefore(legacy, toolbar);
         document.body.insertBefore(nebulous, container.nextSibling);
+        nebulous.after(workshop);
         legacy.appendChild(toolbar);
         legacy.appendChild(container);
         nebulous.appendChild(controls);
-        nebulous.appendChild(buildTemplateEditor());
+        workshop.appendChild(el('div', { id: 've-template-status' }));
+        workshop.appendChild(el('h2', { text: 'Enemy Template Workshop' }));
+        workshop.appendChild(el('p', { class: 've-small-help', text: 'Standalone overworld enemy template authoring. These Lua modules register with Nebulous Liberations; EZEncounters and Endless Runner use battle-character mods instead.' }));
+        workshop.appendChild(buildTemplateEditor());
+        document.getElementById('ve-template-editor').hidden = false;
         const globalPanel = el('details', { id: 've-global-controls', class: 've-global-controls' }, [
             el('summary', { text: 'Global & category overrides · Encounter frequency and battlefield mode' }),
             el('p', { class: 've-small-help', text: 'Global values apply across encounter categories. Category battlefield overrides apply only to the currently selected category and take precedence over encounter-level battlefield mode.' })
@@ -2618,6 +2662,7 @@ window.updateEnemyOnTile = function() {
         createWorkspace(false);
     }
 
+    window.VisualEncountersEditorDiagnostics = { templateModule, serializeLua, normalizeEncounter, validFreedomTurns };
     if (window.jQuery) window.jQuery(install);
     else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install, { once: true });
     else install();

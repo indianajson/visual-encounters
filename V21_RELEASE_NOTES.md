@@ -1,3 +1,16 @@
+# 2026-11-19 V2.1 editor update
+
+- Standalone top-level Enemy Template Workshop with independent JSON project and Lua module ZIP exports.
+- V2.1 export target selection: Nebulous Liberations / EZEncounters / Endless Runner.
+- Liberation: default three-turn Freedom, no battle rewards, mission-scoped ZIP based on current uploaded DEBUGLIB package.
+- General/Runner: standard battle ZIP, area/encounter/enemy rewards retained, base-area naming.
+- Exact 3×6 battlefield and 1-based client rank index validation; optional server validator compatibility correction for rank 8.
+- 94 hosted character mod ZIPs updated, 19 added against supplied server archive; see MOD_SYNC_REPORT.md.
+- Battle Scale blank in OW template no longer forces a template battle-scale override.
+- Node regressions added; live client testing remains.
+
+---
+
 # VisualEncounters V2.1 — Files Changed and Installation
 
 ## Install the **website/editor** update
