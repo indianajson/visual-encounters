@@ -1,6 +1,6 @@
 > **Automatic update handling:** The editor now uses `site-version.json` and versioned asset URLs to prevent stale HTML/JavaScript and mod ZIP downloads in Brave and other browsers. Every publish must run `python tools/update_site_version.py`, or use the optional GitHub Actions Pages workflow; see [CACHE_UPDATE_README.md](CACHE_UPDATE_README.md).
 
-> **2026-11-19 V2.1 update:** Three top-level tabs: Legacy Format, V2.1 format, and Enemy Template Workshop. V2.1 now has dedicated EZEncounters, Endless Runner, and Nebulous Liberations export policies. See [V21_EXPORT_GUIDE.md](V21_EXPORT_GUIDE.md), [ENEMY_TEMPLATE_WORKSHOP.md](ENEMY_TEMPLATE_WORKSHOP.md), and [MOD_SYNC_REPORT.md](MOD_SYNC_REPORT.md). The mod sync uses the uploaded server snapshot, not an unprovided newer live server.
+> **2026-11-19 V2.1 update:** Three top-level tabs: Legacy Format, V2.1 format, and Enemy Template Workshop. V2.1 now has dedicated EZEncounters, Endless Runner, and Nebulous Liberations export policies. See [V21_EXPORT_AUDIT.md](V21_EXPORT_AUDIT.md), [ENEMY_TEMPLATE_WORKSHOP.md](ENEMY_TEMPLATE_WORKSHOP.md), and [MOD_SYNC_REPORT.md](MOD_SYNC_REPORT.md). The mod sync uses the uploaded server snapshot, not an unprovided newer live server.
 
 
 <p align="center">
@@ -12,11 +12,11 @@
 
 ## ⚔️ Nebulous Liberations V2.1 Export
 
-Choose **V2.1 format** and enter the **exact Tiled area name** (for example `DEBUGLIB` or `LiberationEasyMode`). The editor exports a complete mission drop-in ZIP containing `encounters/<MapName>.lua`, a unique mission-scoped EZEncounters battle ZIP, and optional overworld templates and hosted character mods. New Freedom Missions default to 3 turns, enemy positions always export, and battle-result rewards are disabled.
+Choose **V2.1 format** and enter the **exact Tiled area name** (for example `DEBUGLIB` or `LiberationEasyMode`). The editor exports a complete mission drop-in ZIP containing `encounters/<MapName>.lua`, a unique mission-scoped EZEncounters battle ZIP, and validated hosted character mod ZIPs when selected. Custom mod ZIPs may also be attached; Enemy Template Workshop Lua modules are exported separately. New Freedom Missions default to 3 turns, enemy positions always export, and battle-result rewards are disabled.
 
 **Important:** Keep `mods/ezencounters-v21-base.zip` with the site; it is the repaired working battle package with `get_package_id(alias)` restored. A generic `ezencounters.zip` is **not** an interchangeable scoped mission package. The V2.1 tab does **not** generate Tiled maps or new character mods.
 
-Read **[V2.1 mission export guide](V21_EXPORT_GUIDE.md)** and **[V2.1 update notes](NEBULOUS_EDITOR_UPDATE.md)** for installation and troubleshooting. The **Legacy Format** tab retains its original workflow.
+Read **[V2.1 export and mod audit](V21_EXPORT_AUDIT.md)** for installation, Tiled mission requirements, dependency validation, and compatibility notes. The **Legacy Format** tab retains its original workflow.
 
 ## Getting Started
 

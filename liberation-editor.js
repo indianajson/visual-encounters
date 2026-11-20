@@ -1338,54 +1338,29 @@ function validateEnemyRecords(entry) {
         const api = window.VisualEncountersV21;
         const identity = missionIdentity();
         const lua = buildLua();
-        const aliases = api.aliasesForMission(state.data);
-        const JSZip = await window.loadJSZip();
-        const bundle = new JSZip();
-        bundle.file(identity.encounterFile, lua);
-        const scoped = state.exportTarget === 'liberations';
-        const baseFile = scoped ? api.TEMPLATE_SOURCE : 'mods/ezencounters.zip';
-        const response = await fetch(window.veVersionedUrl ? window.veVersionedUrl(baseFile) : baseFile);
-        if (!response.ok) throw new Error('Missing current battle package: ' + baseFile + ' (HTTP ' + response.status + ')');
-        const base = await JSZip.loadAsync(await response.arrayBuffer());
-        const entry = base.file('entry.lua');
-        if (!entry) throw new Error(baseFile + ' lacks root entry.lua.');
-        const entryLua = await entry.async('string');
-        const configuredAliases = api.packageAliases(entryLua);
-        const unknown = aliases.filter(alias => !configuredAliases.has(alias));
-        if (unknown.length) throw new Error('Unknown battle package alias(es): ' + unknown.join(', '));
-        let battleAssetName;
-        if (scoped) {
-            base.file('entry.lua', api.patchBattleEntry(entryLua, identity, aliases));
-            battleAssetName = identity.assetFile;
-        } else {
-            battleAssetName = api.PACKAGE_DIRECTORY + 'ezencounters.zip';
-        }
-        bundle.file(battleAssetName, await base.generateAsync({ type: 'blob' }));
-        const modPlan = api.collectModDownloads(aliases, enemyDictionary);
-        const mods = { included: [], missing: [], unresolved: modPlan.unresolved };
+        const ZIP = await window.loadJSZip();
         const includeMods = document.getElementById('ve-bundle-mods');
-        if (includeMods && includeMods.checked) {
-            for (const filename of modPlan.files) {
-                try {
-                    const modUrl = 'mods/' + encodeURIComponent(filename);
-                    const modResponse = await fetch(window.veVersionedUrl ? window.veVersionedUrl(modUrl) : modUrl);
-                    if (!modResponse.ok) throw new Error('HTTP ' + modResponse.status);
-                    const bytes = await modResponse.arrayBuffer();
-                    if (!bytes.byteLength) throw new Error('empty file');
-                    bundle.file(api.PACKAGE_DIRECTORY + filename, bytes);
-                    mods.included.push(filename);
-                } catch (error) {
-                    console.warn('[V2.1 Export] Missing character ZIP', filename, error);
-                    mods.missing.push(filename);
-                }
-            }
-        }
-        bundle.file('INSTALL_V21_MISSION.md', api.installationNotes(identity, aliases, [], mods, state.exportTarget));
-        const blob = await bundle.generateAsync({ type: 'blob' });
+        const extraInput = document.getElementById('ve-v21-extra-mods');
+        const readResource = async resource => {
+            const url = window.veVersionedUrl ? window.veVersionedUrl(resource) : resource;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(resource + ': HTTP ' + response.status);
+            return response.arrayBuffer();
+        };
+        const { archive, manifest, battleAssetName } = await api.buildDropinBundle({
+            JSZip: ZIP, identity, data: state.data, lua,
+            target: state.exportTarget, enemyDictionary,
+            includeMods: !includeMods || includeMods.checked,
+            extraModFiles: extraInput && extraInput.files ? Array.from(extraInput.files) : [],
+            readResource
+        });
+        const blob = await archive.generateAsync({ type: 'blob' });
         downloadBlob(identity.slug + '-v21-' + state.exportTarget + '-dropin.zip', blob);
-        const warning = mods.missing.length || mods.unresolved.length;
-        status('Exported ' + identity.encounterFile + ' + ' + battleAssetName + '.'
-            + (warning ? ' Review INSTALL_V21_MISSION.md for unresolved mods.' : ''), !warning);
+        const unresolved = manifest.characterMods.unresolved;
+        status('Exported ' + identity.encounterFile + ' + ' + battleAssetName
+            + ' with ' + manifest.characterMods.included.length + ' validated character ZIP(s).'
+            + (unresolved.length ? ' Review manifest for externally required mods: ' + unresolved.join(', ') : ''),
+            unresolved.length === 0);
     }
 
     function downloadText(filename, content) {
@@ -2172,6 +2147,11 @@ function validateEnemyRecords(entry) {
                 el('input', { id: 've-bundle-mods', type: 'checkbox', checked: 'checked' }),
                 ' Include hosted character mod ZIPs with deployment'
             ]),
+            el('label', { class: 've-template-preview-field' }, [
+                'Additional character mod ZIPs (optional)',
+                el('input', { id: 've-v21-extra-mods', type: 'file', accept: '.zip,application/zip', multiple: 'multiple' }),
+                el('small', { class: 've-small-help', text: 'Include mods that are not hosted, or override a hosted ZIP with your own. Every selected ZIP is validated and added as a separate archive under assets/ezlibs-assets/ezencounters/.' })
+            ]),
             el('div', { class: 've-schema-note', text: 'V2.1: the same three encounter categories and always-authored enemy positions. Liberation disables battle rewards and uses scoped battle ZIPs; regular EZEncounters and Endless Runner preserve rewards and use the normal battle ZIP. Endless Runner reads the encounter file for its base area.' }),
             el('label', { class: 've-manual-toggle' }, [
                 el('input', { id: 've-category-manual-battlefield', type: 'checkbox', onChange: event => {
@@ -2206,7 +2186,7 @@ function validateEnemyRecords(entry) {
                 el('div', { id: 've-encounter-mode-note', class: 've-schema-note' })
             ]),
             el('div', { id: 've-manual-note', class: 've-schema-note' }),
-            el('p', { class: 've-schema-note', text: 'Download V2.1 produces encounters/<BaseArea>.lua and the appropriate battle package. Character mods are optional copies; overworld templates are downloaded separately from their own top-level workshop. Tiled maps and new HP variants are not generated.' }),
+            el('p', { class: 've-schema-note', text: 'Download V2.1 produces encounters/<BaseArea>.lua and the appropriate battle package. Included character mod ZIPs are checked for integrity; overworld templates are downloaded separately from their own top-level workshop. Tiled maps and new HP variants are not generated.' }),
             el('div', { class: 've-actions' }, [
             el('button', { type: 'button', class: 've-action', onClick: () => {
                 const name = prompt('Enter a name for the new encounter (letters and numbers only):');

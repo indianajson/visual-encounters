@@ -18,8 +18,8 @@ for (const filename of ['v21-export.js', 'liberation-editor.js']) {
   assert.ok(html.includes(`src="${filename}?v=${fingerprint}"`), `${filename} has the latest hash`);
 }
 const lib = fs.readFileSync(path.join(root, 'liberation-editor.js'), 'utf8');
-assert.match(lib, /window\.veVersionedUrl\(baseFile\)/);
-assert.match(lib, /window\.veVersionedUrl\(modUrl\)/);
+assert.match(lib, /window\.veVersionedUrl\(resource\)/);
+assert.match(lib, /api\.buildDropinBundle/);
 assert.match(html, /window\.veVersionedUrl\(url\)/);
 const match = html.match(/<!-- VE_RELEASE_BOOTSTRAP_START[^>]*-->\s*<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'release bootstrap exists');

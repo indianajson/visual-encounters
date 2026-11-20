@@ -17,8 +17,8 @@ const v = globalThis.VisualEncountersV21;
     assert.equal(identity.encounterFile, 'encounters/LiberationEasyMode.lua');
     assert.equal(identity.assetFile, 'assets/ezlibs-assets/ezencounters/ezencounters-liberation-liberationeasymode.zip');
     assert.equal(identity.clientPath, '/server/assets/ezlibs-assets/ezencounters/ezencounters-liberation-liberationeasymode.zip');
-    assert.throws(() => v.mapIdentity('../bad'), /exact Tiled area name/);
-    assert.throws(() => v.mapIdentity(''), /exact Tiled area name/);
+    assert.throws(() => v.mapIdentity('../bad'), /exact base area name/);
+    assert.throws(() => v.mapIdentity(''), /exact base area name/);
     const sample = {
         encounters: [{ name: 'Encounter1', enemies: [{ name: 'Spikey' }, { name: 'Cannodumb' }, { name: 'Spikey' }] }],
         special_encounters: [{ name: 'Special1', enemies: [{ name: 'BigBrute' }] }],
@@ -26,7 +26,7 @@ const v = globalThis.VisualEncountersV21;
     };
     const aliases = v.aliasesForMission(sample);
     assert.deepEqual(aliases, ['BigBrute', 'Cannodumb', 'ShadeMan', 'Spikey']);
-    assert.throws(() => v.aliasesForMission({ encounters: [], special_encounters: [], bosses: [] }), /at least one/);
+    assert.throws(() => v.aliasesForMission({ encounters: [], special_encounters: [], bosses: [] }), /Place an enemy/);
     assert.throws(() => v.patchBattleEntry(base, identity, ['UnregisteredThing']), /Unknown EZEncounters/);
     const patched = v.patchBattleEntry(base, identity, aliases);
     assert.match(patched, /function get_package_id\(alias\)/);
@@ -36,7 +36,7 @@ const v = globalThis.VisualEncountersV21;
     const table = patched.match(/local liberation_aliases = \{([\s\S]*?)\n\}/)[1];
     assert.match(table, /Spikey = true/);
     assert.doesNotMatch(table, /Roll = true/);
-    assert.match(patched, /for alias, variants in pairs\(enemy_max_health_variants\)/);
+    assert.match(patched, /Engine\.define_character\("com\.keristero\.char\.AirMan\.DEBUGLIB_HP_V3"/);
     assert.match(patched, /if liberation_aliases\[alias\] then/);
     const zip = await JSZip.loadAsync(fs.readFileSync(path.join(__dirname, '../mods/ezencounters-v21-base.zip')));
     zip.file('entry.lua', patched);
@@ -59,7 +59,7 @@ const v = globalThis.VisualEncountersV21;
     assert.deepEqual(plan.unresolved, ['AliasWithoutMod']);
     assert.equal(plan.files.length, 2);
     const notes = v.installationNotes(identity, aliases, ['Mettaur'], { included: ['example.zip'], missing: [], unresolved: [] });
-    assert.ok(notes.includes('template_mettaur.lua'));
-    assert.ok(notes.includes('get_package_id(alias)'));
+    assert.ok(notes.includes('OW Encounter Config'));
+    assert.ok(notes.includes('Battle ZIP:'));
     console.log('PASS: V2.1 mission naming, aliases, no missing lookup, scoped requirements, preserved package members, template and mod manifests');
 })().catch(err => { console.error(err); process.exitCode = 1; });
