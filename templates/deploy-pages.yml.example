@@ -1,0 +1,33 @@
+# OPTIONAL: copy this to .github/workflows/deploy-pages.yml and change
+# GitHub Settings > Pages > Build and deployment > Source to GitHub Actions.
+# Do not install this if you already use a custom Pages deployment workflow
+# without first merging the version step into it.
+name: Deploy Visual Encounters
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate site version and asset cache keys
+        run: python3 tools/update_site_version.py
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - name: Publish site
+        id: deploy
+        uses: actions/deploy-pages@v4

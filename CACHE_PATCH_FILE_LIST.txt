@@ -1,0 +1,12 @@
+Modified files:
+index.html
+liberation-editor.js
+README.md
+INSTALL_README.md
+
+New files:
+site-version.json
+tools/update_site_version.py
+templates/deploy-pages.yml.example
+CACHE_UPDATE_README.md
+tests/cache-release.test.js

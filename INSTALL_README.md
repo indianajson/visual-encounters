@@ -1,3 +1,5 @@
+> **Automatic update handling:** The editor now uses `site-version.json` and versioned asset URLs to prevent stale HTML/JavaScript and mod ZIP downloads in Brave and other browsers. Every publish must run `python tools/update_site_version.py`, or use the optional GitHub Actions Pages workflow; see [CACHE_UPDATE_README.md](CACHE_UPDATE_README.md).
+
 # VisualEncounters V2.1 · Drop-in website update
 
 ## Install VisualEncounters

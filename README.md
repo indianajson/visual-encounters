@@ -1,3 +1,5 @@
+> **Automatic update handling:** The editor now uses `site-version.json` and versioned asset URLs to prevent stale HTML/JavaScript and mod ZIP downloads in Brave and other browsers. Every publish must run `python tools/update_site_version.py`, or use the optional GitHub Actions Pages workflow; see [CACHE_UPDATE_README.md](CACHE_UPDATE_README.md).
+
 > **2026-11-19 V2.1 update:** Three top-level tabs: Legacy Format, V2.1 format, and Enemy Template Workshop. V2.1 now has dedicated EZEncounters, Endless Runner, and Nebulous Liberations export policies. See [V21_EXPORT_GUIDE.md](V21_EXPORT_GUIDE.md), [ENEMY_TEMPLATE_WORKSHOP.md](ENEMY_TEMPLATE_WORKSHOP.md), and [MOD_SYNC_REPORT.md](MOD_SYNC_REPORT.md). The mod sync uses the uploaded server snapshot, not an unprovided newer live server.
 
 

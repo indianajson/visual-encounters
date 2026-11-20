@@ -4,6 +4,93 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VisualEncounters Editor</title>
+    <!-- VE_RELEASE_BOOTSTRAP_START: updated by tools/update_site_version.py -->
+    <script>
+    (function () {
+      'use strict';
+      // This value is generated from the site's published assets at release time.
+      const CURRENT_BUILD = "554bf7a29658dc41"; // VE_SITE_BUILD
+      window.VE_SITE_BUILD = CURRENT_BUILD;
+
+      // Version assets fetched on demand (e.g. mod ZIPs); unchanged cached
+      // resources remain reusable until a new release is published.
+      window.veVersionedUrl = function (resource) {
+        try {
+          const url = new URL(resource, document.baseURI);
+          if (url.origin !== window.location.origin) return resource;
+          url.searchParams.set('ve_build', CURRENT_BUILD);
+          return url.href;
+        } catch (_) { return resource; }
+      };
+
+      if (location.protocol !== 'https:' && location.protocol !== 'http:') return;
+
+      function showUpdateNotice(version) {
+        const makeNotice = function () {
+          if (document.getElementById('ve-release-notice')) return;
+          const panel = document.createElement('div');
+          panel.id = 've-release-notice';
+          panel.setAttribute('role', 'status');
+          panel.style.cssText = 'position:fixed;bottom:16px;right:16px;z-index:2147483647;max-width:340px;padding:14px;background:#172b40;color:#fff;border:2px solid #7bb7ff;border-radius:8px;font:14px/1.5 Arial,sans-serif;box-shadow:0 6px 20px #0005;';
+          const message = document.createElement('div');
+          message.textContent = 'A newer Visual Encounters release is available. Save/export any unsaved changes before reloading.';
+          const button = document.createElement('button');
+          button.textContent = 'Load new version';
+          button.type = 'button';
+          button.style.cssText = 'margin-top:10px;padding:7px 12px;cursor:pointer;background:#fff;color:#172b40;border:0;border-radius:4px;font-weight:bold;';
+          button.addEventListener('click', function () {
+            const next = new URL(location.href);
+            next.searchParams.set('ve_build', version);
+            // Avoid a cached HTML response even if the CDN has not converged.
+            next.searchParams.set('ve_reload', String(Date.now()));
+            location.assign(next.href);
+          });
+          panel.appendChild(message);
+          panel.appendChild(button);
+          document.body.appendChild(panel);
+        };
+        if (document.body) makeNotice();
+        else document.addEventListener('DOMContentLoaded', makeNotice, { once: true });
+      }
+
+      async function checkForRelease(initial) {
+        try {
+          const url = new URL('site-version.json', document.baseURI);
+          url.searchParams.set('_', String(Date.now()));
+          const response = await fetch(url.href, { cache: 'no-store' });
+          if (!response.ok) return; // Keep editor usable offline or while deploying.
+          const manifest = await response.json();
+          const latest = manifest && manifest.version;
+          if (typeof latest !== 'string' || !/^[a-f0-9]{12,64}$/i.test(latest) || latest === CURRENT_BUILD) return;
+
+          if (initial) {
+            const next = new URL(location.href);
+            if (next.searchParams.get('ve_build') !== latest) {
+              next.searchParams.set('ve_build', latest);
+              location.replace(next.href); // New URL bypasses the old HTML cache entry.
+              return;
+            }
+          }
+          // Already editing or CDNs temporarily disagree: don't discard edits.
+          showUpdateNotice(latest);
+        } catch (_) {
+          // An unreachable manifest must never break offline editing.
+        }
+      }
+
+      // On a fresh visit, automatically load the newest published HTML.
+      checkForRelease(true);
+      // Don't force-reload open editors containing potentially unsaved work.
+      document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) checkForRelease(false);
+      });
+      setInterval(function () {
+        if (!document.hidden) checkForRelease(false);
+      }, 120000);
+    })();
+    </script>
+    <!-- VE_RELEASE_BOOTSTRAP_END -->
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <meta property="og:image" content="viz-bg.jpg">
     <style>
@@ -2304,7 +2391,7 @@ async function downloadModFiles() {
                 progress.text(`Downloading ${filename}... (${i + 1}/${downloads.length})`);
                 progress.css('width', `${(i / downloads.length) * 100}%`);
 
-                const response = await fetch(url);
+                const response = await fetch(window.veVersionedUrl ? window.veVersionedUrl(url) : url);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const blob = await response.blob();
                 if (!blob.size) throw new Error('Downloaded file was empty');
@@ -4547,7 +4634,7 @@ $(document).ready(function() {
     <div class="tile-popup-hint"></div>
 </div>
 <script src="vendor/jszip.min.js"></script>
-<script src="v21-export.js"></script>
-<script src="liberation-editor.js"></script>
+<script src="v21-export.js?v=45570e911a1e5e32"></script>
+<script src="liberation-editor.js?v=cd71011ed0683335"></script>
 </body>
 </html>

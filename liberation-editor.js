@@ -1301,7 +1301,7 @@ function validateEnemyRecords(entry) {
         bundle.file(identity.encounterFile, lua);
         const scoped = state.exportTarget === 'liberations';
         const baseFile = scoped ? api.TEMPLATE_SOURCE : 'mods/ezencounters.zip';
-        const response = await fetch(baseFile);
+        const response = await fetch(window.veVersionedUrl ? window.veVersionedUrl(baseFile) : baseFile);
         if (!response.ok) throw new Error('Missing current battle package: ' + baseFile + ' (HTTP ' + response.status + ')');
         const base = await JSZip.loadAsync(await response.arrayBuffer());
         const entry = base.file('entry.lua');
@@ -1324,7 +1324,8 @@ function validateEnemyRecords(entry) {
         if (includeMods && includeMods.checked) {
             for (const filename of modPlan.files) {
                 try {
-                    const modResponse = await fetch('mods/' + encodeURIComponent(filename));
+                    const modUrl = 'mods/' + encodeURIComponent(filename);
+                    const modResponse = await fetch(window.veVersionedUrl ? window.veVersionedUrl(modUrl) : modUrl);
                     if (!modResponse.ok) throw new Error('HTTP ' + modResponse.status);
                     const bytes = await modResponse.arrayBuffer();
                     if (!bytes.byteLength) throw new Error('empty file');
@@ -1902,7 +1903,8 @@ function validateEnemyRecords(entry) {
         const demo = el('button', { type: 'button', text: 'Try Mettaur example', onClick: async () => {
             previewMode.value = 'ow'; switchMode('ow');
             try {
-                const response = await fetch('ow-preview/mettaur_ow.animation');
+                const previewUrl = 'ow-preview/mettaur_ow.animation';
+                const response = await fetch(window.veVersionedUrl ? window.veVersionedUrl(previewUrl) : previewUrl);
                 if (!response.ok) throw new Error('Example animation not available');
                 const parsed = parseAnimation(await response.text());
                 const a = assets.ow;
