@@ -9,6 +9,10 @@ const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'site-version.json'), 'utf8'));
 assert.match(manifest.version, /^[a-f0-9]{16}$/);
 assert.match(html, new RegExp(`const CURRENT_BUILD = "${manifest.version}"; // VE_SITE_BUILD`));
+assert.ok(
+  html.includes(`<title>VisualEncounters Editor — v${manifest.version}</title> <!-- VE_SITE_TITLE -->`),
+  'browser tab title includes the exact generated build ID'
+);
 for (const filename of ['v21-export.js', 'liberation-editor.js']) {
   const fingerprint = crypto.createHash('sha256').update(fs.readFileSync(path.join(root, filename))).digest('hex').slice(0, 16);
   assert.ok(html.includes(`src="${filename}?v=${fingerprint}"`), `${filename} has the latest hash`);

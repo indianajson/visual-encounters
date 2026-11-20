@@ -2,6 +2,8 @@
 
 ## What changed
 
+- The browser/tab title displays `VisualEncounters Editor — v<build ID>`, using the exact ID from `site-version.json`. `tools/update_site_version.py` updates this automatically on each publish and excludes the generated title from the release fingerprint so builds remain deterministic.
+
 - `index.html` checks `site-version.json` using a fresh, timestamped request and `cache: 'no-store'`.
 - On a **new page visit**, if the published site has a newer build, the browser loads the HTML under a new `?ve_build=` URL. This bypasses the old cached index page.
 - The editor's `v21-export.js` and `liberation-editor.js` URLs have individual content hashes (`?v=`), so changed JavaScript is fetched while unchanged JS can stay cached.

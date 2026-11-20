@@ -26,6 +26,15 @@ def canonical_index(content: str) -> str:
                          r'\g<1>unbuilt\g<2>', content)
     if n != 1:
         raise SystemExit('Missing/duplicate VE_SITE_BUILD marker in index.html')
+    # Normalize the generated browser-tab title too. Otherwise changing only
+    # the build label would change the fingerprint on the next publish.
+    content, n = re.subn(
+        r'(<title>VisualEncounters Editor — v)[0-9a-f]{16}(</title> <!-- VE_SITE_TITLE -->)',
+        r'\g<1>0000000000000000\g<2>',
+        content,
+    )
+    if n != 1:
+        raise SystemExit('Missing/duplicate VE_SITE_TITLE marker in index.html')
     for name in JS_FILES:
         escaped = re.escape(name)
         content = re.sub(r'(?<=src=")' + escaped + r'\?v=[0-9a-f]+(?=")', name, content)
@@ -56,6 +65,15 @@ def main() -> None:
     html, n = re.subn(r'(const CURRENT_BUILD = ")[^"]+("; // VE_SITE_BUILD)',
                       lambda m: m.group(1) + build + m.group(2), html)
     assert n == 1
+
+    # Show the same exact release ID in the browser title as in the manifest.
+    html, n = re.subn(
+        r'(<title>VisualEncounters Editor — v)[0-9a-f]{16}(</title> <!-- VE_SITE_TITLE -->)',
+        lambda m: m.group(1) + build + m.group(2),
+        html,
+    )
+    if n != 1:
+        raise SystemExit('Missing/duplicate VE_SITE_TITLE marker in index.html')
 
     # Use the content digest of each script so unchanged scripts can remain
     # cached even when an enemy image or mod archive changes.
