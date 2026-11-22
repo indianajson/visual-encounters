@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Visual Encounters — Combat Pack Workshop V3</title>
+<link rel="stylesheet" href="visual-theme.css">
+<link rel="stylesheet" href="v3-combat-workshop.css">
+</head>
+<body>
+<main id="ve-v3-view">
+  <header class="v3-header"><div><h1>Combat Pack Workshop <small>V3 foundation</small></h1><p>Reusable attacks, behaviors, entities and Tiled placement presets.</p></div><div class="v3-header-actions"><a href="index.html">Back to Visual Encounters</a><button id="v3-theme" type="button">Toggle theme</button></div></header>
+  <div class="v3-bar" role="toolbar" aria-label="Project tools">
+    <button id="v3-new" type="button">New definition</button>
+    <button id="v3-save" type="button">Save definition</button>
+    <button id="v3-export-json" type="button">Export project JSON</button>
+    <button id="v3-export-zip" type="button">Export pack ZIP</button>
+    <button id="v3-import" type="button">Import project</button>
+    <button id="v3-export-tiled" type="button">Export selected Tiled preset</button>
+    <input id="v3-file" type="file" accept=".json,.zip" hidden>
+  </div>
+  <div class="v3-layout">
+    <aside class="v3-panel v3-sidebar"><h2>Definition library</h2><label>Definition type<select id="v3-kind"><option value="attack">Attacks</option><option value="behavior">Behaviors</option><option value="entity">Entities</option><option value="asset">Assets</option><option value="preset">Tiled presets</option></select></label><label>Saved definition<select id="v3-select" size="8" aria-label="Definitions"></select></label><button type="button" id="v3-remove">Delete selected</button><p class="v3-help">Definitions are kept separately and reference each other by stable IDs. Edit one attack and all assigned enemies can reuse it.</p></aside>
+    <section class="v3-panel v3-editor"><h2>Edit definition</h2><label>Definition ID<input id="v3-id" placeholder="GrowingWave" pattern="[A-Za-z_][A-Za-z0-9_.-]*"></label>
+      <label>Description<input id="v3-description" placeholder="What does this definition do?"></label>
+      <nav class="v3-tabs"><button type="button" data-mode="timeline" aria-pressed="true">Timeline</button><button type="button" data-mode="graph" aria-pressed="false">Event graph</button><button type="button" data-mode="json" aria-pressed="false">Definition JSON</button></nav>
+      <div id="v3-timeline"><h3>Phase timeline</h3><p class="v3-help">Each phase has independent duration, hit shape and event actions. The JSON below is the exact event data.</p><div id="v3-phase-list"></div><button id="v3-add-phase" type="button">Add phase</button></div>
+      <div id="v3-graph" hidden><h3>Advanced event graph</h3><p class="v3-help">Select a graph node to edit its actions and transitions. This editor uses the same saved attack definition as the timeline.</p><div id="v3-graph-svg" class="v3-graph-preview"></div><label>Graph start node<input id="v3-graph-start"></label><label>Graph nodes (JSON object)<textarea id="v3-graph-json" rows="14" spellcheck="false"></textarea></label></div>
+      <div id="v3-json" hidden><h3>Raw definition</h3><label>Definition object (JSON)<textarea id="v3-def-json" rows="20" spellcheck="false"></textarea></label></div>
+      <p id="v3-message" role="status" class="v3-status"></p>
+    </section>
+    <aside class="v3-panel v3-inspector"><h2>Deployment & dependencies</h2><div id="v3-deps"></div><p class="v3-help">Generated Tiled objects use the proposed <code>V3 Preset</code> property. They require the V3 mission integration hook before they can spawn in a live map.</p><h3>Export structure</h3><pre>manifest.json
+combat-pack.json
+combat_pack.lua
+tiled/*.tx</pre><p class="v3-help">Runtime integration is opt-in and does not overwrite your existing DEBUGLIB instance logic.</p></aside>
+  </div>
+</main>
+<script src="vendor/jszip.min.js"></script>
+<script src="v3-combat-workshop.js"></script>
+</body>
+</html>
