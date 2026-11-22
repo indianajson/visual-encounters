@@ -1,10 +1,8 @@
 -- Drop-in custom Attack Workshop registry. Loaded by ai/attack_templates.lua.
 return function(AttackTemplates)
     AttackTemplates.register("Wave_Test", {
-        allow_cardinal_directions = true,
-        attack_animation_prefix = "ATTACK",
         attack_damage = 20,
-        idle_animation_prefix = "IDLE",
+        eight_direction_animations = false,
         movement = {
             mode = "stationary",
             tiles = 0,

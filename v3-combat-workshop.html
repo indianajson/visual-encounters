@@ -9,6 +9,10 @@
 <body>
 <main id="ve-v3-view">
   <header class="v3-header"><div><h1>Combat Pack Workshop <small>V3 foundation</small></h1><p>Reusable attacks, behaviors, entities and Tiled placement presets.</p></div><div class="v3-header-actions"><a href="index.html">Back to Visual Encounters</a><button id="v3-theme" type="button">Toggle theme</button></div></header>
+  <div class="v3-bar" aria-label="Combat Pack deployment">
+    <label for="v3-pack-id">Combat Pack ID <input id="v3-pack-id" value="combat_pack" pattern="[A-Za-z_][A-Za-z0-9_.-]*" title="Safe Lua module ID"></label>
+    <span class="v3-help">Use the same ID on the Tiled V3 Combat Pack object. Export includes a ready-to-place .tx configuration.</span>
+  </div>
   <div class="v3-bar" role="toolbar" aria-label="Project tools">
     <button id="v3-new" type="button">New definition</button>
     <button id="v3-save" type="button">Save definition</button>
@@ -31,10 +35,12 @@
     <aside class="v3-panel v3-inspector"><h2>Deployment & dependencies</h2><div id="v3-deps"></div><p class="v3-help">Generated Tiled objects use the proposed <code>V3 Preset</code> property. They require the V3 mission integration hook before they can spawn in a live map.</p><h3>Export structure</h3><pre>manifest.json
 combat-pack.json
 combat_pack.lua
+scripts/.../v3/packs/&lt;Pack ID&gt;.lua
+tiled/v3-combat-pack.tx
 tiled/*.tx</pre><p class="v3-help">Runtime integration is opt-in and does not overwrite your existing DEBUGLIB instance logic.</p></aside>
   </div>
 </main>
 <script src="vendor/jszip.min.js"></script>
-<script src="v3-combat-workshop.js"></script>
+<script src="v3-combat-workshop.js?v=v3-mission-integration-20261122"></script>
 </body>
 </html>
