@@ -12,6 +12,7 @@
   --ve-theme-line: #c3cee0;
   --ve-theme-accent: #e8f1ff;
   --ve-theme-blue: #2464c7;
+  --ve-theme-danger: #a5253d;
   --ve-control-bg: #f5f8fc;
   --ve-control-text: #172439;
   --ve-control-border: #abbad0;
@@ -33,6 +34,7 @@ body.dark-mode {
   --ve-theme-line: #43516a;
   --ve-theme-accent: #293b5b;
   --ve-theme-blue: #78a9ff;
+  --ve-theme-danger: #ff9cac;
   --ve-control-bg: #1c2738;
   --ve-control-text: #f2f6ff;
   --ve-control-border: #53647f;
@@ -45,7 +47,7 @@ body.dark-mode {
   --ve-focus-ring: #95bcff;
 }
 body {background:var(--ve-theme-page); color:var(--ve-theme-text);}
-#ve-legacy-view, #ve-nebulous-view, #ve-template-view, #ve-settings-view {
+#ve-legacy-view, #ve-nebulous-view, #ve-template-view, #ve-attack-view, #ve-settings-view {
   --ve-bg:var(--ve-theme-panel);
   --ve-soft:var(--ve-theme-soft);
   --ve-text:var(--ve-theme-text);
@@ -56,7 +58,7 @@ body {background:var(--ve-theme-page); color:var(--ve-theme-text);}
   color:var(--ve-theme-text);
 }
 /* All authoring controls, including the Workshop's native selector lists. */
-:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-settings-view) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea) {
+:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-attack-view,#ve-settings-view) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea) {
   box-sizing:border-box;
   background-color:var(--ve-control-bg);
   color:var(--ve-control-text);
@@ -66,33 +68,33 @@ body {background:var(--ve-theme-page); color:var(--ve-theme-text);}
   accent-color:var(--ve-theme-blue);
   color-scheme:light;
 }
-body.dark-mode :is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-settings-view) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea) {
+body.dark-mode :is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-attack-view,#ve-settings-view) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea) {
   color-scheme:dark;
 }
-:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-settings-view) :is(input,textarea)::placeholder {
+:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-attack-view,#ve-settings-view) :is(input,textarea)::placeholder {
   color:var(--ve-control-placeholder);
   opacity:1;
 }
-:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-settings-view) :is(select,optgroup,option) {
+:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-attack-view,#ve-settings-view) :is(select,optgroup,option) {
   background-color:var(--ve-control-popup-bg);
   color:var(--ve-control-popup-text);
   color-scheme:light;
 }
-body.dark-mode :is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-settings-view) :is(select,optgroup,option) {
+body.dark-mode :is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-attack-view,#ve-settings-view) :is(select,optgroup,option) {
   color-scheme:dark;
 }
-:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-settings-view) option:checked {
+:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-attack-view,#ve-settings-view) option:checked {
   background-color:var(--ve-control-selected-bg);
   color:var(--ve-control-selected-text);
 }
-:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-settings-view) :is(input,select,textarea,button):focus-visible {
+:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-attack-view,#ve-settings-view) :is(input,select,textarea,button):focus-visible {
   outline:2px solid var(--ve-focus-ring);
   outline-offset:2px;
 }
-:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-settings-view) :is(input,select,textarea):disabled {
+:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-attack-view,#ve-settings-view) :is(input,select,textarea):disabled {
   opacity:.55;cursor:not-allowed;
 }
-:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-settings-view) :is(input[type=checkbox],input[type=radio]) {
+:is(#ve-legacy-view,#ve-nebulous-view,#ve-template-view,#ve-attack-view,#ve-settings-view) :is(input[type=checkbox],input[type=radio]) {
   accent-color:var(--ve-theme-blue);
   color-scheme:inherit;
 }

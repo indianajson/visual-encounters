@@ -9,6 +9,7 @@ const read = p => fs.readFileSync(path.join(root, p), 'utf8');
 const html = read('index.html');
 const script = read('liberation-editor.js');
 const css = read('visual-theme.css');
+const attackCss = read('attack-workshop.css');
 const tools = read('tools/update_site_version.py');
 const ver = JSON.parse(read('site-version.json')).version;
 
@@ -26,6 +27,8 @@ assert.match(script, /persistNebulousWorkspace\(\)/);
 assert.match(css, /--ve-control-popup-bg:/);
 assert.match(css, /body\.dark-mode/);
 assert.match(css, /option:checked/);
+assert.match(css, /#ve-attack-view/);
+assert.match(attackCss, /var\(--ve-control-selected-bg\)/);
 assert.match(css, /select2-results__option--highlighted/);
 assert.match(tools, /CSS_FILES = \('visual-theme\.css', 'attack-workshop\.css'\)/);
 assert.match(html, new RegExp(`VisualEncounters Editor — v${ver}`));
