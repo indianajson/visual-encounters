@@ -1,0 +1,40 @@
+{
+  "site_snapshot": "visual-encounters(2).zip",
+  "server_snapshot": "encounters_and_scripts(1).zip",
+  "latest_battle_package": "DEBUGLIB_eager_all_bots_single_encounter_zip_2026-11-20.zip",
+  "full_character_aliases": 131,
+  "local_battle_aliases": [
+    "AirMan",
+    "Roll"
+  ],
+  "external_mod_archives_required_for_all": 120,
+  "hosted_mod_archives": 152,
+  "old_site_files": 535,
+  "new_site_files": 541,
+  "modified_or_added_files": [
+    "MOD_SYNC_REPORT.md",
+    "README.md",
+    "README_UPGRADE_2026-11-21.md",
+    "V21_EXPORT_GUIDE.md",
+    "index.html",
+    "liberation-editor.js",
+    "mods/com_EXE5_Bladia.zip",
+    "mods/com_alrysc_enemy_Kogasa.zip",
+    "mods/com_louise_exe2_MetFire.zip",
+    "mods/ezencounters-liberation-debuglib.zip",
+    "mods/ezencounters-v21-base.zip",
+    "mods/hoov_package_swaplight.zip",
+    "site-version.json",
+    "tests/debug-aliases.js",
+    "tests/v21-export.test.js",
+    "tests/v21-package-catalog.test.js",
+    "tools/V21_SYNC_AUDIT.json",
+    "v21-export.js"
+  ],
+  "removed_files": [],
+  "site_release": "62b806d91b87250c",
+  "constraints": [
+    "Tiled maps and overworld template registration must be deployed separately",
+    "The battle-mod client engine has not been live-tested with these exports"
+  ]
+}

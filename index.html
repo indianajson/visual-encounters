@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VisualEncounters Editor — vf834b1a809e1bfd4</title> <!-- VE_SITE_TITLE -->
+    <title>VisualEncounters Editor — v792a487dacafe9b6</title> <!-- VE_SITE_TITLE -->
     <!-- VE_RELEASE_BOOTSTRAP_START: updated by tools/update_site_version.py -->
     <script>
     (function () {
       'use strict';
       // This value is generated from the site's published assets at release time.
-      const CURRENT_BUILD = "f834b1a809e1bfd4"; // VE_SITE_BUILD
+      const CURRENT_BUILD = "792a487dacafe9b6"; // VE_SITE_BUILD
       window.VE_SITE_BUILD = CURRENT_BUILD;
 
       // Version assets fetched on demand (e.g. mod ZIPs); unchanged cached
@@ -562,6 +562,20 @@
     <script>
         // Dictionaries for enemies with image paths and offsets
         const enemyDictionary = [
+            // Aliases present in the verified EZEncounters battle package but
+            // absent from the original visual enemy dictionary.
+            { name: "AirMan", image: "", package: "com.keristero.char.AirMan.DEBUGLIB_HP_V3",
+              ranks: [{value:1,name:"AirMan"},{value:2,name:"AirMan V2"},{value:4,name:"AirMan SP"}], downloads:[], offsetX:0, offsetY:0 },
+            { name: "Bugtank", image: "Bugtank.webp", package: "com.louise.enemy.Bugtank",
+              ranks: [{value:1,name:"Bugtank"}], downloads:["com_louise_Bugtank.zip"], offsetX:0, offsetY:0 },
+            { name: "Canodumb", image: "Canodumb1.webp", package: "com.discord.Konstinople#7692.enemy.canodumb",
+              ranks: [{value:1,name:"Canodumb"}], downloads:["com_discord_Konstinople_7692_canodumb.zip"], offsetX:0, offsetY:0 },
+            { name: "Canosmart", image: "", package: "com.dawn.enemy.canosmart",
+              ranks: [{value:1,name:"Canosmart"}], downloads:["com_dawn_canosmart.zip"], offsetX:0, offsetY:0 },
+            { name: "Breaker", image: "Breaker.webp", package: "com.louise.enemy.Breaker",
+              ranks: [{value:1,name:"Breaker"}], downloads:["com_louise_Quaker.zip"], offsetX:0, offsetY:0 },
+            { name: "Shaker", image: "Shaker.webp", package: "com.louise.enemy.Shaker",
+              ranks: [{value:1,name:"Shaker"}], downloads:["com_louise_Quaker.zip"], offsetX:0, offsetY:0 },
             //NAVIS
             { name: "GregarBeast", image: "greigabeast.png", 
                 package:"",
@@ -2514,7 +2528,7 @@ function initializeEditor() {
 function formatEnemyOption(enemy) {
     if (!enemy.id) return enemy.text;
     const enemyDef = enemyDictionary.find(e => e.name === enemy.id);
-    if (!enemyDef) return enemy.text;
+    if (!enemyDef || !enemyDef.image) return enemy.text;
     
     let rankText = "";
     if (enemyDef.ranks.length === 1) {
@@ -2919,7 +2933,7 @@ function getEnemyImage(enemyName, rank) {
     }
     
     // Fall back to default image
-    return "enemies/"+enemy.image;
+    return enemy.image ? "enemies/"+enemy.image : "";
 }
 
 function updateTileImage(row, col) {
@@ -4630,7 +4644,7 @@ $(document).ready(function() {
     <div class="tile-popup-hint"></div>
 </div>
 <script src="vendor/jszip.min.js"></script>
-<script src="v21-export.js?v=e61b842c189c15ab"></script>
-<script src="liberation-editor.js?v=c50ffd51d91686a7"></script>
+<script src="v21-export.js?v=13f5cf1ab1c7b78b"></script>
+<script src="liberation-editor.js?v=7c40b472dc0ced75"></script>
 </body>
 </html>
