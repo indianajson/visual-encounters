@@ -32,6 +32,11 @@ function validate(name, value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Attack definition must be an object.');
   const d = copy(value);
   d.runtime=d.runtime||'phased_attack';
+  // This switch controls PREFIX_DIRECTION effect states ONLY, not aiming/movement.
+  d.eight_direction_animations = d.eight_direction_animations === true;
+  // Old projects may still carry bot animation fields. Keep them until the
+  // editor can migrate them to a linked Enemy Template without data loss.
+  // New attacks never create these keys and the attack runtime ignores them.
   if (!VALID_AI.includes(d.runtime)) throw new Error('Unknown attack runtime '+d.runtime);
   const positive=(v,label,min,max)=>{
     if(v==null||v==='')return undefined;
@@ -40,6 +45,7 @@ function validate(name, value) {
   };
   for (const key of ['attack_damage','telegraph_seconds','windup_seconds','effect_hold_seconds','contact_effect_seconds'])
     if(d[key]!=null)d[key]=positive(d[key],key,0, key.includes('seconds')?10:9999);
+  for(const key of ['attack_texture','attack_animation_path','effect_texture','effect_animation_path','contact_texture','contact_animation_path'])safePath(d[key],key);
   if(d.runtime==='existing_ai') {
     if(typeof d.ai_type!=='string'||!PAT.test(d.ai_type))throw new Error('Existing AI must name a registered Lua AI.');
     return d;
@@ -93,7 +99,7 @@ function bundleSource(defs){
   const chunks=names.map(n=>'    AttackTemplates.register('+luaString(n)+', '+luaValue(validate(n,defs[n]),1)+')');
   return '-- Drop-in custom Attack Workshop registry. Loaded by ai/attack_templates.lua.\nreturn function(AttackTemplates)\n'+chunks.join('\n')+'\nend\n';
 }
-function newAttack(){return {runtime:'phased_attack',attack_damage:20, targeting:'players',pierce_players:true,allow_cardinal_directions:true, movement:{mode:'stationary',tiles:0,transition:'smooth'},attack_animation_prefix:'ATTACK',idle_animation_prefix:'IDLE',phases:[{shape_type:'line',range:1,duration:0.25,movement_mode:'animation',animation_prefix:'IMPACT',pierce_players:true,sfx:{}}]};}
+function newAttack(){return {runtime:'phased_attack',attack_damage:20,targeting:'players',pierce_players:true,eight_direction_animations:false,movement:{mode:'stationary',tiles:0,transition:'smooth'},phases:[{shape_type:'line',range:1,duration:0.25,movement_mode:'animation',animation_prefix:'IMPACT',directional:true,contact_directional:true,pierce_players:true,sfx:{}}]};}
 const getNames=custom=>Array.from(new Set([...Object.keys(BUILT_INS),...Object.keys(custom||{})])).sort();
 
 function mount(node, options={}) {
@@ -150,30 +156,44 @@ function mount(node, options={}) {
   function render(){
     canvas.replaceChildren();
     const info=e('section',undefined,{class:'ve-aw-card'});canvas.appendChild(info);
-    info.appendChild(e('h3','Attack identity & movement'));
+    info.appendChild(e('h3','1 · Attack behavior and targeting'));
     const fields=e('div',undefined,{class:'ve-aw-fields'});info.appendChild(fields);
     const prop=(label,key,kind,opts)=>fields.appendChild(buildInput(label,key,current[key],kind,v=>{current[key]=kind==='number'?(v===''?undefined:Number(v)):v;},opts));
     fields.appendChild(buildInput('Runtime','runtime',current.runtime,'text',v=>{current.runtime=v; if(v==='phased_attack'&&(!current.phases||!current.phases.length))current.phases=[copy(newAttack().phases[0])];render();},VALID_AI.map(v=>({value:v,label:v}))));
     prop('Base OW damage','attack_damage','number');
     prop('Targeting','targeting','text',['players','forward'].map(v=>({value:v,label:v})));
     prop('Pierce players','pierce_players','bool');
-    prop('Allow all eight directions','allow_cardinal_directions','bool');
     prop('Allow repeat hits','allow_repeat_hits','bool');
-    prop('Attack body animation PREFIX','attack_animation_prefix','text');
-    prop('Return-to-idle PREFIX','idle_animation_prefix','text');
+    const movementCard=e('section',undefined,{class:'ve-aw-card'});canvas.appendChild(movementCard);
     const movement=current.movement||(current.movement={mode:'stationary',tiles:0,transition:'smooth'});
-    const mv=e('div',undefined,{class:'ve-aw-fields'});info.appendChild(e('h3','Movement before attacking'));info.appendChild(mv);
+    const mv=e('div',undefined,{class:'ve-aw-fields'});movementCard.appendChild(e('h3','2 · Approach before attack'));movementCard.appendChild(mv);
     for(const [label,key,type,opts] of [
       ['Policy','mode','text',['stationary','approach','reposition']],
       ['Maximum tiles','tiles','number'],['Travel','transition','text',['smooth','instant']]]){
       mv.appendChild(buildInput(label,key,movement[key],type,v=>{movement[key]=type==='number'?Number(v):v},opts&&opts.map(x=>({value:x,label:x}))));
     }
+    const effects=e('section',undefined,{class:'ve-aw-card'});canvas.appendChild(effects);
+    effects.appendChild(e('h3','3 · Attack effect assets and animations'));
+    effects.appendChild(e('p','Four diagonal suffixes (UL, UR, DL, DR) are the default. Enable eight-direction effect animations only when those states actually exist. This does not change attack targeting or the enemy sprite animations.'));
+    const fx=e('div',undefined,{class:'ve-aw-fields'});effects.appendChild(fx);
+    const fxProp=(label,key,kind)=>fx.appendChild(buildInput(label,key,current[key],kind,v=>{current[key]=v;}));
+    fxProp('Eight-direction effect animations (PREFIX_DIRECTION)','eight_direction_animations','bool');
+    fxProp('Default effect texture (/server/assets/…)','effect_texture','text');
+    fxProp('Default effect animation path','effect_animation_path','text');
+    fxProp('Default effect animation PREFIX','animation_prefix','text');
+    fxProp('Contact effect texture','contact_texture','text');
+    fxProp('Contact effect animation path','contact_animation_path','text');
+    fxProp('Contact effect animation PREFIX','contact_animation_prefix','text');
     if(current.runtime==='existing_ai'){
+      effects.appendChild(e('p','Legacy AI asset overrides (only needed for existing non-phased AI):'));
+      const legacyFx=e('div',undefined,{class:'ve-aw-fields'});effects.appendChild(legacyFx);
+      for(const [label,key] of [['Legacy attack texture','attack_texture'],['Legacy attack animation','attack_animation_path'],['Legacy attack effect state','attack_effect_animation']])
+        legacyFx.appendChild(buildInput(label,key,current[key],'text',v=>{current[key]=v;}));
       info.appendChild(e('p','This is an existing specialized Lua AI ('+(current.ai_type||'')+'). It is listed for reference; switch to phased_attack and add phases to build a new generic version.'));
       return;
     }
     const sequence=e('section',undefined,{class:'ve-aw-card'});canvas.appendChild(sequence);
-    const row=e('div',undefined,{class:'ve-aw-phase-title'});row.appendChild(e('h3','Phases · in execution order'));
+    const row=e('div',undefined,{class:'ve-aw-phase-title'});row.appendChild(e('h3','4 · Phases · in execution order'));
     row.appendChild(button('Add phase',()=>{if(!current.phases)current.phases=[];current.phases.push(copy(newAttack().phases[0]));render()}));sequence.appendChild(row);
     if(current.runtime==='patterned_attack' && !current.phases){
       sequence.appendChild(e('p','Legacy stages are preserved in the old runner. Change runtime to phased_attack and add phases for advanced features.'));
@@ -187,15 +207,15 @@ function mount(node, options={}) {
       ['Duplicate',()=>{current.phases.splice(index+1,0,copy(phase));render()}],
       ['Remove',()=>{current.phases.splice(index,1);render()}]].forEach(([t,fn])=>nav.appendChild(button(t,fn)));card.appendChild(nav);
       const grid=e('div',undefined,{class:'ve-aw-fields'});card.appendChild(grid);
-      function field(label,key,kind,opts){grid.appendChild(buildInput(label,key,phase[key],kind,v=>{phase[key]=kind==='number'?(v===''?undefined:Number(v)):v; if(['shape_type','range'].includes(key))render();},opts&&opts.map(o=>({value:o,label:o}))))}
+      function field(label,key,kind,opts){const val=kind==='bool'&&['directional','contact_directional'].includes(key)&&phase[key]===undefined?true:phase[key];grid.appendChild(buildInput(label,key,val,kind,v=>{phase[key]=kind==='number'?(v===''?undefined:Number(v)):v; if(['shape_type','range'].includes(key))render();},opts&&opts.map(o=>({value:o,label:o}))))}
       field('Shape','shape_type','text',VALID_SHAPES);
       field('Forward range','range','number');field('Offset X','offset_x','number');field('Offset Y','offset_y','number');
       field('Seconds / phase','duration','number');field('Wait for full animation','wait_for_animation','bool');
       field('Effect basename (attacks/)','effect','text');field('Effect texture (optional)','effect_texture','text');field('Effect animation path','effect_animation_path','text');
-      field('Animation PREFIX','animation_prefix','text');field('Effect movement','movement_mode','text',VALID_MOVEMENT);
+      field('Animation PREFIX','animation_prefix','text');field('Directional phase state (PREFIX_DIRECTION)','directional','bool');field('Effect movement','movement_mode','text',VALID_MOVEMENT);
       field('Pierce players (override)','pierce_players','text',['inherit','true','false']);
       field('Persist until contact (bounded)','linger_until_contact','bool');field('Maximum wait seconds','max_wait_seconds','number');
-      field('Contact effect basename','contact_effect','text');field('Contact animation PREFIX','contact_animation_prefix','text');
+      field('Contact effect basename','contact_effect','text');field('Contact animation PREFIX','contact_animation_prefix','text');field('Directional contact state (PREFIX_DIRECTION)','contact_directional','bool');
       field('Spawn enemy template','spawn_bot_template','text');field('Spawn count (max 3)','spawn_bot_count','number');
       field('Spawn offset X','spawn_offset_x','number');field('Spawn offset Y','spawn_offset_y','number');
       field('Phase damage override','damage','number');
@@ -227,16 +247,33 @@ function mount(node, options={}) {
         show('Exported '+Object.keys(custom).length+' attack templates.',true);
       }catch(err){show(err.message,false)}
     }),
-    button('Export project JSON',()=>download('attack-workshop.json',JSON.stringify({version:2,attacks:custom},null,2),'application/json')),
-    button('Import project JSON',()=>file.click()),
+    button('Export selected attack JSON',()=>{const k=save();download('attack_'+k.toLowerCase()+'.json',JSON.stringify({version:2,attacks:{[k]:custom[k]}},null,2),'application/json')}),
+    button('Export all attacks JSON',()=>download('attack-workshop.json',JSON.stringify({version:2,attacks:custom},null,2),'application/json')),
+    button('Import attacks JSON / ZIP',()=>file.click()),
     button('Delete',()=>{const key=chooser.value;if(key&&custom[key]&&root.confirm('Delete saved '+key+'?')){delete custom[key];persist();currentKey='';refreshChooser();load('')}})
   ];
   toolbarRows.forEach(child=>bar.appendChild(child));
-  const file=e('input',undefined,{type:'file',accept:'.json,application/json'});file.hidden=true;bar.appendChild(file);
-  file.addEventListener('change',async()=>{try{const body=JSON.parse(await file.files[0].text());if(body.version!==2||!body.attacks||Array.isArray(body.attacks))throw new Error('Invalid Attack Workshop v2 project.');for(const [key,def] of Object.entries(body.attacks))custom[key]=validate(key,def);persist();refreshChooser();load('');show('Imported '+Object.keys(body.attacks).length+' attacks.',true);}catch(err){show(err.message,false)}file.value='';});
+  const file=e('input',undefined,{type:'file',accept:'.json,.zip,application/json,application/zip'});file.hidden=true;bar.appendChild(file);
+  file.addEventListener('change',async()=>{
+    try{
+      const selected=file.files&&file.files[0];if(!selected)return;
+      let body;
+      if(/\.zip$/i.test(selected.name)){
+        const JSZip=await loadZip();const archive=await JSZip.loadAsync(await selected.arrayBuffer());
+        const project=archive.file('ATTACK_WORKSHOP_PROJECT.json');
+        if(!project)throw new Error('This ZIP has no ATTACK_WORKSHOP_PROJECT.json. Export it from the Attack Workshop first.');
+        body=JSON.parse(await project.async('string'));
+      }else body=JSON.parse(await selected.text());
+      if(body.version!==2||!body.attacks||typeof body.attacks!=='object'||Array.isArray(body.attacks))throw new Error('Invalid Attack Workshop v2 project.');
+      const incoming={};
+      for(const [key,def] of Object.entries(body.attacks)) incoming[key]=validate(key,def);
+      Object.assign(custom,incoming);persist();refreshChooser();load('');
+      show('Imported '+Object.keys(incoming).length+' attacks. Open Enemy Template Workshop to assign them.',true);
+    }catch(err){show(err.message,false)}file.value='';
+  });
   chooser.addEventListener('change',()=>load(chooser.value));
   refreshChooser();load('');
   return {getNames:()=>getNames(custom),reload:()=>{refreshChooser();load(chooser.value)}};
 }
-root.VisualEncountersAttackWorkshop={seeds:BUILT_INS, validate, parseMask, moduleSource, bundleSource, newAttack, getNames, mount, suffixes:FACES, facing:FACING};
+root.VisualEncountersAttackWorkshop={seeds:BUILT_INS,validate,parseMask,moduleSource,bundleSource,newAttack,getNames,mount,suffixes:FACES,facing:FACING};
 })(typeof window!=='undefined'?window:globalThis);

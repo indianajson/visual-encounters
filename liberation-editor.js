@@ -1575,6 +1575,82 @@ function validateEnemyRecords(entry) {
         status('Loaded Nebulous Liberations encounter table.', true);
     }
 
+    // Older projects authored effect assets/damage directly on Enemy Templates.
+    // Move ONLY attack-owned values into a private, reusable Attack Template.
+    // Bot animation prefixes and timings remain in Enemy Templates.
+    function migrateLegacyEnemyAttackFields(templates, attackTemplates) {
+        const attackEditor = window.VisualEncountersAttackWorkshop;
+        if (!attackEditor || !templates || !attackTemplates) return 0;
+        let migrated = 0;
+        const attackOwned = ['attack_damage','attack_texture','attack_animation_path','attack_effect_animation'];
+        for (const [enemyName, def] of Object.entries(templates)) {
+            if (!def || typeof def !== 'object' || Array.isArray(def)) continue;
+            const fields = attackOwned.filter(key => def[key] !== undefined && def[key] !== '');
+            if (!fields.length) continue;
+            const previous = def.attack_template || String(def.default_attacks || '').split(',').map(x=>x.trim()).filter(Boolean)[0];
+            const source = attackTemplates[previous] || attackEditor.seeds[previous];
+            const profile = source ? JSON.parse(JSON.stringify(source)) : {
+                runtime:'existing_ai', ai_type:def.ai_type || 'simple_charge'
+            };
+            const base = enemyName + '_Attack';
+            let key = base, index = 2;
+            while (attackTemplates[key] || attackEditor.seeds[key]) key = base + '_' + index++;
+            if (def.attack_damage !== undefined && def.attack_damage !== '') profile.attack_damage = Number(def.attack_damage);
+            if (def.attack_texture) {
+                profile.attack_texture = def.attack_texture; // specialized AI compatibility
+                profile.effect_texture = def.attack_texture; // phase default
+            }
+            if (def.attack_animation_path) {
+                profile.attack_animation_path = def.attack_animation_path;
+                profile.effect_animation_path = def.attack_animation_path;
+            }
+            if (def.attack_effect_animation) profile.attack_effect_animation = def.attack_effect_animation;
+            attackTemplates[key] = attackEditor.validate(key,profile);
+            def.attack_template = key;
+            if (def.default_attacks) {
+                const names = String(def.default_attacks).split(',').map(x=>x.trim()).filter(Boolean);
+                def.default_attacks = names.map(x=>x===previous ? key : x).join(', ');
+            }
+            for (const field of attackOwned) delete def[field];
+            migrated++;
+        }
+        return migrated;
+    }
+    // Historical attack projects could define the bot's ATTACK and IDLE
+    // prefixes. Transfer them when the attack is assigned to an enemy.
+    // Unassigned definitions are preserved until there is a recipient, so
+    // older custom prefix choices are never silently discarded.
+    function migrateLegacyAttackBotAnimations(templates,attackTemplates) {
+        let count = 0;
+        for (const [key,attack] of Object.entries(attackTemplates || {})) {
+            if (!attack || typeof attack !== 'object') continue;
+            const keys = ['idle_animation_prefix','attack_animation_prefix'].filter(field =>
+                attack[field] !== undefined && attack[field] !== '');
+            if (!keys.length) continue;
+            const linked = Object.values(templates || {}).filter(enemy =>
+                enemy && (enemy.attack_template === key ||
+                    String(enemy.default_attacks || '').split(',').map(x=>x.trim()).includes(key)));
+            if (!linked.length) continue;
+            for (const enemy of linked) for (const field of keys) {
+                if (!enemy[field]) enemy[field] = attack[field];
+            }
+            for (const field of keys) delete attack[field];
+            count++;
+        }
+        return count;
+    }
+    function requiredCustomAttackTemplates(templates,attackTemplates) {
+        const used = {};
+        for (const [name,def] of Object.entries(templates)) {
+            const names = [def.attack_template, ...String(def.default_attacks || '').split(',').map(x=>x.trim())].filter(Boolean);
+            for (const key of names) {
+                if (attackTemplates[key]) used[key]=attackTemplates[key];
+                else if (!(window.VisualEncountersAttackWorkshop && window.VisualEncountersAttackWorkshop.seeds[key]))
+                    throw new Error('Enemy "'+name+'" references missing Attack Template "'+key+'". Import that attack JSON/ZIP before exporting.');
+            }
+        }
+        return used;
+    }
     // Enemy templates are authorable Lua registry data, NOT an encounter-table field.
     // They intentionally exclude behavior functions: named registered AI only.
     const TEMPLATE_FIELDS = [
@@ -1587,8 +1663,10 @@ function validateEnemyRecords(entry) {
         ['movement_directions','Movement directions','select','any'],
         ['allowed_move_panels','Allowed move panel types (comma separated)','text',''],
         ['require_dark_panel_to_attack','Must stand on a Dark Panel to attack','checkbox',''],
-        ['idle_animation_prefix','Idle animation PREFIX (e.g. IDLE)','text','IDLE'],
-        ['attack_animation_prefix','Attack animation PREFIX (e.g. ATTACK)','text','ATTACK'],
+        ['idle_animation_prefix','Bot IDLE animation PREFIX','text','IDLE'],
+        ['attack_animation_prefix','Bot ATTACK animation PREFIX','text','ATTACK'],
+        ['hold_animation_prefix','Bot HOLD animation PREFIX','text','HOLD'],
+        ['eight_direction_animations','Bot has all eight PREFIX_DIRECTION states','checkbox',''],
         ['is_boss','Boss template','checkbox',''],
         ['is_special_encounter','Special encounter enemy','checkbox',''],
         ['health','Starting HP','number','100'],
@@ -1597,16 +1675,12 @@ function validateEnemyRecords(entry) {
         ['battle_scale','Default battle scale (blank = inherit OW)','number',''],
         ['texture_path','OW texture path','text','/server/assets/.../enemy.png'],
         ['animation_path','OW animation path','text','/server/assets/.../enemy.animation'],
-        ['attack_damage','Overworld base attack damage','number','20'],
         ['attack_animation_seconds','Attack animation duration (optional)','number',''],
-        ['attack_effect_animation','Attack effect state (optional)','text','IMPACT'],
         ['has_attack_animation','OW has attack animation','checkbox',''],
         ['has_attack_hold','OW has attack hold','checkbox',''],
         ['default_ow_bot_encounter_name','Default OW encounter name (optional)','text',''],
         ['battle_scale_scope','Battle scale scope','select','Matching'],
         ['ai_type','Registered AI type','select','simple_charge'],
-        ['attack_texture','Attack texture path (optional)','text','/server/assets/.../attack.png'],
-        ['attack_animation_path','Attack animation path (optional)','text','/server/assets/.../attack.animation'],
         ['death_message','Death message (optional)','text','Defeated!'],
         ['shape','Selection shape (rows separated by /)','text','1,1,1 / 1,0,1 / 1,1,1'],
         ['shape_offset_x','Selection offset X','number','0'],
@@ -1618,11 +1692,11 @@ function validateEnemyRecords(entry) {
     function templateModule(name, info) {
         if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(name)) throw new Error('Template name must be a Lua-safe identifier (letters, digits, underscore).');
         const def = { ...info };
-        for (const key of ['health','max_health','battle_max_health','battle_starting_hp','move_range','scale','battle_scale','attack_damage','attack_animation_seconds','shape_offset_x','shape_offset_y']) {
+        for (const key of ['health','max_health','battle_max_health','battle_starting_hp','move_range','scale','battle_scale','attack_animation_seconds','shape_offset_x','shape_offset_y']) {
             if (def[key] === undefined || def[key] === '') { delete def[key]; continue; }
             def[key] = Number(def[key]);
-            if (!Number.isFinite(def[key]) || (key !== 'attack_damage' && key !== 'move_range' && !key.startsWith('shape_offset') && def[key] <= 0) || (key === 'attack_damage' && def[key] < 0)) throw new Error(key + ' must be valid and positive (damage may be zero).');
-            if (['health','max_health','battle_max_health','battle_starting_hp','move_range','attack_damage','shape_offset_x','shape_offset_y'].includes(key)) {
+            if (!Number.isFinite(def[key]) || (key !== 'move_range' && !key.startsWith('shape_offset') && def[key] <= 0)) throw new Error(key + ' must be valid and positive (damage may be zero).');
+            if (['health','max_health','battle_max_health','battle_starting_hp','move_range','shape_offset_x','shape_offset_y'].includes(key)) {
                 if (!Number.isInteger(def[key])) throw new Error(key + ' must be an integer.');
             }
         }
@@ -1635,6 +1709,7 @@ function validateEnemyRecords(entry) {
         const attacks = String(def.default_attacks||'').split(',').map(x=>x.trim()).filter(Boolean);
         if (def.attack_template && !identifier.test(def.attack_template)) throw new Error('Attack template name is invalid.');
         if (attacks.some(x=>!identifier.test(x))) throw new Error('Default attacks must use registered Lua names.');
+        requiredCustomAttackTemplates({[name]:def},state.attackTemplates);
         if (def.movement_directions && !['any','axis','diagonal','none'].includes(def.movement_directions)) throw new Error('Unknown movement direction policy.');
         const allowed = String(def.allowed_move_panels||'').split(',').map(x=>x.trim()).filter(Boolean);
         if (allowed.some(x=>!['Dark Panel','Item Panel','Trap Panel','Normal Panel','Liberated Panel'].includes(x))) throw new Error('Choose existing Tiled panel types for allowed movement.');
@@ -1644,7 +1719,6 @@ function validateEnemyRecords(entry) {
             max_health: def.max_health || def.health || 100,
             texture_path: def.texture_path,
             animation_path: def.animation_path,
-            attack_damage: def.attack_damage ?? 20,
             ai_type: def.ai_type || 'simple_charge',
             scale: def.scale || 1,
             battle_scale_scope: def.battle_scale_scope || 'Matching',
@@ -1672,21 +1746,21 @@ function validateEnemyRecords(entry) {
         if (def.require_dark_panel_to_attack) config.require_dark_panel_to_attack = true;
         if (def.idle_animation_prefix) config.idle_animation_prefix = def.idle_animation_prefix;
         if (def.attack_animation_prefix) config.attack_animation_prefix = def.attack_animation_prefix;
+        if (def.hold_animation_prefix) config.hold_animation_prefix = def.hold_animation_prefix;
+        config.eight_direction_animations = def.eight_direction_animations === true;
         if (attacks.length) config.default_attacks = attacks;
         if (def.attack_template) config.attack_template = def.attack_template;
         if (!config.attack_template && attacks.length) config.attack_template = attacks[0];
         if (def.death_message) config.death_message = def.death_message;
         if (def.default_ow_bot_encounter_name) config.default_ow_bot_encounter_name = def.default_ow_bot_encounter_name;
         if (def.attack_animation_seconds !== undefined) config.attack_animation_seconds = def.attack_animation_seconds;
-        if (def.attack_effect_animation) config.attack_effect_animation = def.attack_effect_animation;
         if (def.has_attack_animation) config.has_attack_animation = true;
         if (def.has_attack_hold) config.has_attack_hold = true;
         if (def.mug_texture || def.mug_animation) {
             if (!def.mug_texture || !def.mug_animation) throw new Error('Both mug texture and animation paths are required.');
             config.mug = { texture_path: def.mug_texture, animation_path: def.mug_animation };
         }
-        config.preload_assets = [def.texture_path, def.animation_path, def.attack_texture, def.attack_animation_path, def.mug_texture, def.mug_animation].filter(Boolean);
-        for (const k of ['attack_texture','attack_animation_path']) if (def[k]) config[k] = def[k];
+        config.preload_assets = [def.texture_path, def.animation_path, def.mug_texture, def.mug_animation].filter(Boolean);
         // These fields are supported by EnemyTemplates.create.
         return '-- Overworld template generated by VisualEncounters\n'
             + '-- Apply OW/Battle Scale via Liberation Enemy Config in Tiled.\n'
@@ -1822,7 +1896,6 @@ function validateEnemyRecords(entry) {
     function createTemplateSpritePreview(fields) {
         const targets = {
             ow: { name: 'OW sprite', texture: 'texture_path', animation: 'animation_path' },
-            attack: { name: 'Attack effect', texture: 'attack_texture', animation: 'attack_animation_path' },
             mug: { name: 'Boss mug', texture: 'mug_texture', animation: 'mug_animation' }
         };
         const assets = Object.fromEntries(Object.keys(targets).map(key => [key, { image: null, imageName: '', animationName: '', states: {}, imagePath: '', url: '' }]));
@@ -2067,26 +2140,35 @@ function validateEnemyRecords(entry) {
         const shape = createTemplateShapePainter(fields);
         const preview = createTemplateSpritePreview(fields);
         const primary = el('div', { class: 've-template-primary' }, [
-            section('1 · Identity & behavior', 'Choose existing AI or a reusable Attack Workshop template. Custom attack Lua modules must also be installed.', ['battle_name','is_boss','is_special_encounter','ai_type','attack_template','default_attacks','death_message','default_ow_bot_encounter_name']),
-            section('2 · HP, scale & combat', 'Independent OW/battle HP. Tiled Bot Config Max HP overrides template defaults. Battle scale inherits OW unless specified.', ['health','max_health','battle_max_health','battle_starting_hp','scale','battle_scale','battle_scale_scope','attack_damage','attack_animation_seconds','has_attack_animation','has_attack_hold','idle_animation_prefix','attack_animation_prefix']),
-            section('3 · Movement and territory', 'Allowed Tiled panel types, movement modes and whether attacks require Dark Panel footing.', ['move_range','movement_directions','allowed_move_panels','require_dark_panel_to_attack']),
+            section('1 · Bot identity', 'Choose the battle alias, mission classification and bot-specific messages.', ['battle_name','is_boss','is_special_encounter','death_message','default_ow_bot_encounter_name']),
+            section('2 · Attack loadout', 'Select an attack saved or imported in Attack Template Workshop. Attack damage, effect sprites, phases and contact SFX are defined there.', ['ai_type','attack_template','default_attacks']),
+            section('3 · Bot HP and scaling', 'OW and battle health and sprite scale belong to the bot; Tiled overrides remain supported.', ['health','max_health','battle_max_health','battle_starting_hp','scale','battle_scale','battle_scale_scope']),
+            section('4 · Movement and territory', 'Configure the bot movement and which panels are valid for attacking.', ['move_range','movement_directions','allowed_move_panels','require_dark_panel_to_attack']),
             shape.panel,
-            section('4 · Overworld asset paths', 'These are server asset paths, not the local files used for preview. Upload files on the right to inspect them; optionally copy the filenames into these fields.', ['texture_path','animation_path']),
+            section('6 · Bot animation states', 'Prefixes for the bot sprite, not the attack effects. Only check eight directions if IDLE/ATTACK/HOLD have U,D,L,R as well as UL,UR,DL,DR.', ['idle_animation_prefix','attack_animation_prefix','hold_animation_prefix','eight_direction_animations','attack_animation_seconds','has_attack_animation','has_attack_hold']),
+            section('7 · Bot overworld assets', 'These two assets belong to the enemy. Attack effect texture, animation and sounds belong in the Attack Workshop.', ['texture_path','animation_path']),
             el('details', { class: 've-template-card ve-template-advanced' }, [
-                el('summary', { text: 'Advanced · Attack effects and boss mug' }),
-                el('p', { class: 've-small-help', text: 'Optional attack and mug assets can also be previewed using the selector in the preview panel.' }),
-                el('div', { class: 've-template-fields' }, ['attack_texture','attack_animation_path','attack_effect_animation','mug_texture','mug_animation'].map(key => wrappers[key]))
+                el('summary', { text: '8 · Boss mugshot assets' }),
+                el('div', { class: 've-template-fields' }, ['mug_texture','mug_animation'].map(key => wrappers[key]))
             ])
         ]);
         const workspace = el('div', { class: 've-template-workspace' }, [primary, el('aside', { class: 've-template-preview-column' }, [preview.panel])]);
         const refresh = () => {
             chooser.replaceChildren(el('option', { value: '', text: 'New enemy template…' }));
             Object.keys(state.templates).sort().forEach(key => chooser.appendChild(el('option', { value: key, text: key })));
+            // An imported attack project may add names while Enemy Workshop
+            // is already open. Refresh this loadout selector as well.
+            const selected = fields.attack_template.value;
+            const names = window.VisualEncountersAttackWorkshop
+                ? window.VisualEncountersAttackWorkshop.getNames(state.attackTemplates) : [];
+            fields.attack_template.replaceChildren(...['', ...names].map(key =>
+                el('option', { value: key, text: key || 'Select an attack…' })));
+            fields.attack_template.value = selected;
         };
         const load = key => {
             const def = state.templates[key] || {};
             const starting = !key || !state.templates[key];
-            const defaults = starting ? { health: '100', max_health: '100', scale: '1', attack_damage: '20', shape: '1', shape_offset_x: '0', shape_offset_y: '-1' } : {};
+            const defaults = starting ? { health: '100', max_health: '100', scale: '1', shape: '1', shape_offset_x: '0', shape_offset_y: '-1', idle_animation_prefix: 'IDLE', attack_animation_prefix: 'ATTACK', hold_animation_prefix: 'HOLD' } : {};
             name.value = key;
             Object.entries(fields).forEach(([field,input]) => {
                 if (input.type === 'checkbox') input.checked = !!def[field];
@@ -2105,6 +2187,7 @@ function validateEnemyRecords(entry) {
             });
             templateModule(key, def); // validate the exact Lua structure before saving
             state.templates[key] = def;
+            migrateLegacyAttackBotAnimations(state.templates,state.attackTemplates);
             refresh(); chooser.value = key;
             saveToLocalStorage();
             status('Saved template "' + key + '" locally. Export its complete Lua module to install it on your server.', true);
@@ -2131,6 +2214,7 @@ function validateEnemyRecords(entry) {
                 const zip = new JSZip();
                 const names = Object.keys(state.templates).sort();
                 if (!names.length) throw new Error('Save at least one template first.');
+                const attackDeps = requiredCustomAttackTemplates(state.templates,state.attackTemplates);
                 const registrations = [];
                 for (const key of names) {
                     const filename = 'template_' + key.toLowerCase() + '.lua';
@@ -2141,12 +2225,17 @@ function validateEnemyRecords(entry) {
                     '-- Drop-in Enemy Workshop registry. Auto-loaded by enemy_templates.lua.\nreturn function(EnemyTemplates)\n'
                     + registrations.join('\n')
                     + '\nend\n');
-                zip.file('ENEMY_TEMPLATE_REGISTRATION.md', '# These enemy templates install automatically with the matching server patch.\n\nIndividual registration commands (for manual use):\n\n```lua\n' + registrations.join('\n') + '\n```\n');
+                if (Object.keys(attackDeps).length) {
+                    zip.file('scripts/ezlibs-custom/nebulous-liberations/liberations/attacks/enemy_workshop_templates.lua',
+                        window.VisualEncountersAttackWorkshop.bundleSource(attackDeps));
+                }
+                zip.file('ENEMY_TEMPLATE_REGISTRATION.md', '# These enemy templates install automatically with the matching server patch.\nAttack dependencies (' + Object.keys(attackDeps).length + ' custom templates) are included in attacks/enemy_workshop_templates.lua without overwriting a separately installed Attack Workshop registry.\nBuilt-in Legacy_* attack profiles come from your server.\n\nIndividual registration commands (for manual use):\n\n```lua\n' + registrations.join('\n') + '\n```\n');
                 downloadBlob('enemy-template-workshop.zip', await zip.generateAsync({ type: 'blob' }));
-                status('Exported ' + names.length + ' complete OW modules and auto-registration bundle.', true);
+                status('Exported ' + names.length + ' enemy modules and ' + Object.keys(attackDeps).length + ' linked custom attacks. Install the ZIP into your server root.', true);
             }),
             action('Export project JSON', () => {
-                downloadText('enemy-template-workshop.json', JSON.stringify({ version: 1, templates: state.templates }, null, 2));
+                const attackDeps = requiredCustomAttackTemplates(state.templates,state.attackTemplates);
+                downloadText('enemy-template-workshop.json', JSON.stringify({ version: 2, templates: state.templates, attacks: attackDeps }, null, 2));
             }),
             action('Import project JSON', () => document.getElementById('ve-template-project-import').click()),
             action('Delete', () => {
@@ -2161,13 +2250,20 @@ function validateEnemyRecords(entry) {
                 const file = projectImport.files && projectImport.files[0];
                 if (!file) return;
                 const data = JSON.parse(await file.text());
-                if (!data || data.version !== 1 || !data.templates || typeof data.templates !== 'object' || Array.isArray(data.templates)) throw new Error('Invalid workshop JSON project.');
+                if (!data || ![1,2].includes(data.version) || !data.templates || typeof data.templates !== 'object' || Array.isArray(data.templates)) throw new Error('Invalid workshop JSON project.');
+                const incomingAttacks = {};
+                for (const [key,definition] of Object.entries(data.attacks || {})) {
+                    incomingAttacks[key] = window.VisualEncountersAttackWorkshop.validate(key,definition);
+                }
+                Object.assign(state.attackTemplates,incomingAttacks);
                 const imported = {};
                 for (const [key, def] of Object.entries(data.templates)) {
                     templateModule(key, def);
                     imported[key] = def;
                 }
                 state.templates = { ...state.templates, ...imported };
+                migrateLegacyEnemyAttackFields(state.templates,state.attackTemplates);
+                migrateLegacyAttackBotAnimations(state.templates,state.attackTemplates);
                 refresh(); load(''); persistNebulousWorkspace();
                 status('Imported ' + Object.keys(imported).length + ' templates.', true);
             } catch (error) { status('Import failed: ' + error.message, false); }
@@ -2714,6 +2810,9 @@ window.updateEnemyOnTile = function() {
             }
         } catch (error) { console.warn('[VisualEncounters] Ignoring invalid Nebulous workspace:', error); }
 
+        migrateLegacyEnemyAttackFields(state.templates,state.attackTemplates);
+        migrateLegacyAttackBotAnimations(state.templates,state.attackTemplates);
+
         const tabs = el('nav', { id: 've-main-tabs', 'aria-label': 'Encounter editor modes' }, [
             el('button', { type: 'button', class: 'active', 'data-view': 'legacy', onClick: () => activateView('legacy') }, ['Legacy Format']),
             el('button', { type: 'button', 'data-view': 'new', onClick: () => activateView('new') }, ['V2.1 format']),
@@ -2755,7 +2854,18 @@ window.updateEnemyOnTile = function() {
         if (window.VisualEncountersAttackWorkshop) {
             window.VisualEncountersAttackWorkshop.mount(attackWorkshop, {
                 templates: state.attackTemplates,
-                onChange: () => persistNebulousWorkspace(),
+                onChange: () => {
+                    migrateLegacyAttackBotAnimations(state.templates,state.attackTemplates);
+                    persistNebulousWorkspace();
+                    const dropdown = document.querySelector('#ve-template-editor [data-template-field="attack_template"]');
+                    if (dropdown && window.VisualEncountersAttackWorkshop) {
+                        const selected = dropdown.value;
+                        const known = window.VisualEncountersAttackWorkshop.getNames(state.attackTemplates);
+                        dropdown.replaceChildren(...['', ...known].map(key =>
+                            el('option', { value:key, text:key || 'Select an attack…' })));
+                        dropdown.value = selected;
+                    }
+                },
                 download: (name, content) => typeof content === 'string'
                     ? downloadText(name,content) : downloadBlob(name,content),
                 loadZip: () => window.loadJSZip()
@@ -2790,7 +2900,11 @@ window.updateEnemyOnTile = function() {
         createWorkspace(false);
     }
 
-    window.VisualEncountersEditorDiagnostics = { templateModule, serializeLua, normalizeEncounter, validFreedomTurns };
+    window.VisualEncountersEditorDiagnostics = {
+        templateModule, serializeLua, normalizeEncounter, validFreedomTurns,
+        migrateLegacyEnemyAttackFields, migrateLegacyAttackBotAnimations,
+        requiredCustomAttackTemplates
+    };
     if (window.jQuery) window.jQuery(install);
     else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install, { once: true });
     else install();

@@ -76,3 +76,24 @@ Enemy templates may set `move_range`, `movement_directions` (`any`, `axis`, `dia
 ## Out-of-scope / verification
 
 The website export is tested with Node.js; the server Lua modules and generated template files are syntax-tested, and 8-direction shapes, three-phase execution, SFX/contact and summoning were exercised in isolated Lua mocks. **Live ONB gameplay, animation playback, indefinite hazard lifecycle and newest runtime merge are not yet verified.** This avoids claiming workarounds for engine callbacks not present in source.
+
+---
+
+## Direction-state defaults and portable attack assignments (November 22 update)
+
+The current Workshop controls and server runtime are documented in
+[WORKSHOP_DIRECTION_AND_PORTABILITY_GUIDE.md](WORKSHOP_DIRECTION_AND_PORTABILITY_GUIDE.md).
+By default, both bot and attack-effect animations use only the four diagonal
+`PREFIX_UL`, `PREFIX_UR`, `PREFIX_DL`, and `PREFIX_DR` states. An explicit
+**eight-direction animation** checkbox exists independently in each Workshop;
+it changes animation suffix lookup only, not movement or attack targeting.
+
+For portable authoring, export an Attack Workshop **JSON or ZIP** project and
+import that into the Attack Workshop of another browser. Then assign the saved
+attack in the Enemy Workshop. The Enemy Workshop's complete ZIP includes the
+custom attack definitions referenced by its enemies in a separate
+`attacks/enemy_workshop_templates.lua` registry. This registry does not overwrite
+an independently installed `attacks/custom_templates.lua`.
+
+Older saved enemy templates with attack-owned settings are migrated into named
+attacks; bot animation prefixes are retained on the enemy.
