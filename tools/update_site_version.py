@@ -15,8 +15,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 INDEX = ROOT / 'index.html'
 VERSION_FILE = ROOT / 'site-version.json'
-JS_FILES = ('v21-export.js', 'liberation-editor.js')
-CSS_FILES = ('visual-theme.css',)
+JS_FILES = ('v21-export.js', 'liberation-editor.js', 'attack-workshop.js')
+CSS_FILES = ('visual-theme.css', 'attack-workshop.css')
 ASSET_EXTENSIONS = {'.html', '.js', '.css', '.json', '.zip', '.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg', '.animation'}
 SKIP_TOP = {'tools', 'tests', 'templates', '.git', '.github'}
 

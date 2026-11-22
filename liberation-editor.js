@@ -33,6 +33,7 @@
         selectedEnemyRewardAlias: '',
         selectedEnemyRewardRank: 'default',
         templates: {},
+        attackTemplates: {},
         categoryBattlefieldDefaults: { encounters: false, special_encounters: false, bosses: false },
         legacyConfig: null,
         data: {
@@ -484,6 +485,7 @@
         document.getElementById('ve-legacy-view').hidden = state.activeView !== 'legacy';
         document.getElementById('ve-nebulous-view').hidden = state.activeView !== 'new';
         document.getElementById('ve-template-view').hidden = state.activeView !== 'templates';
+        document.getElementById('ve-attack-view').hidden = state.activeView !== 'attacks';
         document.getElementById('ve-settings-view').hidden = state.activeView !== 'settings';
     }
 
@@ -741,7 +743,18 @@
     }
 
     function activateView(view) {
-        if (!['legacy', 'new', 'templates', 'settings'].includes(view) || view === state.activeView) return;
+        if (view === 'templates') {
+            const select = document.querySelector('#ve-template-editor [data-template-field="attack_template"]');
+            if (select && window.VisualEncountersAttackWorkshop) {
+                const selected = select.value;
+                const names = window.VisualEncountersAttackWorkshop.getNames(state.attackTemplates);
+                select.replaceChildren(...['', ...names].map(name =>
+                    el('option', { value:name, text:name || 'Select an attack…' })));
+                select.value = selected;
+            }
+        }
+
+        if (!['legacy', 'new', 'templates', 'attacks', 'settings'].includes(view) || view === state.activeView) return;
         const previous = state.activeView;
         if (previous === 'new') {
             state.data[state.activeSection] = config.encounters;
@@ -1566,6 +1579,16 @@ function validateEnemyRecords(entry) {
     // They intentionally exclude behavior functions: named registered AI only.
     const TEMPLATE_FIELDS = [
         ['battle_name','Battle enemy alias','text','Mettaur'],
+        ['attack_template','Primary attack template','select',''],
+        ['default_attacks','Default attacks (comma separated names)','text',''],
+        ['battle_max_health','Base battle max HP (optional, separate OW)','number',''],
+        ['battle_starting_hp','Base battle starting HP (optional)','number',''],
+        ['move_range','Maximum movement tiles','number',''],
+        ['movement_directions','Movement directions','select','any'],
+        ['allowed_move_panels','Allowed move panel types (comma separated)','text',''],
+        ['require_dark_panel_to_attack','Must stand on a Dark Panel to attack','checkbox',''],
+        ['idle_animation_prefix','Idle animation PREFIX (e.g. IDLE)','text','IDLE'],
+        ['attack_animation_prefix','Attack animation PREFIX (e.g. ATTACK)','text','ATTACK'],
         ['is_boss','Boss template','checkbox',''],
         ['is_special_encounter','Special encounter enemy','checkbox',''],
         ['health','Starting HP','number','100'],
@@ -1591,22 +1614,30 @@ function validateEnemyRecords(entry) {
         ['mug_texture','Boss mug texture (optional)','text','/server/assets/.../mug.png'],
         ['mug_animation','Boss mug animation (optional)','text','/server/assets/.../mug.animation']
     ];
-    const TEMPLATE_AI = ['simple_charge','ranged','shockwave_line','shademan_ambush','bladia_strike','roll_heart_whip','patterned_attack'];
+    const TEMPLATE_AI = ['simple_charge','ranged','shockwave_line','shademan_ambush','bladia_strike','roll_heart_whip','patterned_attack','phased_attack'];
     function templateModule(name, info) {
         if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(name)) throw new Error('Template name must be a Lua-safe identifier (letters, digits, underscore).');
         const def = { ...info };
-        for (const key of ['health','max_health','scale','battle_scale','attack_damage','attack_animation_seconds','shape_offset_x','shape_offset_y']) {
+        for (const key of ['health','max_health','battle_max_health','battle_starting_hp','move_range','scale','battle_scale','attack_damage','attack_animation_seconds','shape_offset_x','shape_offset_y']) {
             if (def[key] === undefined || def[key] === '') { delete def[key]; continue; }
             def[key] = Number(def[key]);
-            if (!Number.isFinite(def[key]) || (key !== 'attack_damage' && !key.startsWith('shape_offset') && def[key] <= 0) || (key === 'attack_damage' && def[key] < 0)) throw new Error(key + ' must be valid and positive (damage may be zero).');
-            if (['health','max_health','attack_damage','shape_offset_x','shape_offset_y'].includes(key)) {
+            if (!Number.isFinite(def[key]) || (key !== 'attack_damage' && key !== 'move_range' && !key.startsWith('shape_offset') && def[key] <= 0) || (key === 'attack_damage' && def[key] < 0)) throw new Error(key + ' must be valid and positive (damage may be zero).');
+            if (['health','max_health','battle_max_health','battle_starting_hp','move_range','attack_damage','shape_offset_x','shape_offset_y'].includes(key)) {
                 if (!Number.isInteger(def[key])) throw new Error(key + ' must be an integer.');
             }
         }
         if (def.max_health && def.health && def.health > def.max_health) throw new Error('Starting HP must not exceed maximum HP.');
+        if (def.battle_max_health && def.battle_starting_hp && def.battle_starting_hp > def.battle_max_health) throw new Error('Battle starting HP must not exceed battle max HP.');
         if (def.ai_type && !TEMPLATE_AI.includes(def.ai_type)) throw new Error('Choose a registered AI type.');
         if (def.battle_scale_scope && !['Matching','All'].includes(def.battle_scale_scope)) throw new Error('Unsupported battle scale scope.');
         if (!def.texture_path || !def.animation_path) throw new Error('Overworld texture and animation paths are required.');
+        const identifier = /^[A-Za-z][A-Za-z0-9_]*$/;
+        const attacks = String(def.default_attacks||'').split(',').map(x=>x.trim()).filter(Boolean);
+        if (def.attack_template && !identifier.test(def.attack_template)) throw new Error('Attack template name is invalid.');
+        if (attacks.some(x=>!identifier.test(x))) throw new Error('Default attacks must use registered Lua names.');
+        if (def.movement_directions && !['any','axis','diagonal','none'].includes(def.movement_directions)) throw new Error('Unknown movement direction policy.');
+        const allowed = String(def.allowed_move_panels||'').split(',').map(x=>x.trim()).filter(Boolean);
+        if (allowed.some(x=>!['Dark Panel','Item Panel','Trap Panel','Normal Panel','Liberated Panel'].includes(x))) throw new Error('Choose existing Tiled panel types for allowed movement.');
         const config = {
             battle_name: def.battle_name || name,
             health: def.health || def.max_health || 100,
@@ -1633,6 +1664,17 @@ function validateEnemyRecords(entry) {
         }
         // Blank battle_scale must inherit the runtime OW scale, including Tiled overrides.
         if (def.battle_scale !== undefined) config.battle_scale = def.battle_scale;
+        if (def.battle_max_health !== undefined) config.battle_max_health = def.battle_max_health;
+        if (def.battle_starting_hp !== undefined) config.battle_starting_hp = def.battle_starting_hp;
+        if (def.move_range !== undefined) config.move_range = def.move_range;
+        if (def.movement_directions) config.movement_directions = def.movement_directions;
+        if (allowed.length) config.allowed_move_panels = allowed;
+        if (def.require_dark_panel_to_attack) config.require_dark_panel_to_attack = true;
+        if (def.idle_animation_prefix) config.idle_animation_prefix = def.idle_animation_prefix;
+        if (def.attack_animation_prefix) config.attack_animation_prefix = def.attack_animation_prefix;
+        if (attacks.length) config.default_attacks = attacks;
+        if (def.attack_template) config.attack_template = def.attack_template;
+        if (!config.attack_template && attacks.length) config.attack_template = attacks[0];
         if (def.death_message) config.death_message = def.death_message;
         if (def.default_ow_bot_encounter_name) config.default_ow_bot_encounter_name = def.default_ow_bot_encounter_name;
         if (def.attack_animation_seconds !== undefined) config.attack_animation_seconds = def.attack_animation_seconds;
@@ -2008,7 +2050,11 @@ function validateEnemyRecords(entry) {
         const name = el('input', { id: 've-template-name', type: 'text', placeholder: 'e.g. MyMettaur' });
         const fields = {}, wrappers = {};
         TEMPLATE_FIELDS.forEach(([key,label,type,placeholder]) => {
-            const input = type === 'select' ? el('select', { 'data-template-field': key }, (key === 'ai_type' ? TEMPLATE_AI : ['Matching','All']).map(value => el('option', { value, text: value })))
+            const selectValues = key === 'ai_type' ? TEMPLATE_AI
+                : key === 'movement_directions' ? ['any','axis','diagonal','none']
+                : key === 'attack_template' ? ['', ...(window.VisualEncountersAttackWorkshop ? window.VisualEncountersAttackWorkshop.getNames(state.attackTemplates) : [])]
+                : ['Matching','All'];
+            const input = type === 'select' ? el('select', { 'data-template-field': key }, selectValues.map(value => el('option', { value, text: value || 'Select an attack…' })))
                 : el('input', { type, placeholder, 'data-template-field': key, ...(type === 'number' ? { step: key.includes('scale') ? '0.05' : '1' } : {}) });
             fields[key] = input;
             wrappers[key] = el('label', {}, [label, input]);
@@ -2021,10 +2067,11 @@ function validateEnemyRecords(entry) {
         const shape = createTemplateShapePainter(fields);
         const preview = createTemplateSpritePreview(fields);
         const primary = el('div', { class: 've-template-primary' }, [
-            section('1 · Identity & behavior', 'Start with the battle alias, class and registered AI. Different overworld behaviors still need a Lua AI implementation.', ['battle_name','is_boss','is_special_encounter','ai_type','death_message','default_ow_bot_encounter_name']),
-            section('2 · Health, scale & combat', 'OW scale is used in the live preview. Battle scale is independent and defaults to OW scale when left empty.', ['health','max_health','scale','battle_scale','battle_scale_scope','attack_damage','attack_animation_seconds','has_attack_animation','has_attack_hold']),
+            section('1 · Identity & behavior', 'Choose existing AI or a reusable Attack Workshop template. Custom attack Lua modules must also be installed.', ['battle_name','is_boss','is_special_encounter','ai_type','attack_template','default_attacks','death_message','default_ow_bot_encounter_name']),
+            section('2 · HP, scale & combat', 'Independent OW/battle HP. Tiled Bot Config Max HP overrides template defaults. Battle scale inherits OW unless specified.', ['health','max_health','battle_max_health','battle_starting_hp','scale','battle_scale','battle_scale_scope','attack_damage','attack_animation_seconds','has_attack_animation','has_attack_hold','idle_animation_prefix','attack_animation_prefix']),
+            section('3 · Movement and territory', 'Allowed Tiled panel types, movement modes and whether attacks require Dark Panel footing.', ['move_range','movement_directions','allowed_move_panels','require_dark_panel_to_attack']),
             shape.panel,
-            section('3 · Overworld asset paths', 'These are server asset paths, not the local files used for preview. Upload files on the right to inspect them; optionally copy the filenames into these fields.', ['texture_path','animation_path']),
+            section('4 · Overworld asset paths', 'These are server asset paths, not the local files used for preview. Upload files on the right to inspect them; optionally copy the filenames into these fields.', ['texture_path','animation_path']),
             el('details', { class: 've-template-card ve-template-advanced' }, [
                 el('summary', { text: 'Advanced · Attack effects and boss mug' }),
                 el('p', { class: 've-small-help', text: 'Optional attack and mug assets can also be previewed using the selector in the preview panel.' }),
@@ -2090,9 +2137,13 @@ function validateEnemyRecords(entry) {
                     zip.file('scripts/ezlibs-custom/nebulous-liberations/liberations/enemies/' + filename, templateModule(key, state.templates[key]));
                     registrations.push('require("scripts/ezlibs-custom/nebulous-liberations/liberations/enemies/' + filename.slice(0,-4) + '")(EnemyTemplates)');
                 }
-                zip.file('ENEMY_TEMPLATE_REGISTRATION.md', '# Register these OW templates in your existing enemy_templates.lua, after shared AI initialization.\n\n```lua\n' + registrations.join('\n') + '\n```\n');
+                zip.file('scripts/ezlibs-custom/nebulous-liberations/liberations/enemies/custom_templates.lua',
+                    '-- Drop-in Enemy Workshop registry. Auto-loaded by enemy_templates.lua.\nreturn function(EnemyTemplates)\n'
+                    + registrations.join('\n')
+                    + '\nend\n');
+                zip.file('ENEMY_TEMPLATE_REGISTRATION.md', '# These enemy templates install automatically with the matching server patch.\n\nIndividual registration commands (for manual use):\n\n```lua\n' + registrations.join('\n') + '\n```\n');
                 downloadBlob('enemy-template-workshop.zip', await zip.generateAsync({ type: 'blob' }));
-                status('Exported ' + names.length + ' complete OW modules and registration guide.', true);
+                status('Exported ' + names.length + ' complete OW modules and auto-registration bundle.', true);
             }),
             action('Export project JSON', () => {
                 downloadText('enemy-template-workshop.json', JSON.stringify({ version: 1, templates: state.templates }, null, 2));
@@ -2607,7 +2658,7 @@ window.updateEnemyOnTile = function() {
             localStorage.setItem('nebulousEncounterConfig', JSON.stringify({
                 ...state.data, exportTarget: state.exportTarget,
                 categoryBattlefieldDefaults: state.categoryBattlefieldDefaults,
-                templates: state.templates
+                templates: state.templates, attackTemplates: state.attackTemplates
             }));
         } catch (error) {
             // Offline/embedded previews may deny localStorage. Do not prevent
@@ -2644,6 +2695,7 @@ window.updateEnemyOnTile = function() {
                 const data = JSON.parse(saved);
                 if (Array.isArray(data.enemy_rewards) && data.enemy_rewards.length === 0) data.enemy_rewards = {};
                 state.templates = data.templates && typeof data.templates === 'object' && !Array.isArray(data.templates) ? data.templates : {};
+                state.attackTemplates = data.attackTemplates && typeof data.attackTemplates === 'object' && !Array.isArray(data.attackTemplates) ? data.attackTemplates : {};
                 state.exportTarget = ['liberations','ezencounters','endless_runner'].includes(data.exportTarget) ? data.exportTarget : 'liberations';
                 state.categoryBattlefieldDefaults = Object.fromEntries(SECTION_KEYS.map(section => [
                     section, !!(data.categoryBattlefieldDefaults && data.categoryBattlefieldDefaults[section])
@@ -2666,12 +2718,14 @@ window.updateEnemyOnTile = function() {
             el('button', { type: 'button', class: 'active', 'data-view': 'legacy', onClick: () => activateView('legacy') }, ['Legacy Format']),
             el('button', { type: 'button', 'data-view': 'new', onClick: () => activateView('new') }, ['V2.1 format']),
             el('button', { type: 'button', 'data-view': 'templates', onClick: () => activateView('templates') }, ['Enemy Template Workshop']),
+            el('button', { type: 'button', 'data-view': 'attacks', onClick: () => activateView('attacks') }, ['Attack Template Workshop']),
             el('button', { type: 'button', 'data-view': 'settings', onClick: () => activateView('settings') }, ['⚙ Settings'])
         ]);
         tabs.prepend(el('div', { class: 've-brand' }, [el('strong', { text: 'VisualEncounters' }), el('span', { text: 'Battle builder · Grid + Inspector' })]));
         const legacy = el('section', { id: 've-legacy-view' });
         const nebulous = el('section', { id: 've-nebulous-view', hidden: true });
         const workshop = el('section', { id: 've-template-view', hidden: true });
+        const attackWorkshop = el('section', { id: 've-attack-view', hidden: true });
         const settings = buildSettingsView();
         const controls = buildNebulousControls();
         controls.querySelector('#ve-area-id').addEventListener('input', event => {
@@ -2689,7 +2743,8 @@ window.updateEnemyOnTile = function() {
         document.body.insertBefore(legacy, toolbar);
         document.body.insertBefore(nebulous, container.nextSibling);
         nebulous.after(workshop);
-        workshop.after(settings);
+        workshop.after(attackWorkshop);
+        attackWorkshop.after(settings);
         legacy.appendChild(toolbar);
         legacy.appendChild(container);
         nebulous.appendChild(controls);
@@ -2697,6 +2752,17 @@ window.updateEnemyOnTile = function() {
         workshop.appendChild(el('h2', { text: 'Enemy Template Workshop' }));
         workshop.appendChild(el('p', { class: 've-small-help', text: 'Standalone overworld enemy template authoring. These Lua modules register with Nebulous Liberations; EZEncounters and Endless Runner use battle-character mods instead.' }));
         workshop.appendChild(buildTemplateEditor());
+        if (window.VisualEncountersAttackWorkshop) {
+            window.VisualEncountersAttackWorkshop.mount(attackWorkshop, {
+                templates: state.attackTemplates,
+                onChange: () => persistNebulousWorkspace(),
+                download: (name, content) => typeof content === 'string'
+                    ? downloadText(name,content) : downloadBlob(name,content),
+                loadZip: () => window.loadJSZip()
+            });
+        } else {
+            attackWorkshop.appendChild(el('p',{text:'Attack Workshop script was not loaded. Check attack-workshop.js.'}));
+        }
         document.getElementById('ve-template-editor').hidden = false;
         const globalPanel = el('details', { id: 've-global-controls', class: 've-global-controls' }, [
             el('summary', { text: 'Global & category overrides · Encounter frequency and battlefield mode' }),

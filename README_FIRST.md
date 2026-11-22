@@ -1,25 +1,22 @@
-# Visual Encounters V2.1 — verified nested ZIP/mod exporter
+# Visual Encounters — split Attack & Enemy Workshops
 
-**Install:** Extract this modified-files archive over your Visual Encounters repository root, preserving folders. Do not extract `mods/ezencounters.zip` or `mods/ezencounters-v21-base.zip`: those two files are ZIP assets hosted by the site.
+Extract this archive at the **root of the existing Visual Encounters repository**. It includes complete changed files, the independent Attack Workshop JavaScript/CSS, the updated Enemy Template Workshop, release cache fingerprints, docs and regression tests. Unchanged hosted mod ZIPs and web assets are intentionally not included in this smaller patch.
 
-Then run your existing `publish.bat` / `publish.sh`. The release version and cache URLs have already been updated in this package; the publisher will refresh them again if anything else changed.
+Top navigation: **Attack Template Workshop** (edit phase attacks) and **Enemy Template Workshop** (assign attacks, movement policies, OW/battle HP). **V2.1 format** remains the separate battle encounter editor.
 
-In the V2.1 editor, choose `Nebulous Liberations`, `EZEncounters`, or `Endless Runner`, enter your exact base area ID, and click **Download V2.1 drop-in ZIP**. Keep **Include hosted character mod ZIPs** on for a self-contained dependency copy. The new **Additional character mod ZIPs** picker allows local mods/overrides not present on the site.
+Save an attack and export **Attack Workshop ZIP**. Save an enemy and export **All Enemy Templates ZIP**. Extract both *outer* ZIPs into the server root; keep image and animation resources in their existing `/server/assets/...` directory. New Lua registries auto-load the generated custom registries. Tiled Bot Configs still choose which enemies spawn.
 
-The downloaded *outer* ZIP installs to the ONB server root with the Lua encounter file, the appropriate nested battle ZIP, nested character mod ZIPs, `EXPORT_MANIFEST_V21.json`, and `INSTALL_V21_MISSION.md`. Don't unpack the inner ZIPs.
+For the matching server runtime source and **optional** independent battle-HP handoff, install/merge the server patch separately. Do not overwrite the recent optimized `instance.lua` with a snapshot from Nov 20.
 
-For Liberations, Tiled mission objects (Bot Config, Encounter Config, boss links, etc.) and separate OW enemy template modules remain your responsibility. See `V21_EXPORT_AUDIT.md`.
+After copying files, run the site's existing publisher to update deployment/cache versions. To check locally with Node.js:
 
-An optional server-side compatibility patch is in its **own** archive. Only apply it if your current `liberations/panel_encounters.lua` still validates `enemy.rank` as `0..7`, because the uploaded client package uses indices `1..8`.
-
-**Offline verification:**
-
-```bash
-node tests/v21-regression.test.js
-node tests/v21-export.test.js
-node tests/v21-bundle-integration.test.js
+```
+node tests/attack-workshop.test.js
 node tests/cache-release.test.js
 node tests/theme-settings.test.js
+node tests/v21-export.test.js
+node tests/v21-package-catalog.test.js
+node tests/v21-regression.test.js
 ```
 
-Live ONB validation is still needed for character loading, native HP and Tiled mission behavior.
+Read `TEMPLATE_WORKSHOPS_GUIDE.md` for schema, phase example and all runtime limitations.

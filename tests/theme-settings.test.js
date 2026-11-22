@@ -16,7 +16,7 @@ assert.ok(!html.includes('id="dark-mode-toggle"'), 'Legacy-only theme button rem
 assert.match(html, /function toggleDarkMode\(enabled, saveToStorage\)/);
 assert.match(html, /localStorage\.getItem\('darkMode'\)/);
 assert.match(html, /localStorage\.setItem\('darkMode', String\(isDark\)\)/);
-assert.match(script, /\['legacy', 'new', 'templates', 'settings'\]/);
+assert.match(script, /\['legacy', 'new', 'templates', 'attacks', 'settings'\]/);
 assert.match(script, /data-view': 'settings'/);
 assert.match(script, /id: 've-settings-view'/);
 assert.match(script, /aria-pressed/);
@@ -27,7 +27,7 @@ assert.match(css, /--ve-control-popup-bg:/);
 assert.match(css, /body\.dark-mode/);
 assert.match(css, /option:checked/);
 assert.match(css, /select2-results__option--highlighted/);
-assert.match(tools, /CSS_FILES = \('visual-theme\.css',\)/);
+assert.match(tools, /CSS_FILES = \('visual-theme\.css', 'attack-workshop\.css'\)/);
 assert.match(html, new RegExp(`VisualEncounters Editor — v${ver}`));
 const digest=crypto.createHash('sha256').update(css).digest('hex').slice(0,16);
 assert.ok(html.includes(`visual-theme.css?v=${digest}`), 'Theme CSS fingerprint missing or out of date');

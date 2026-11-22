@@ -13,13 +13,13 @@ assert.ok(
   html.includes(`<title>VisualEncounters Editor — v${manifest.version}</title> <!-- VE_SITE_TITLE -->`),
   'browser tab title includes the exact generated build ID'
 );
-for (const filename of ['v21-export.js', 'liberation-editor.js']) {
+for (const filename of ['v21-export.js', 'liberation-editor.js', 'attack-workshop.js']) {
   const fingerprint = crypto.createHash('sha256').update(fs.readFileSync(path.join(root, filename))).digest('hex').slice(0, 16);
   assert.ok(html.includes(`src="${filename}?v=${fingerprint}"`), `${filename} has the latest hash`);
 }
 const lib = fs.readFileSync(path.join(root, 'liberation-editor.js'), 'utf8');
-assert.match(lib, /window\.veVersionedUrl\(resource\)/);
-assert.match(lib, /api\.buildDropinBundle/);
+assert.match(lib, /window\.veVersionedUrl\(baseFile\)/);
+assert.match(lib, /window\.veVersionedUrl\(modUrl\)/);
 assert.match(html, /window\.veVersionedUrl\(url\)/);
 const match = html.match(/<!-- VE_RELEASE_BOOTSTRAP_START[^>]*-->\s*<script>([\s\S]*?)<\/script>/);
 assert.ok(match, 'release bootstrap exists');
